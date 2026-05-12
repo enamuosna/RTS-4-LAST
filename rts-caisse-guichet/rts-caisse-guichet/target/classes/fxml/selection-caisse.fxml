@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<BorderPane prefHeight="640" prefWidth="900" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sn.rts.caisse.guichet.controller.SelectionCaisseController">
+
+    <!-- ====================== HEADER ====================== -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="14" styleClass="app-header">
+
+            <!-- Logo RTS officiel -->
+            <ImageView fitHeight="40" fitWidth="40" preserveRatio="true" smooth="true">
+                <image>
+                    <Image url="@rts-logo.jpg" />
+                </image>
+            </ImageView>
+
+            <VBox spacing="2">
+                <Label styleClass="app-title" text="RTS Caisse  Guichet" />
+                <Label styleClass="login-subtitle" text="Sélection de la caisse" />
+            </VBox>
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <VBox alignment="CENTER_RIGHT" spacing="0">
+                <Label fx:id="agentNameLabel" styleClass="user-name" />
+                <Label fx:id="agentRoleLabel" styleClass="user-role" />
+            </VBox>
+
+            <Button onAction="#onLogout" styleClass="button, button-ghost">
+                <graphic>
+                    <HBox alignment="CENTER" spacing="6">
+                        <SVGPath content="M9 21 H5 a2 2 0 0 1-2-2 V5 a2 2 0 0 1 2-2 h4 M16 17 l5-5-5-5 M21 12 H9" scaleX="0.65" scaleY="0.65" style="-fx-fill: transparent; -fx-stroke: -rts-gray-600; -fx-stroke-width: 2; -fx-stroke-line-cap: round; -fx-stroke-line-join: round;" />
+                        <Label text="Déconnexion" />
+                    </HBox>
+                </graphic>
+            </Button>
+        </HBox>
+    </top>
+
+    <!-- ====================== CENTRE ====================== -->
+    <center>
+        <VBox alignment="TOP_CENTER" maxWidth="720" spacing="16">
+            <padding>
+                <Insets bottom="40" left="40" right="40" top="40" />
+            </padding>
+
+            <VBox spacing="14" styleClass="card" VBox.vgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <SVGPath content="M3 9 l9-7 9 7 v11 a2 2 0 0 1-2 2 H5 a2 2 0 0 1-2-2 z M9 22 V12 h6 v10" scaleX="0.75" scaleY="0.75" style="-fx-fill: transparent; -fx-stroke: -rts-primary; -fx-stroke-width: 2; -fx-stroke-line-cap: round; -fx-stroke-line-join: round;" />
+                    <Label styleClass="app-title" text="Choisissez votre caisse" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Button onAction="#onRefresh" styleClass="button, button-ghost">
+                        <graphic>
+                            <HBox alignment="CENTER" spacing="6">
+                                <SVGPath content="M21 12 a9 9 0 0 1-15 6.7 L3 16 M3 12 a9 9 0 0 1 15-6.7 L21 8 M21 3 v5 h-5 M3 21 v-5 h5" scaleX="0.6" scaleY="0.6" style="-fx-fill: transparent; -fx-stroke: -rts-gray-700; -fx-stroke-width: 2; -fx-stroke-line-cap: round; -fx-stroke-line-join: round;" />
+                                <Label text="Actualiser" />
+                            </HBox>
+                        </graphic>
+                    </Button>
+                </HBox>
+
+                <Label styleClass="login-subtitle" text="Sélectionnez la caisse à laquelle vous êtes affecté pour cette journée. Si aucune caisse n'est disponible, contactez votre superviseur." wrapText="true" />
+
+                <ListView fx:id="caissesList" prefHeight="360" VBox.vgrow="ALWAYS" />
+
+                <Button fx:id="selectionnerButton" disable="true" maxWidth="Infinity" onAction="#onSelectionner" prefHeight="44" styleClass="button, button-primary">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="10">
+                            <Label style="-fx-text-fill: white; -fx-font-weight: 600;" text="Utiliser cette caisse" />
+                            <SVGPath content="M5 12 h14 M12 5 l7 7-7 7" scaleX="0.7" scaleY="0.7" style="-fx-fill: transparent; -fx-stroke: white; -fx-stroke-width: 2.5; -fx-stroke-line-cap: round; -fx-stroke-line-join: round;" />
+                        </HBox>
+                    </graphic>
+                </Button>
+            </VBox>
+
+        </VBox>
+    </center>
+
+</BorderPane>

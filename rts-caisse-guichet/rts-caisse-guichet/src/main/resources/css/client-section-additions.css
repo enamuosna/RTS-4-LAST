@@ -1,0 +1,106 @@
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  MODAL SCROLL PANE (v4.1)                                               ║
+   ║  Permet au corps du formulaire de scroller sans recouvrir le header    ║
+   ║  ou le footer. Transparent : laisse passer le fond .modal-body.        ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.modal-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.modal-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Scrollbar verticale fine et discrète à l'intérieur du modal */
+.modal-scroll-pane > .scroll-bar:vertical {
+    -fx-pref-width: 8;
+    -fx-background-color: transparent;
+}
+
+.modal-scroll-pane > .scroll-bar:vertical .thumb {
+    -fx-background-color: -rts-border-hl;
+    -fx-background-radius: 4;
+}
+
+.modal-scroll-pane > .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: -rts-border-strong;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  MINI-BASCULE CLIENT  (Existant / + Nouveau)                            ║
+   ║  Style "segmented control" : conteneur arrondi grisé, toggles plats,   ║
+   ║  toggle sélectionné en surface élevée avec accent primary.             ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.client-mode-switch {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 8;
+    -fx-padding: 2;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.toggle-button.mode-switch-toggle {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-padding: 4 12 4 12;
+    -fx-background-radius: 6;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.toggle-button.mode-switch-toggle:hover {
+    -fx-text-fill: -rts-text;
+    -fx-background-color: -rts-surface-2;
+}
+
+.toggle-button.mode-switch-toggle:selected {
+    -fx-background-color: -rts-surface;
+    -fx-text-fill: -rts-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 4, 0.0, 0, 1);
+}
+
+.toggle-button.mode-switch-toggle:selected:hover {
+    -fx-background-color: -rts-surface;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  SOUS-FORMULAIRE "NOUVEAU CLIENT"                                       ║
+   ║  Encadré avec fond légèrement teinté, bordure douce, padding interne.  ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.client-nouveau-pane {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 10;
+    -fx-padding: 14;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}
+
+/* Labels secondaires (plus petits que les .field-label principaux) */
+.field-label-sub {
+    -fx-font-size: 10px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -rts-text-muted;
+}
+
+/* Hint italique sous le formulaire (info contextuelle) */
+.client-nouveau-hint {
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+    -fx-text-fill: -rts-text-muted;
+    -fx-padding: 4 0 0 0;
+}

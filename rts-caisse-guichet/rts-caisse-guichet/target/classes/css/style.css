@@ -1,0 +1,1392 @@
+/* ============================================================================
+   RTS Caisse Guichet — Thème "Broadcast Dark" v4.0
+   Inspiré de RSI Archives v2 (FXML + EventBus + design system)
+   ============================================================================
+   - Fond multi-couches sombre (#0A0E18 → #06080F)
+   - Palette RTS-blue (#3B82F6) + Ambre (#FBBF24) + Teal monétaire (#5EEAD4)
+   - Cartes "raised" avec ombres internes lumineuses
+   - Boutons en gradients + glow d'élévation
+   - JetBrains Mono pour les chiffres et timecodes
+   - Toutes les règles équilibrées (accolades vérifiées)
+   - AUCUNE propriété non supportée par JavaFX (pas de -fx-letter-spacing,
+     -fx-text-transform, :focus-within, -fx-margin)
+   ============================================================================ */
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TOKENS DE DESIGN — la racine définit toutes les variables             ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.root {
+    -fx-font-family: "Inter", "Segoe UI Variable", "Segoe UI", "Roboto",
+                     "Helvetica Neue", system-ui, sans-serif;
+    -fx-font-size: 13.5px;
+    -fx-font-smoothing-type: lcd;
+
+    /* ---------- Surfaces (du plus sombre au plus clair) ---------- */
+    -rts-bg:             #06080F;
+    -rts-bg-2:           #0A0E18;
+    -rts-surface:        #111827;
+    -rts-surface-2:      #161E2E;
+    -rts-surface-3:      #1C2536;
+    -rts-raised:         #1F2937;
+    -rts-overlay:        rgba(255, 255, 255, 0.04);
+
+    /* ---------- Bordures ---------- */
+    -rts-border:         #1E2B40;
+    -rts-border-hl:      #2D3B54;
+    -rts-border-strong:  #475569;
+
+    /* ---------- Texte ---------- */
+    -rts-text:           #F1F5F9;
+    -rts-text-2:         #CBD5E1;
+    -rts-text-muted:     #94A3B8;
+    -rts-text-dim:       #64748B;
+    -rts-text-disabled:  #475569;
+
+    /* ---------- Accent principal RTS — bleu broadcast ---------- */
+    -rts-primary:        #3B82F6;
+    -rts-primary-light:  #60A5FA;
+    -rts-primary-dark:   #2563EB;
+    -rts-primary-50:     rgba(59, 130, 246, 0.12);
+    -rts-primary-100:    rgba(59, 130, 246, 0.20);
+    -rts-primary-glow:   rgba(59, 130, 246, 0.35);
+
+    /* ---------- Accent doré RTS / Ambre ---------- */
+    -rts-accent:         #FBBF24;
+    -rts-accent-light:   #FCD34D;
+    -rts-accent-dark:    #F59E0B;
+    -rts-accent-50:      rgba(251, 191, 36, 0.12);
+    -rts-accent-glow:    rgba(251, 191, 36, 0.35);
+
+    /* ---------- Teal monétaire (encaissements) ---------- */
+    -rts-teal:           #5EEAD4;
+    -rts-teal-light:     #99F6E4;
+    -rts-teal-dark:      #2DD4BF;
+    -rts-teal-50:        rgba(94, 234, 212, 0.12);
+    -rts-teal-glow:      rgba(94, 234, 212, 0.35);
+
+    /* ---------- États sémantiques ---------- */
+    -rts-success:        #10B981;
+    -rts-success-light:  rgba(16, 185, 129, 0.18);
+    -rts-success-dark:   #059669;
+
+    -rts-warning:        #F59E0B;
+    -rts-warning-light:  rgba(245, 158, 11, 0.18);
+    -rts-warning-dark:   #D97706;
+
+    -rts-danger:         #EF4444;
+    -rts-danger-light:   rgba(239, 68, 68, 0.18);
+    -rts-danger-dark:    #DC2626;
+
+    -rts-info:           #38BDF8;
+    -rts-info-light:     rgba(56, 189, 248, 0.18);
+
+    /* ---------- Échelle de gris (utilitaire) ---------- */
+    -rts-gray-50:        #F8FAFC;
+    -rts-gray-100:       #F1F5F9;
+    -rts-gray-200:       #E2E8F0;
+    -rts-gray-300:       #CBD5E1;
+    -rts-gray-400:       #94A3B8;
+    -rts-gray-500:       #64748B;
+    -rts-gray-600:       #475569;
+    -rts-gray-700:       #334155;
+    -rts-gray-800:       #1E293B;
+    -rts-gray-900:       #0F172A;
+
+    /* ---------- Police monospace ---------- */
+    -rts-mono:           "JetBrains Mono", "Fira Code", "Consolas",
+                         "Menlo", monospace;
+
+    /* Fond de l'application — léger dégradé radial pour profondeur */
+    -fx-background-color: linear-gradient(
+        from 0% 0% to 100% 100%,
+        -rts-bg-2 0%,
+        -rts-bg 100%
+    );
+    -accent-bg-subtle : #1E2530;
+    -hover-bg         : #2A3140;
+    -bg-card          : #131922;
+    -border-subtle    : #2F3744;
+    -text-default     : #E5E7EB;
+    -text-muted       : #9CA3AF;
+    -accent-primary   : #4FACFE;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TYPOGRAPHIE — hiérarchie modulaire                                     ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.h1 { -fx-font-size: 28px; -fx-font-weight: 800; -fx-text-fill: -rts-text; }
+.h2 { -fx-font-size: 22px; -fx-font-weight: 700; -fx-text-fill: -rts-text; }
+.h3 { -fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: -rts-text; }
+.h4 { -fx-font-size: 15px; -fx-font-weight: 600; -fx-text-fill: -rts-text-2; }
+
+.text-muted     { -fx-text-fill: -rts-text-muted; }
+.text-secondary { -fx-text-fill: -rts-text-2; }
+.text-emphasis  { -fx-text-fill: -rts-text; -fx-font-weight: 600; }
+.text-mono      { -fx-font-family: -rts-mono; }
+
+.text-xs   { -fx-font-size: 10.5px; }
+.text-sm   { -fx-font-size: 12px; }
+.text-base { -fx-font-size: 13.5px; }
+.text-lg   { -fx-font-size: 15.5px; }
+.text-xl   { -fx-font-size: 18px; }
+
+.text-success { -fx-text-fill: -rts-success; }
+.text-warning { -fx-text-fill: -rts-warning; }
+.text-danger  { -fx-text-fill: -rts-danger; }
+.text-accent  { -fx-text-fill: -rts-accent; }
+.text-teal    { -fx-text-fill: -rts-teal; }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  ICÔNES SVG — fill/stroke en classes utilitaires                       ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.icon {
+    -fx-stroke-width: 2;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+    -fx-fill: transparent;
+}
+
+.icon-primary    { -fx-fill: -rts-primary;    -fx-stroke: -rts-primary; }
+.icon-on-primary { -fx-fill: white;           -fx-stroke: white; }
+.icon-accent     { -fx-fill: -rts-accent;     -fx-stroke: -rts-accent; }
+.icon-teal       { -fx-fill: -rts-teal;       -fx-stroke: -rts-teal; }
+.icon-success    { -fx-fill: -rts-success;    -fx-stroke: -rts-success; }
+.icon-warning    { -fx-fill: -rts-warning;    -fx-stroke: -rts-warning; }
+.icon-danger     { -fx-fill: -rts-danger;     -fx-stroke: -rts-danger; }
+.icon-muted      { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; }
+.icon-on-dark    { -fx-fill: -rts-text;       -fx-stroke: -rts-text; }
+
+.icon-sm  { -fx-scale-x: 0.75; -fx-scale-y: 0.75; }
+.icon-md  { -fx-scale-x: 1.0;  -fx-scale-y: 1.0; }
+.icon-lg  { -fx-scale-x: 1.4;  -fx-scale-y: 1.4; }
+.icon-xl  { -fx-scale-x: 1.8;  -fx-scale-y: 1.8; }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  ÉCRAN DE LOGIN — halo radial + carte raised                           ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.login-pane {
+    -fx-background-color:
+        radial-gradient(
+            center 50% 30%, radius 60%,
+            rgba(59, 130, 246, 0.18) 0%,
+            transparent 70%
+        ),
+        radial-gradient(
+            center 50% 80%, radius 50%,
+            rgba(251, 191, 36, 0.08) 0%,
+            transparent 70%
+        ),
+        linear-gradient(
+            from 0% 0% to 100% 100%,
+            #0A0E18 0%,
+            #06080F 100%
+        );
+}
+
+.login-card {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        -rts-surface 0%,
+        -rts-surface-2 100%
+    );
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-width: 1;
+    -fx-padding: 44 48 40 48;
+    /* Ombre profonde + lumière interne */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 40, 0.0, 0, 16);
+}
+
+.login-logo {
+    -fx-pref-width: 78;
+    -fx-pref-height: 78;
+    -fx-background-color: linear-gradient(
+        to bottom,
+        rgba(59, 130, 246, 0.18) 0%,
+        rgba(59, 130, 246, 0.04) 100%
+    );
+    -fx-background-radius: 22;
+    -fx-border-color: rgba(59, 130, 246, 0.30);
+    -fx-border-radius: 22;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.40), 26, 0.2, 0, 0);
+}
+
+.login-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -rts-text;
+}
+
+.login-subtitle {
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-size: 12.5px;
+}
+
+.link-discreet {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-primary-light;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+    -fx-padding: 6 12 6 12;
+    -fx-background-radius: 6;
+    -fx-border-color: transparent;
+}
+.link-discreet:hover {
+    -fx-background-color: -rts-primary-50;
+    -fx-text-fill: -rts-primary-light;
+    -fx-underline: false;
+}
+.link-discreet:visited {
+    -fx-text-fill: -rts-primary-light;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  EN-TÊTE D'APPLICATION                                                  ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.app-header {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        -rts-surface 0%,
+        -rts-surface-2 100%
+    );
+    -fx-padding: 14 28 14 28;
+    -fx-border-color: transparent transparent -rts-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 12, 0.0, 0, 4);
+}
+
+.app-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -rts-text;
+}
+
+.app-subtitle {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -rts-text-muted;
+}
+
+.header-logo {
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+}
+
+.user-badge {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 12;
+    -fx-padding: 8 14 8 14;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+}
+.user-badge:hover {
+    -fx-background-color: -rts-raised;
+    -fx-border-color: -rts-border-strong;
+}
+
+.user-name {
+    -fx-font-weight: 700;
+    -fx-text-fill: -rts-text;
+    -fx-font-size: 12.5px;
+}
+
+.user-role {
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-size: 10.5px;
+}
+
+.agent-avatar {
+    -fx-background-color: linear-gradient(
+        to bottom right,
+        -rts-accent-light 0%,
+        -rts-accent-dark 100%
+    );
+    -fx-background-radius: 50%;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-pref-width: 38;
+    -fx-pref-height: 38;
+    -fx-text-fill: #1A1308;
+    -fx-font-weight: 800;
+    -fx-font-size: 13px;
+    -fx-alignment: center;
+    -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.40), 10, 0.2, 0, 2);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  BOUTONS — gradients + glow + micro-interactions                       ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.button {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-padding: 10 20 10 20;
+    -fx-font-weight: 600;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-border-width: 1;
+    -fx-text-fill: -rts-text-2;
+    -fx-background-color: -rts-surface-3;
+}
+.button:hover {
+    -fx-background-color: -rts-raised;
+    -fx-text-fill: -rts-text;
+}
+.button:pressed {
+    -fx-background-color: -rts-surface-2;
+    -fx-translate-y: 1;
+}
+.button:disabled {
+    -fx-opacity: 0.45;
+}
+
+/* ---------- Primary : RTS-blue avec glow ---------- */
+.button-primary {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        -rts-primary-light 0%,
+        -rts-primary 50%,
+        -rts-primary-dark 100%
+    );
+    -fx-text-fill: white;
+    -fx-border-color: rgba(96, 165, 250, 0.45);
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.35), 14, 0.0, 0, 4);
+}
+.button-primary:hover {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #7BA9F8 0%,
+        -rts-primary-light 100%
+    );
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.55), 20, 0.0, 0, 6);
+}
+.button-primary:pressed {
+    -fx-background-color: -rts-primary-dark;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.25), 6, 0.0, 0, 1);
+    -fx-translate-y: 1;
+}
+
+/* ---------- Accent (ambre/doré) ---------- */
+.button-accent {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        -rts-accent-light 0%,
+        -rts-accent 50%,
+        -rts-accent-dark 100%
+    );
+    -fx-text-fill: #1A1308;
+    -fx-border-color: rgba(252, 211, 77, 0.55);
+    -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.40), 14, 0.0, 0, 4);
+}
+.button-accent:hover {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #FDE68A 0%,
+        -rts-accent-light 100%
+    );
+    -fx-text-fill: #1A1308;
+    -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.60), 20, 0.0, 0, 6);
+}
+.button-accent:pressed {
+    -fx-background-color: -rts-accent-dark;
+    -fx-translate-y: 1;
+}
+
+/* ---------- Secondary : raised neutre ---------- */
+.button-secondary {
+    -fx-background-color: -rts-surface-3;
+    -fx-text-fill: -rts-text;
+    -fx-border-color: -rts-border-hl;
+}
+.button-secondary:hover {
+    -fx-background-color: -rts-raised;
+    -fx-border-color: -rts-border-strong;
+}
+.button-secondary:pressed {
+    -fx-background-color: -rts-surface-2;
+    -fx-translate-y: 1;
+}
+
+/* ---------- Ghost : transparent, juste un texte ---------- */
+.button-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text-muted;
+    -fx-border-color: transparent;
+}
+.button-ghost:hover {
+    -fx-background-color: -rts-overlay;
+    -fx-text-fill: -rts-text;
+}
+.button-ghost:pressed {
+    -fx-background-color: -rts-surface-2;
+}
+
+/* ---------- Danger ---------- */
+.button-danger {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #F87171 0%,
+        -rts-danger 50%,
+        -rts-danger-dark 100%
+    );
+    -fx-text-fill: white;
+    -fx-border-color: rgba(248, 113, 113, 0.45);
+    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.35), 14, 0.0, 0, 4);
+}
+.button-danger:hover {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #FCA5A5 0%,
+        #F87171 100%
+    );
+    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.55), 20, 0.0, 0, 6);
+}
+.button-danger:pressed {
+    -fx-background-color: -rts-danger-dark;
+    -fx-translate-y: 1;
+}
+
+/* ---------- Success ---------- */
+.button-success {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #34D399 0%,
+        -rts-success 50%,
+        -rts-success-dark 100%
+    );
+    -fx-text-fill: white;
+    -fx-border-color: rgba(52, 211, 153, 0.45);
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.35), 14, 0.0, 0, 4);
+}
+.button-success:hover {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #6EE7B7 0%,
+        #34D399 100%
+    );
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.55), 20, 0.0, 0, 6);
+}
+.button-success:pressed {
+    -fx-background-color: -rts-success-dark;
+    -fx-translate-y: 1;
+}
+
+/* ---------- Icon-only : carré, padding réduit + contraste renforcé ---------- */
+.button-icon {
+    -fx-padding: 8 10 8 10;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-background-color: -rts-surface-3;
+    -fx-border-color: -rts-border-strong;
+    -fx-border-width: 1;
+}
+.button-icon:hover {
+    -fx-background-color: -rts-raised;
+    -fx-border-color: -rts-text-muted;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CARTES & SURFACES                                                      ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.card {
+    -fx-background-color: -rts-surface;
+    -fx-background-radius: 14;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 22 24 22 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 18, 0.0, 0, 6);
+}
+
+.card-raised {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 14;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 22 24 22 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 24, 0.0, 0, 10);
+}
+
+.card-flat {
+    -fx-background-color: -rts-surface;
+    -fx-background-radius: 12;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 16 18 16 18;
+}
+
+.surface-elevated {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 16, 0.0, 0, 4);
+}
+
+.glass-pane {
+    -fx-background-color: rgba(17, 24, 39, 0.92);
+    -fx-background-radius: 14;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 32, 0.0, 0, 12);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CHAMPS DE SAISIE — focus ring teal/bleu                               ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.text-field, .password-field, .text-area {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 10 14 10 14;
+    -fx-text-fill: -rts-text;
+    -fx-prompt-text-fill: -rts-text-dim;
+    -fx-font-size: 13px;
+    -fx-highlight-fill: -rts-primary-100;
+    -fx-highlight-text-fill: -rts-text;
+}
+
+.text-field:focused, .password-field:focused, .text-area:focused {
+    -fx-background-color: -rts-raised;
+    -fx-border-color: -rts-primary;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.30), 8, 0.0, 0, 0);
+}
+
+.text-area .content {
+    -fx-background-color: transparent;
+}
+
+.field-label {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -rts-text-muted;
+}
+
+/* TextField groupé avec icône à gauche */
+.text-field-with-icon {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 4 12 4 12;
+}
+.text-field-with-icon:hover {
+    -fx-border-color: -rts-border-strong;
+}
+.text-field-with-icon .text-field,
+.text-field-with-icon .password-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 8 4 8 4;
+    -fx-effect: null;
+}
+.text-field-with-icon .text-field:focused,
+.text-field-with-icon .password-field:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  COMBO-BOX                                                              ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.combo-box-base {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.combo-box-base:hover {
+    -fx-border-color: -rts-border-strong;
+}
+.combo-box-base:focused {
+    -fx-border-color: -rts-primary;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.30), 8, 0.0, 0, 0);
+}
+.combo-box-base .arrow,
+.combo-box-base .arrow-button {
+    -fx-background-color: transparent;
+}
+.combo-box-base .arrow {
+    -fx-background-color: -rts-text-muted;
+}
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text;
+    -fx-padding: 8 12 8 12;
+    -fx-font-size: 13px;
+}
+.combo-box-popup .list-view {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.50), 16, 0.0, 0, 6);
+}
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text-2;
+    -fx-padding: 8 12 8 12;
+    -fx-background-radius: 6;
+}
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: -rts-overlay;
+    -fx-text-fill: -rts-text;
+}
+.combo-box-popup .list-view .list-cell:filled:selected {
+    -fx-background-color: -rts-primary-50;
+    -fx-text-fill: -rts-primary-light;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TABLES                                                                 ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.table-view {
+    -fx-background-color: transparent;
+    -fx-background-radius: 12;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.table-view:focused {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 12 12 0 0;
+    -fx-padding: 0;
+}
+
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -rts-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 12 14 12 14;
+    -fx-size: 44;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-alignment: center-left;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -rts-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-table-cell-border-color: transparent;
+    -fx-cell-size: 44;
+}
+.table-view .table-row-cell:odd {
+    -fx-background-color: rgba(255, 255, 255, 0.015);
+}
+.table-view .table-row-cell:hover {
+    -fx-background-color: -rts-overlay;
+}
+.table-view .table-row-cell:selected {
+    -fx-background-color: -rts-primary-50;
+}
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: -rts-text;
+}
+.table-view .table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: -rts-text-2;
+    -fx-padding: 10 14 10 14;
+    -fx-border-color: transparent;
+    -fx-font-size: 12.5px;
+    -fx-alignment: center-left;
+}
+
+.table-view .placeholder .label {
+    -fx-text-fill: -rts-text-dim;
+    -fx-font-size: 13px;
+    -fx-font-style: italic;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  BADGES & CHIPS                                                         ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.badge {
+    -fx-padding: 4 12 4 12;
+    -fx-background-radius: 999;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+.badge-success { -fx-background-color: -rts-success-light; -fx-text-fill: #6EE7B7; }
+.badge-warning { -fx-background-color: -rts-warning-light; -fx-text-fill: -rts-accent-light; }
+.badge-danger  { -fx-background-color: -rts-danger-light;  -fx-text-fill: #FCA5A5; }
+.badge-info    { -fx-background-color: -rts-primary-50;    -fx-text-fill: -rts-primary-light; }
+.badge-accent  { -fx-background-color: -rts-accent-50;     -fx-text-fill: -rts-accent-light; }
+.badge-teal    { -fx-background-color: -rts-teal-50;       -fx-text-fill: -rts-teal; }
+.badge-neutral { -fx-background-color: -rts-surface-3;     -fx-text-fill: -rts-text-2; }
+
+/* Chips (pill avec bordure) */
+.chip {
+    -fx-padding: 5 12 5 12;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-background-color: -rts-surface-3;
+    -fx-text-fill: -rts-text-2;
+    -fx-border-color: -rts-border-hl;
+}
+.chip-primary {
+    -fx-background-color: -rts-primary-50;
+    -fx-text-fill: -rts-primary-light;
+    -fx-border-color: rgba(59, 130, 246, 0.30);
+}
+.chip-accent {
+    -fx-background-color: -rts-accent-50;
+    -fx-text-fill: -rts-accent-light;
+    -fx-border-color: rgba(251, 191, 36, 0.30);
+}
+.chip-teal {
+    -fx-background-color: -rts-teal-50;
+    -fx-text-fill: -rts-teal;
+    -fx-border-color: rgba(94, 234, 212, 0.30);
+}
+.chip-success {
+    -fx-background-color: -rts-success-light;
+    -fx-text-fill: #6EE7B7;
+    -fx-border-color: rgba(16, 185, 129, 0.30);
+}
+.chip-danger {
+    -fx-background-color: -rts-danger-light;
+    -fx-text-fill: #FCA5A5;
+    -fx-border-color: rgba(239, 68, 68, 0.30);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  BANNIÈRE STATUT CAISSE — couleurs OPAQUES + texte crisp               ║
+   ║  Note : on évite les rgba transparents pour ne pas dépendre du fond    ║
+   ║         parent (rootContainer pourrait encore être clair).             ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.status-banner {
+    -fx-background-radius: 16;
+    -fx-padding: 24 32 24 32;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    /* Fond solide par défaut (cas où aucune classe d'état n'est appliquée) */
+    -fx-background-color: -rts-surface-2;
+    -fx-border-color: -rts-border;
+}
+
+/* ---------- État OUVERTE : gradient teal/vert OPAQUE ---------- */
+.status-banner.ouverte {
+    -fx-background-color: linear-gradient(
+        to right,
+        #0E3F36 0%,
+        #0A2A28 100%
+    );
+    -fx-border-color: #14B8A6;
+    /* Glow sur la BOÎTE uniquement, pas sur le texte */
+    -fx-effect: dropshadow(gaussian, rgba(20, 184, 166, 0.35), 24, 0.0, 0, 6);
+}
+
+/* ---------- État FERMÉE : gris ardoise opaque ---------- */
+.status-banner.fermee {
+    -fx-background-color: linear-gradient(
+        to right,
+        #1E293B 0%,
+        #0F172A 100%
+    );
+    -fx-border-color: -rts-border-strong;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.40), 18, 0.0, 0, 6);
+}
+
+/* ---------- Petites étiquettes (STATUT DE LA CAISSE / SOLDE COURANT) ---------- */
+.status-banner .banner-title {
+    -fx-text-fill: rgba(255, 255, 255, 0.62);
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+
+.status-banner.ouverte .banner-title {
+    -fx-text-fill: #99F6E4;
+}
+
+.status-banner.fermee .banner-title {
+    -fx-text-fill: -rts-text-muted;
+}
+
+/* ---------- Grandes valeurs (OUVERTE / 2 027 000 FCFA) ---------- */
+.status-banner .banner-value {
+    -fx-text-fill: white;
+    -fx-font-size: 30px;
+    -fx-font-weight: 800;
+    -fx-font-family: -rts-mono;
+    /* Ombre dure et fine — UNIQUEMENT pour la profondeur, pas de halo */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 3, 0.0, 0, 1);
+}
+
+.status-banner.ouverte .banner-value {
+    -fx-text-fill: #5EEAD4;
+}
+
+.status-banner.fermee .banner-value {
+    -fx-text-fill: -rts-text;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  STATUS BOX (login/serveur) — états du ping                            ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.status-box {
+    -fx-background-radius: 10;
+    -fx-padding: 12 16 12 16;
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}
+
+.status-box .status-message {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.status-box .status-detail {
+    -fx-font-size: 11px;
+    -fx-text-fill: -rts-text-muted;
+}
+
+.status-idle {
+    -fx-background-color: -rts-surface-3;
+    -fx-border-color: -rts-border-hl;
+}
+.status-idle .status-message { -fx-text-fill: -rts-text-2; }
+.status-idle .status-icon-svg { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; }
+
+.status-pending {
+    -fx-background-color: -rts-warning-light;
+    -fx-border-color: rgba(245, 158, 11, 0.45);
+}
+.status-pending .status-message { -fx-text-fill: -rts-accent-light; }
+.status-pending .status-icon-svg { -fx-fill: -rts-warning; -fx-stroke: -rts-warning; }
+
+.status-ok {
+    -fx-background-color: -rts-success-light;
+    -fx-border-color: rgba(16, 185, 129, 0.45);
+}
+.status-ok .status-message { -fx-text-fill: #6EE7B7; }
+.status-ok .status-icon-svg { -fx-fill: -rts-success; -fx-stroke: -rts-success; }
+
+.status-ko {
+    -fx-background-color: -rts-danger-light;
+    -fx-border-color: rgba(239, 68, 68, 0.45);
+}
+.status-ko .status-message { -fx-text-fill: #FCA5A5; }
+.status-ko .status-icon-svg { -fx-fill: -rts-danger; -fx-stroke: -rts-danger; }
+
+.loading-spinner {
+    -fx-pref-width: 22;
+    -fx-pref-height: 22;
+    -fx-progress-color: -rts-primary;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  BANNIÈRE D'ERREUR                                                      ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.error-banner {
+    -fx-background-color: -rts-danger-light;
+    -fx-text-fill: #FCA5A5;
+    -fx-padding: 12 16 12 16;
+    -fx-background-radius: 10;
+    -fx-border-color: rgba(239, 68, 68, 0.45);
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-font-size: 12.5px;
+    -fx-font-weight: 600;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  SCROLLBARS — minimalistes pour fond sombre                            ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-padding: 2;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 8;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -rts-border-strong;
+    -fx-background-radius: 8;
+    -fx-padding: 0;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: -rts-text-muted;
+}
+.scroll-bar .thumb:pressed {
+    -fx-background-color: -rts-text-2;
+}
+
+.scroll-bar:vertical { -fx-pref-width: 10; }
+.scroll-bar:horizontal { -fx-pref-height: 10; }
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button,
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: null;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+.scroll-pane:focused {
+    -fx-background-color: transparent;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  LIST-VIEW                                                              ║
+   ║  ⚠ Inclut le fix critique du bug texte invisible sur sélection        ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.list-view {
+    -fx-background-color: -rts-surface;
+    -fx-background-radius: 12;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+}
+.list-view:focused {
+    -fx-background-color: -rts-surface;
+    -fx-background-insets: 0;
+}
+
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text-2;
+    -fx-padding: 10 14 10 14;
+    -fx-background-radius: 8;
+    -fx-font-size: 13px;
+}
+.list-view .list-cell:filled:hover {
+    -fx-background-color: -rts-overlay;
+    -fx-text-fill: -rts-text;
+}
+/* FIX critique : éviter le texte invisible sur sélection */
+.list-view .list-cell:filled:selected,
+.list-view .list-cell:filled:selected:focused {
+    -fx-background-color: -rts-primary-50;
+    -fx-text-fill: -rts-text;
+}
+.list-view .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TOGGLE BUTTONS (Encaissement / Décaissement)                          ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.toggle-button {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 12 18 12 18;
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-weight: 600;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+.toggle-button:hover {
+    -fx-background-color: -rts-raised;
+    -fx-text-fill: -rts-text;
+}
+
+/* Encaissement = teal/green (entrée d'argent) */
+.entree-toggle:selected {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        rgba(94, 234, 212, 0.18) 0%,
+        rgba(45, 212, 191, 0.10) 100%
+    );
+    -fx-text-fill: -rts-teal;
+    -fx-border-color: -rts-teal;
+    -fx-effect: dropshadow(gaussian, rgba(94, 234, 212, 0.30), 12, 0.0, 0, 0);
+}
+
+/* Décaissement = ambre/rouge (sortie d'argent) */
+.sortie-toggle:selected {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        rgba(251, 191, 36, 0.18) 0%,
+        rgba(245, 158, 11, 0.10) 100%
+    );
+    -fx-text-fill: -rts-accent-light;
+    -fx-border-color: -rts-accent;
+    -fx-effect: dropshadow(gaussian, rgba(251, 191, 36, 0.30), 12, 0.0, 0, 0);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CHECKBOX                                                               ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.check-box {
+    -fx-text-fill: -rts-text-2;
+    -fx-font-size: 13px;
+}
+.check-box .box {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 4;
+    -fx-border-color: -rts-border-strong;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+    -fx-padding: 3;
+}
+.check-box:hover .box {
+    -fx-border-color: -rts-primary;
+}
+.check-box:selected .box {
+    -fx-background-color: -rts-primary;
+    -fx-border-color: -rts-primary;
+}
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TOOLTIP                                                                ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.tooltip {
+    -fx-background-color: -rts-raised;
+    -fx-text-fill: -rts-text;
+    -fx-background-radius: 6;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-font-size: 11.5px;
+    -fx-padding: 6 10 6 10;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.50), 12, 0.0, 0, 4);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  PROGRESS INDICATOR                                                     ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.progress-indicator {
+    -fx-progress-color: -rts-primary;
+}
+.progress-indicator .indicator {
+    -fx-background-color: transparent;
+}
+.progress-bar {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 8;
+    -fx-padding: 1;
+}
+.progress-bar > .track {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+}
+.progress-bar > .bar {
+    -fx-background-color: linear-gradient(
+        to right,
+        -rts-primary 0%,
+        -rts-teal 100%
+    );
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.40), 8, 0.0, 0, 0);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  DIALOG (Alert) — pour les boîtes natives JavaFX                       ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.dialog-pane {
+    -fx-background-color: -rts-surface;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.dialog-pane > .header-panel {
+    -fx-background-color: -rts-surface-2;
+    -fx-padding: 16 20 16 20;
+    -fx-background-radius: 12 12 0 0;
+}
+.dialog-pane > .header-panel > .label {
+    -fx-text-fill: -rts-text;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+.dialog-pane > .content {
+    -fx-padding: 20;
+}
+.dialog-pane .content .label {
+    -fx-text-fill: -rts-text-2;
+    -fx-font-size: 13px;
+}
+.dialog-pane .button-bar {
+    -fx-background-color: -rts-surface-2;
+    -fx-padding: 12 16 12 16;
+    -fx-background-radius: 0 0 12 12;
+}
+.dialog-pane .button-bar .button {
+    -fx-background-color: -rts-surface-3;
+    -fx-text-fill: -rts-text;
+    -fx-border-color: -rts-border-hl;
+}
+.dialog-pane .button-bar .button:default {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        -rts-primary-light 0%,
+        -rts-primary 100%
+    );
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+    -fx-font-weight: 700;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  SÉPARATEURS                                                            ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.separator .line {
+    -fx-border-color: -rts-border;
+    -fx-border-width: 1 0 0 0;
+}
+
+.divider-h { -fx-pref-height: 1; -fx-background-color: -rts-border; }
+.divider-v { -fx-pref-width:  1; -fx-background-color: -rts-border; }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  PAGINATION BAR                                                         ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.pagination-bar {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 10;
+    -fx-padding: 8 14 8 14;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  MODAL — racine, header, body, footer (Nouvelle opération)             ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.modal-root {
+    -fx-background-color: -rts-surface;
+    -fx-background-radius: 16;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.65), 40, 0.0, 0, 16);
+}
+
+/* ---------- En-tête bleu type bandeau ---------- */
+.modal-header {
+    -fx-background-color: linear-gradient(
+        to right,
+        -rts-primary 0%,
+        -rts-primary-dark 100%
+    );
+    -fx-background-radius: 16 16 0 0;
+    -fx-padding: 18 24 18 24;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.20), 8, 0.0, 0, -2);
+}
+
+.modal-title {
+    -fx-text-fill: white;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.modal-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.78);
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 500;
+}
+
+/* Bouton fermer (X) en haut à droite du header */
+.button-close {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 6 10 6 10;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+}
+.button-close:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+}
+.button-close:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.10);
+}
+
+/* ---------- Corps du formulaire ---------- */
+.modal-body {
+    -fx-background-color: -rts-surface;
+    -fx-padding: 24 28 24 28;
+}
+
+/* ---------- Footer avec les boutons d'action ---------- */
+.modal-footer {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 0 0 16 16;
+    -fx-padding: 14 24 14 24;
+    -fx-border-color: -rts-border transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* =====================================================
+   Section client refondue : mini-bascule "Existant / Nouveau"
+   ===================================================== */
+
+/* Container de la mini-bascule (style "segmented control") */
+.client-mode-switch {
+    -fx-background-color: -accent-bg-subtle;
+    -fx-background-radius: 8;
+    -fx-padding: 2;
+    -fx-border-color: -border-subtle;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+/* Les ToggleButtons de la bascule */
+.toggle-button.mode-switch-toggle {
+    -fx-background-color: transparent;
+    -fx-text-fill: -text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 5 14 5 14;
+    -fx-background-radius: 6;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+}
+
+.toggle-button.mode-switch-toggle:hover {
+    -fx-text-fill: -text-default;
+    -fx-background-color: -hover-bg;
+}
+
+/* Toggle actif (sélectionné) */
+.toggle-button.mode-switch-toggle:selected {
+    -fx-background-color: -bg-card;
+    -fx-text-fill: -accent-primary;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 4, 0, 0, 1);
+}
+
+.toggle-button.mode-switch-toggle:selected:hover {
+    -fx-background-color: -bg-card;
+}
+
+
+/* =====================================================
+   Sous-section "Nouveau client" (formulaire embarqué)
+   ===================================================== */
+
+.client-nouveau-pane {
+    -fx-background-color: -accent-bg-subtle;
+    -fx-background-radius: 10;
+    -fx-padding: 14;
+    -fx-border-color: -border-subtle;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}
+
+/* Labels secondaires (plus petits que les field-label principaux) */
+.field-label-sub {
+    -fx-font-size: 10px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -text-muted;
+    -fx-letter-spacing: 0.5;
+}
+
+/* Hint sous le formulaire nouveau client */
+.client-nouveau-hint {
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+    -fx-text-fill: -text-muted;
+    -fx-padding: 4 0 0 0;
+}
+
+
+/* =====================================================
+   Section client : encadré visuel global
+   ===================================================== */
+
+.client-section {
+    -fx-padding: 0;
+}

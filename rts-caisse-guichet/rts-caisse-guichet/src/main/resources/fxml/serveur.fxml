@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<!--
+    Écran de connexion au serveur RTS.
+    Logo RTS officiel remplace la pastille générique.
+-->
+
+<StackPane styleClass="login-pane" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sn.rts.caisse.guichet.controller.ServeurController">
+
+    <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="500" spacing="14" styleClass="login-card">
+
+        <!-- ======================== Logo RTS ======================== -->
+        <StackPane alignment="CENTER" styleClass="login-logo">
+            <ImageView fitHeight="76" fitWidth="76" preserveRatio="true" smooth="true">
+                <image>
+                    <Image url="@rts-logo.jpg" />
+                </image>
+            </ImageView>
+        </StackPane>
+
+        <Label styleClass="login-title" text="Connexion au serveur" />
+        <Label styleClass="login-subtitle" text="Indiquez l'URL du serveur RTS Caisse avant de vous authentifier." />
+
+        <!-- ===================== Formulaire ===================== -->
+        <VBox maxWidth="440" spacing="14">
+            <VBox.margin>
+                <Insets top="16" />
+            </VBox.margin>
+
+            <!-- URL serveur -->
+            <VBox spacing="6">
+                <Label styleClass="field-label" text="URL DU SERVEUR" />
+                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="text-field-with-icon">
+                    <SVGPath content="M12 2 L2 7 v7 c0 5.55 3.84 10.74 10 12 6.16-1.26 10-6.45 10-12 V7 z" scaleX="0.85" scaleY="0.85" styleClass="icon, icon-muted" />
+                    <TextField fx:id="urlField" promptText="http://serveur-rts:9090/api" HBox.hgrow="ALWAYS" />
+                </HBox>
+                <Label styleClass="login-subtitle" wrapText="true" />
+            </VBox>
+
+            <!-- Bloc statut -->
+            <HBox fx:id="statusBox" alignment="CENTER_LEFT" spacing="12" styleClass="status-box, status-idle">
+                <StackPane alignment="CENTER" maxHeight="28" maxWidth="28" minHeight="28" minWidth="28">
+                    <SVGPath fx:id="statusIcon" content="M12 22 c5.523 0 10-4.477 10-10 S17.523 2 12 2 2 6.477 2 12 s4.477 10 10 10 z" scaleX="0.85" scaleY="0.85" styleClass="status-icon-svg" />
+                    <ProgressIndicator fx:id="statusSpinner" managed="false" prefHeight="22" prefWidth="22" styleClass="loading-spinner" visible="false" />
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="statusMessage" styleClass="status-message" text="Non testé" />
+                    <Label fx:id="statusDetail" styleClass="status-detail" text="Cliquez sur « Tester la connexion » pour vérifier." wrapText="true" />
+                </VBox>
+            </HBox>
+
+            <!-- Boutons -->
+            <HBox spacing="10">
+                <Button fx:id="testerButton" maxWidth="Infinity" onAction="#onTester" prefHeight="42" styleClass="button, button-secondary" HBox.hgrow="ALWAYS">
+                    <graphic>
+                        <HBox alignment="CENTER" spacing="8">
+                            <SVGPath content="M5 12.55 a11 11 0 0 1 14.08 0 M1.42 9 a16 16 0 0 1 21.16 0 M8.53 16.11 a6 6 0 0 1 6.95 0 M12 20 h.01" scaleX="0.7" scaleY="0.7" style="-fx-fill: -rts-primary-dark;" styleClass="icon" />
+                            <Label fx:id="testerButtonLabel" style="-fx-text-fill: -rts-primary-dark; -fx-font-weight: 600;" text="Tester la connexion" />
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Button onAction="#onReinitialiser" styleClass="button, button-icon">
+                    <graphic>
+                        <SVGPath content="M21 12 a9 9 0 0 1-15 6.7 L3 16 M3 12 a9 9 0 0 1 15-6.7 L21 8 M21 3 v5 h-5 M3 21 v-5 h5" scaleX="0.7" scaleY="0.7" styleClass="icon, icon-muted" />
+                    </graphic>
+                </Button>
+            </HBox>
+
+            <!-- Bouton Continuer -->
+            <Button fx:id="continuerButton" defaultButton="true" disable="true" maxWidth="Infinity" onAction="#onContinuer" prefHeight="46" styleClass="button, button-primary">
+                <graphic>
+                    <HBox alignment="CENTER" spacing="10">
+                        <Label style="-fx-text-fill: white; -fx-font-weight: 600; -fx-font-size: 13.5px;" text="Continuer vers la connexion" />
+                        <SVGPath content="M5 12 h14 M12 5 l7 7-7 7" scaleX="0.7" scaleY="0.7" styleClass="icon, icon-on-primary" />
+                    </HBox>
+                </graphic>
+            </Button>
+
+            <HBox alignment="CENTER">
+                <CheckBox fx:id="autoTestCheckBox" selected="true" text="Tester automatiquement au démarrage" />
+            </HBox>
+
+            <Label alignment="CENTER" maxWidth="Infinity" styleClass="login-subtitle" text="v1.0.0  © RTS Sénégal" />
+        </VBox>
+
+    </VBox>
+
+</StackPane>

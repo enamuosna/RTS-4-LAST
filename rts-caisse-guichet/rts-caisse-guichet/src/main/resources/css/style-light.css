@@ -1,0 +1,1237 @@
+/* ============================================================================
+   RTS Caisse Guichet — Thème "Broadcast Light" v4.0
+   Mêmes sélecteurs que style.css (dark), palette blanche RTS-blue + ambre
+   ============================================================================
+   - Fond clair multi-couches (#f5f7fb)
+   - Cartes blanches avec ombres douces
+   - Bleu RTS profond (#0a4d8c) + ambre (#F59E0B)
+   - Accolades équilibrées, aucune propriété non supportée
+   ============================================================================ */
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TOKENS DE DESIGN                                                       ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.root {
+    -fx-font-family: "Inter", "Segoe UI Variable", "Segoe UI", "Roboto",
+                     "Helvetica Neue", system-ui, sans-serif;
+    -fx-font-size: 13.5px;
+    -fx-font-smoothing-type: lcd;
+    -rts-primary-darker: #1a5276;
+
+    /* ---------- Surfaces (du plus clair au plus marqué) ---------- */
+    -rts-bg:             #F5F7FB;
+    -rts-bg-2:           #EEF2F7;
+    -rts-surface:        #FFFFFF;
+    -rts-surface-2:      #F8FAFC;
+    -rts-surface-3:      #F1F5F9;
+    -rts-raised:         #E2E8F0;
+    -rts-overlay:        rgba(15, 23, 42, 0.04);
+
+    /* ---------- Bordures ---------- */
+    -rts-border:         #E2E8F0;
+    -rts-border-hl:      #CBD5E1;
+    -rts-border-strong:  #94A3B8;
+
+    /* ---------- Texte ---------- */
+    -rts-text:           #0F172A;
+    -rts-text-2:         #334155;
+    -rts-text-muted:     #64748B;
+    -rts-text-dim:       #94A3B8;
+    -rts-text-disabled:  #CBD5E1;
+
+    /* ---------- Accent principal RTS — bleu institutionnel ---------- */
+    -rts-primary:        #0A4D8C;
+    -rts-primary-light:  #1565C0;
+    -rts-primary-dark:   #073A6B;
+    -rts-primary-50:     #E8F1FA;
+    -rts-primary-100:    #C5DCF0;
+    -rts-primary-glow:   rgba(10, 77, 140, 0.30);
+
+    /* ---------- Accent doré RTS / Ambre ---------- */
+    -rts-accent:         #F59E0B;
+    -rts-accent-light:   #FBBF24;
+    -rts-accent-dark:    #D48806;
+    -rts-accent-50:      #FFF8EB;
+    -rts-accent-glow:    rgba(245, 158, 11, 0.30);
+
+    /* ---------- Teal (encaissements) ---------- */
+    -rts-teal:           #0D9488;
+    -rts-teal-light:     #5EEAD4;
+    -rts-teal-dark:      #0F766E;
+    -rts-teal-50:        #F0FDFA;
+    -rts-teal-glow:      rgba(13, 148, 136, 0.25);
+
+    /* ---------- États sémantiques ---------- */
+    -rts-success:        #16A34A;
+    -rts-success-light:  #DCFCE7;
+    -rts-success-dark:   #15803D;
+
+    -rts-warning:        #EA580C;
+    -rts-warning-light:  #FFEDD5;
+    -rts-warning-dark:   #C2410C;
+
+    -rts-danger:         #DC2626;
+    -rts-danger-light:   #FEE2E2;
+    -rts-danger-dark:    #B91C1C;
+
+    -rts-info:           #0284C7;
+    -rts-info-light:     #E0F2FE;
+
+    /* ---------- Échelle de gris ---------- */
+    -rts-gray-50:        #F8FAFC;
+    -rts-gray-100:       #F1F5F9;
+    -rts-gray-200:       #E2E8F0;
+    -rts-gray-300:       #CBD5E1;
+    -rts-gray-400:       #94A3B8;
+    -rts-gray-500:       #64748B;
+    -rts-gray-600:       #475569;
+    -rts-gray-700:       #334155;
+    -rts-gray-800:       #1E293B;
+    -rts-gray-900:       #0F172A;
+
+    /* ---------- Police monospace ---------- */
+    -rts-mono:           "JetBrains Mono", "Fira Code", "Consolas",
+                         "Menlo", monospace;
+
+    /* Fond de l'application — léger dégradé subtil */
+    -fx-background-color: -rts-bg;
+
+    -accent-bg-subtle : #F8FAFC;
+    -hover-bg         : #F1F5F9;
+    -bg-card          : #FFFFFF;
+    -border-subtle    : #E5E7EB;
+    -text-default     : #1F2937;
+    -text-muted       : #6B7280;
+    -accent-primary   : #0A4D8C;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TYPOGRAPHIE                                                            ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.h1 { -fx-font-size: 28px; -fx-font-weight: 800; -fx-text-fill: -rts-text; }
+.h2 { -fx-font-size: 22px; -fx-font-weight: 700; -fx-text-fill: -rts-text; }
+.h3 { -fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: -rts-text; }
+.h4 { -fx-font-size: 15px; -fx-font-weight: 600; -fx-text-fill: -rts-text-2; }
+
+.text-muted     { -fx-text-fill: -rts-text-muted; }
+.text-secondary { -fx-text-fill: -rts-text-2; }
+.text-emphasis  { -fx-text-fill: -rts-text; -fx-font-weight: 600; }
+.text-mono      { -fx-font-family: -rts-mono; }
+
+.text-xs   { -fx-font-size: 10.5px; }
+.text-sm   { -fx-font-size: 12px; }
+.text-base { -fx-font-size: 13.5px; }
+.text-lg   { -fx-font-size: 15.5px; }
+.text-xl   { -fx-font-size: 18px; }
+
+.text-success { -fx-text-fill: -rts-success-dark; }
+.text-warning { -fx-text-fill: -rts-warning-dark; }
+.text-danger  { -fx-text-fill: -rts-danger-dark; }
+.text-accent  { -fx-text-fill: -rts-accent-dark; }
+.text-teal    { -fx-text-fill: -rts-teal-dark; }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  ICÔNES SVG                                                             ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.icon {
+    -fx-stroke-width: 2;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+    -fx-fill: transparent;
+}
+
+.icon-primary    { -fx-fill: -rts-primary;    -fx-stroke: -rts-primary; }
+.icon-on-primary { -fx-fill: white;           -fx-stroke: white; }
+.icon-accent     { -fx-fill: -rts-accent-dark; -fx-stroke: -rts-accent-dark; }
+.icon-teal       { -fx-fill: -rts-teal-dark;  -fx-stroke: -rts-teal-dark; }
+.icon-success    { -fx-fill: -rts-success;    -fx-stroke: -rts-success; }
+.icon-warning    { -fx-fill: -rts-warning;    -fx-stroke: -rts-warning; }
+.icon-danger     { -fx-fill: -rts-danger;     -fx-stroke: -rts-danger; }
+.icon-muted      { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; }
+.icon-on-dark    { -fx-fill: -rts-text;       -fx-stroke: -rts-text; }
+
+.icon-sm  { -fx-scale-x: 0.75; -fx-scale-y: 0.75; }
+.icon-md  { -fx-scale-x: 1.0;  -fx-scale-y: 1.0; }
+.icon-lg  { -fx-scale-x: 1.4;  -fx-scale-y: 1.4; }
+.icon-xl  { -fx-scale-x: 1.8;  -fx-scale-y: 1.8; }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  ÉCRAN DE LOGIN                                                         ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.login-pane {
+    -fx-background-color: linear-gradient(
+        from 0% 0% to 100% 100%,
+        -rts-primary 0%,
+        -rts-primary-dark 50%,
+        #052C52 100%
+    );
+}
+
+.login-card {
+    -fx-background-color: white;
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: rgba(255, 255, 255, 0.30);
+    -fx-border-width: 1;
+    -fx-padding: 44 48 40 48;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 36, 0.0, 0, 14);
+}
+
+.login-logo {
+    -fx-pref-width: 78;
+    -fx-pref-height: 78;
+    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.18), 14, 0.0, 0, 4);
+}
+
+.login-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -rts-text;
+}
+
+.login-subtitle {
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-size: 12.5px;
+}
+
+.link-discreet {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-primary;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+    -fx-padding: 6 12 6 12;
+    -fx-background-radius: 6;
+    -fx-border-color: transparent;
+}
+.link-discreet:hover {
+    -fx-background-color: -rts-primary-50;
+    -fx-text-fill: -rts-primary-dark;
+    -fx-underline: false;
+}
+.link-discreet:visited {
+    -fx-text-fill: -rts-primary;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  EN-TÊTE D'APPLICATION                                                  ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.app-header {
+    -fx-background-color: white;
+    -fx-padding: 14 28 14 28;
+    -fx-border-color: transparent transparent -rts-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.05), 10, 0.0, 0, 2);
+}
+
+.app-title {
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+    -fx-text-fill: -rts-text;
+}
+
+.app-subtitle {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -rts-text-muted;
+}
+
+.header-logo {
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+}
+
+.user-badge {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 12;
+    -fx-padding: 8 14 8 14;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+}
+.user-badge:hover {
+    -fx-background-color: -rts-raised;
+    -fx-border-color: -rts-border-hl;
+}
+
+.user-name {
+    -fx-font-weight: 700;
+    -fx-text-fill: -rts-text;
+    -fx-font-size: 12.5px;
+}
+
+.user-role {
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-size: 10.5px;
+}
+
+.agent-avatar {
+    -fx-background-color: linear-gradient(
+        to bottom right,
+        -rts-accent-light 0%,
+        -rts-accent 100%
+    );
+    -fx-background-radius: 50%;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-pref-width: 38;
+    -fx-pref-height: 38;
+    -fx-text-fill: -rts-primary-dark;
+    -fx-font-weight: 800;
+    -fx-font-size: 13px;
+    -fx-alignment: center;
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.35), 10, 0.2, 0, 2);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  BOUTONS                                                                ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.button {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-padding: 10 20 10 20;
+    -fx-font-weight: 600;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+    -fx-border-width: 1;
+    -fx-text-fill: -rts-text-2;
+    -fx-background-color: -rts-surface-3;
+}
+.button:hover {
+    -fx-background-color: -rts-raised;
+    -fx-text-fill: -rts-text;
+}
+.button:pressed {
+    -fx-background-color: -rts-border;
+    -fx-translate-y: 1;
+}
+.button:disabled {
+    -fx-opacity: 0.45;
+}
+
+/* ---------- Primary : RTS-blue avec glow ---------- */
+.button-primary {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        -rts-primary-light 0%,
+        -rts-primary 100%
+    );
+    -fx-text-fill: white;
+    -fx-border-color: rgba(10, 77, 140, 0.45);
+    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.28), 12, 0.0, 0, 4);
+}
+.button-primary:hover {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #1976D2 0%,
+        -rts-primary-light 100%
+    );
+    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.40), 16, 0.0, 0, 6);
+}
+.button-primary:pressed {
+    -fx-background-color: -rts-primary-dark;
+    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.20), 4, 0.0, 0, 1);
+    -fx-translate-y: 1;
+}
+
+/* ---------- Accent (ambre/doré) ---------- */
+.button-accent {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        -rts-accent-light 0%,
+        -rts-accent 100%
+    );
+    -fx-text-fill: -rts-primary-darker;
+    -fx-border-color: rgba(245, 158, 11, 0.55);
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.30), 12, 0.0, 0, 4);
+}
+.button-accent:hover {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #FCD34D 0%,
+        -rts-accent-light 100%
+    );
+    -fx-effect: dropshadow(gaussian, rgba(245, 158, 11, 0.50), 18, 0.0, 0, 6);
+}
+.button-accent:pressed {
+    -fx-background-color: -rts-accent-dark;
+    -fx-translate-y: 1;
+}
+
+/* ---------- Secondary ---------- */
+.button-secondary {
+    -fx-background-color: white;
+    -fx-text-fill: -rts-text;
+    -fx-border-color: -rts-border-hl;
+}
+.button-secondary:hover {
+    -fx-background-color: -rts-surface-3;
+    -fx-border-color: -rts-border-strong;
+}
+.button-secondary:pressed {
+    -fx-background-color: -rts-border;
+    -fx-translate-y: 1;
+}
+
+/* ---------- Ghost ---------- */
+.button-ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text-muted;
+    -fx-border-color: transparent;
+}
+.button-ghost:hover {
+    -fx-background-color: -rts-overlay;
+    -fx-text-fill: -rts-text;
+}
+.button-ghost:pressed {
+    -fx-background-color: -rts-surface-3;
+}
+
+/* ---------- Danger ---------- */
+.button-danger {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #EF4444 0%,
+        -rts-danger 100%
+    );
+    -fx-text-fill: white;
+    -fx-border-color: rgba(220, 38, 38, 0.45);
+    -fx-effect: dropshadow(gaussian, rgba(220, 38, 38, 0.30), 12, 0.0, 0, 4);
+}
+.button-danger:hover {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #F87171 0%,
+        #EF4444 100%
+    );
+    -fx-effect: dropshadow(gaussian, rgba(220, 38, 38, 0.45), 18, 0.0, 0, 6);
+}
+.button-danger:pressed {
+    -fx-background-color: -rts-danger-dark;
+    -fx-translate-y: 1;
+}
+
+/* ---------- Success ---------- */
+.button-success {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #22C55E 0%,
+        -rts-success 100%
+    );
+    -fx-text-fill: white;
+    -fx-border-color: rgba(22, 163, 74, 0.45);
+    -fx-effect: dropshadow(gaussian, rgba(22, 163, 74, 0.30), 12, 0.0, 0, 4);
+}
+.button-success:hover {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        #4ADE80 0%,
+        #22C55E 100%
+    );
+    -fx-effect: dropshadow(gaussian, rgba(22, 163, 74, 0.45), 18, 0.0, 0, 6);
+}
+.button-success:pressed {
+    -fx-background-color: -rts-success-dark;
+    -fx-translate-y: 1;
+}
+
+/* ---------- Icon-only ---------- */
+.button-icon {
+    -fx-padding: 8 10 8 10;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-background-color: white;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-width: 1;
+}
+.button-icon:hover {
+    -fx-background-color: -rts-surface-3;
+    -fx-border-color: -rts-border-strong;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CARTES & SURFACES                                                      ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 14;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 22 24 22 24;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.06), 14, 0.0, 0, 4);
+}
+
+.card-raised {
+    -fx-background-color: white;
+    -fx-background-radius: 14;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 22 24 22 24;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.10), 22, 0.0, 0, 8);
+}
+
+.card-flat {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 12;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 16 18 16 18;
+}
+
+.surface-elevated {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 16, 0.0, 0, 4);
+}
+
+.glass-pane {
+    -fx-background-color: rgba(255, 255, 255, 0.92);
+    -fx-background-radius: 14;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.15), 24, 0.0, 0, 8);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CHAMPS DE SAISIE                                                       ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.text-field, .password-field, .text-area {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 10 14 10 14;
+    -fx-text-fill: -rts-text;
+    -fx-prompt-text-fill: -rts-text-dim;
+    -fx-font-size: 13px;
+    -fx-highlight-fill: -rts-primary-100;
+    -fx-highlight-text-fill: -rts-primary-dark;
+}
+
+.text-field:focused, .password-field:focused, .text-area:focused {
+    -fx-background-color: white;
+    -fx-border-color: -rts-primary;
+    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.20), 8, 0.0, 0, 0);
+}
+
+.text-area .content {
+    -fx-background-color: transparent;
+}
+
+.field-label {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: 700;
+    -fx-text-fill: -rts-text-muted;
+}
+
+.text-field-with-icon {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 4 12 4 12;
+}
+.text-field-with-icon:hover {
+    -fx-border-color: -rts-border-strong;
+}
+.text-field-with-icon .text-field,
+.text-field-with-icon .password-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 8 4 8 4;
+    -fx-effect: null;
+}
+.text-field-with-icon .text-field:focused,
+.text-field-with-icon .password-field:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  COMBO-BOX                                                              ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.combo-box-base {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.combo-box-base:hover {
+    -fx-border-color: -rts-border-strong;
+}
+.combo-box-base:focused {
+    -fx-border-color: -rts-primary;
+    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.20), 8, 0.0, 0, 0);
+}
+.combo-box-base .arrow,
+.combo-box-base .arrow-button {
+    -fx-background-color: transparent;
+}
+.combo-box-base .arrow {
+    -fx-background-color: -rts-text-muted;
+}
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text;
+    -fx-padding: 8 12 8 12;
+    -fx-font-size: 13px;
+}
+.combo-box-popup .list-view {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.18), 16, 0.0, 0, 6);
+}
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text-2;
+    -fx-padding: 8 12 8 12;
+    -fx-background-radius: 6;
+}
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: -rts-surface-3;
+    -fx-text-fill: -rts-text;
+}
+.combo-box-popup .list-view .list-cell:filled:selected {
+    -fx-background-color: -rts-primary-50;
+    -fx-text-fill: -rts-primary-dark;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TABLES                                                                 ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.table-view {
+    -fx-background-color: transparent;
+    -fx-background-radius: 12;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+.table-view:focused {
+    -fx-background-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 12 12 0 0;
+    -fx-padding: 0;
+}
+
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -rts-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 12 14 12 14;
+    -fx-size: 44;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-alignment: center-left;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent -rts-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-table-cell-border-color: transparent;
+    -fx-cell-size: 44;
+}
+.table-view .table-row-cell:odd {
+    -fx-background-color: -rts-surface-2;
+}
+.table-view .table-row-cell:hover {
+    -fx-background-color: -rts-primary-50;
+}
+.table-view .table-row-cell:selected {
+    -fx-background-color: -rts-primary-100;
+}
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: -rts-primary-dark;
+}
+.table-view .table-row-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: -rts-text-2;
+    -fx-padding: 10 14 10 14;
+    -fx-border-color: transparent;
+    -fx-font-size: 12.5px;
+    -fx-alignment: center-left;
+}
+
+.table-view .placeholder .label {
+    -fx-text-fill: -rts-text-dim;
+    -fx-font-size: 13px;
+    -fx-font-style: italic;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  BADGES & CHIPS                                                         ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.badge {
+    -fx-padding: 4 12 4 12;
+    -fx-background-radius: 999;
+    -fx-font-size: 10px;
+    -fx-font-weight: 800;
+}
+
+.badge-success { -fx-background-color: -rts-success-light; -fx-text-fill: -rts-success-dark; }
+.badge-warning { -fx-background-color: -rts-warning-light; -fx-text-fill: -rts-warning-dark; }
+.badge-danger  { -fx-background-color: -rts-danger-light;  -fx-text-fill: -rts-danger-dark; }
+.badge-info    { -fx-background-color: -rts-primary-50;    -fx-text-fill: -rts-primary-dark; }
+.badge-accent  { -fx-background-color: -rts-accent-50;     -fx-text-fill: -rts-accent-dark; }
+.badge-teal    { -fx-background-color: -rts-teal-50;       -fx-text-fill: -rts-teal-dark; }
+.badge-neutral { -fx-background-color: -rts-gray-200;      -fx-text-fill: -rts-gray-700; }
+
+.chip {
+    -fx-padding: 5 12 5 12;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-background-color: -rts-surface-3;
+    -fx-text-fill: -rts-text-2;
+    -fx-border-color: -rts-border;
+}
+.chip-primary {
+    -fx-background-color: -rts-primary-50;
+    -fx-text-fill: -rts-primary-dark;
+    -fx-border-color: -rts-primary-100;
+}
+.chip-accent {
+    -fx-background-color: -rts-accent-50;
+    -fx-text-fill: -rts-accent-dark;
+    -fx-border-color: rgba(245, 158, 11, 0.35);
+}
+.chip-teal {
+    -fx-background-color: -rts-teal-50;
+    -fx-text-fill: -rts-teal-dark;
+    -fx-border-color: rgba(13, 148, 136, 0.35);
+}
+.chip-success {
+    -fx-background-color: -rts-success-light;
+    -fx-text-fill: -rts-success-dark;
+    -fx-border-color: rgba(22, 163, 74, 0.35);
+}
+.chip-danger {
+    -fx-background-color: -rts-danger-light;
+    -fx-text-fill: -rts-danger-dark;
+    -fx-border-color: rgba(220, 38, 38, 0.35);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  BANNIÈRE STATUT CAISSE                                                 ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.status-banner {
+    -fx-background-radius: 16;
+    -fx-padding: 24 32 24 32;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-background-color: white;
+    -fx-border-color: -rts-border;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.08), 14, 0.0, 0, 4);
+}
+
+.status-banner.ouverte {
+    -fx-background-color: linear-gradient(
+        to right,
+        -rts-success-dark 0%,
+        #22C55E 100%
+    );
+    -fx-border-color: -rts-success-dark;
+    -fx-effect: dropshadow(gaussian, rgba(22, 163, 74, 0.30), 16, 0.0, 0, 6);
+}
+
+.status-banner.fermee {
+    -fx-background-color: linear-gradient(
+        to right,
+        -rts-gray-700 0%,
+        -rts-gray-500 100%
+    );
+    -fx-border-color: -rts-gray-700;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.18), 14, 0.0, 0, 4);
+}
+
+.status-banner .banner-title {
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: 800;
+}
+
+.status-banner.ouverte .banner-title,
+.status-banner.fermee .banner-title {
+    -fx-text-fill: rgba(255, 255, 255, 0.85);
+}
+
+.status-banner .banner-value {
+    -fx-text-fill: -rts-text;
+    -fx-font-size: 30px;
+    -fx-font-weight: 800;
+    -fx-font-family: -rts-mono;
+}
+
+.status-banner.ouverte .banner-value,
+.status-banner.fermee .banner-value {
+    -fx-text-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.20), 4, 0.0, 0, 2);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  STATUS BOX (login/serveur)                                            ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.status-box {
+    -fx-background-radius: 10;
+    -fx-padding: 12 16 12 16;
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}
+
+.status-box .status-message {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+}
+
+.status-box .status-detail {
+    -fx-font-size: 11px;
+    -fx-text-fill: -rts-text-muted;
+}
+
+.status-idle {
+    -fx-background-color: -rts-gray-100;
+    -fx-border-color: -rts-gray-200;
+}
+.status-idle .status-message { -fx-text-fill: -rts-gray-800; }
+.status-idle .status-icon-svg { -fx-fill: -rts-gray-500; -fx-stroke: -rts-gray-500; }
+
+.status-pending {
+    -fx-background-color: -rts-warning-light;
+    -fx-border-color: derive(-rts-warning, 60%);
+}
+.status-pending .status-message { -fx-text-fill: #7C2D12; }
+.status-pending .status-icon-svg { -fx-fill: -rts-warning; -fx-stroke: -rts-warning; }
+
+.status-ok {
+    -fx-background-color: -rts-success-light;
+    -fx-border-color: derive(-rts-success, 50%);
+}
+.status-ok .status-message { -fx-text-fill: -rts-success-dark; }
+.status-ok .status-icon-svg { -fx-fill: -rts-success; -fx-stroke: -rts-success; }
+
+.status-ko {
+    -fx-background-color: -rts-danger-light;
+    -fx-border-color: derive(-rts-danger, 50%);
+}
+.status-ko .status-message { -fx-text-fill: -rts-danger-dark; }
+.status-ko .status-icon-svg { -fx-fill: -rts-danger; -fx-stroke: -rts-danger; }
+
+.loading-spinner {
+    -fx-pref-width: 22;
+    -fx-pref-height: 22;
+    -fx-progress-color: -rts-primary;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  BANNIÈRE D'ERREUR                                                      ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.error-banner {
+    -fx-background-color: -rts-danger-light;
+    -fx-text-fill: -rts-danger-dark;
+    -fx-padding: 12 16 12 16;
+    -fx-background-radius: 10;
+    -fx-border-color: derive(-rts-danger, 50%);
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-font-size: 12.5px;
+    -fx-font-weight: 600;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  SCROLLBARS                                                             ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-padding: 2;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 8;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -rts-border-hl;
+    -fx-background-radius: 8;
+    -fx-padding: 0;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: -rts-border-strong;
+}
+.scroll-bar .thumb:pressed {
+    -fx-background-color: -rts-text-muted;
+}
+
+.scroll-bar:vertical { -fx-pref-width: 10; }
+.scroll-bar:horizontal { -fx-pref-height: 10; }
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button,
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-shape: null;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+.scroll-pane:focused {
+    -fx-background-color: transparent;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  LIST-VIEW (avec fix texte invisible sur sélection)                    ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.list-view {
+    -fx-background-color: white;
+    -fx-background-radius: 12;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+}
+.list-view:focused {
+    -fx-background-color: white;
+    -fx-background-insets: 0;
+}
+
+.list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -rts-text-2;
+    -fx-padding: 10 14 10 14;
+    -fx-background-radius: 8;
+    -fx-font-size: 13px;
+}
+.list-view .list-cell:filled:hover {
+    -fx-background-color: -rts-surface-3;
+    -fx-text-fill: -rts-text;
+}
+.list-view .list-cell:filled:selected,
+.list-view .list-cell:filled:selected:focused {
+    -fx-background-color: -rts-primary-50;
+    -fx-text-fill: -rts-primary-dark;
+}
+.list-view .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TOGGLE BUTTONS (Encaissement / Décaissement)                          ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.toggle-button {
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 12 18 12 18;
+    -fx-text-fill: -rts-text-muted;
+    -fx-font-weight: 600;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+.toggle-button:hover {
+    -fx-background-color: -rts-surface-3;
+    -fx-text-fill: -rts-text;
+}
+
+.entree-toggle:selected {
+    -fx-background-color: -rts-success-light;
+    -fx-text-fill: -rts-success-dark;
+    -fx-border-color: -rts-success;
+    -fx-effect: dropshadow(gaussian, rgba(22, 163, 74, 0.20), 8, 0.0, 0, 0);
+}
+
+.sortie-toggle:selected {
+    -fx-background-color: -rts-warning-light;
+    -fx-text-fill: -rts-warning-dark;
+    -fx-border-color: -rts-warning;
+    -fx-effect: dropshadow(gaussian, rgba(234, 88, 12, 0.20), 8, 0.0, 0, 0);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  CHECKBOX                                                               ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.check-box {
+    -fx-text-fill: -rts-text-2;
+    -fx-font-size: 13px;
+}
+.check-box .box {
+    -fx-background-color: white;
+    -fx-background-radius: 4;
+    -fx-border-color: -rts-border-strong;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+    -fx-padding: 3;
+}
+.check-box:hover .box {
+    -fx-border-color: -rts-primary;
+}
+.check-box:selected .box {
+    -fx-background-color: -rts-primary;
+    -fx-border-color: -rts-primary;
+}
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  TOOLTIP                                                                ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.tooltip {
+    -fx-background-color: -rts-gray-800;
+    -fx-text-fill: white;
+    -fx-background-radius: 6;
+    -fx-border-color: -rts-gray-700;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-font-size: 11.5px;
+    -fx-padding: 6 10 6 10;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.20), 8, 0.0, 0, 2);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  PROGRESS                                                               ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.progress-indicator {
+    -fx-progress-color: -rts-primary;
+}
+.progress-indicator .indicator {
+    -fx-background-color: transparent;
+}
+.progress-bar {
+    -fx-background-color: -rts-surface-3;
+    -fx-background-radius: 8;
+    -fx-padding: 1;
+}
+.progress-bar > .track {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+}
+.progress-bar > .bar {
+    -fx-background-color: linear-gradient(
+        to right,
+        -rts-primary 0%,
+        -rts-primary-light 100%
+    );
+    -fx-background-radius: 8;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  DIALOG                                                                 ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.dialog-pane {
+    -fx-background-color: white;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+.dialog-pane > .header-panel {
+    -fx-background-color: -rts-surface-2;
+    -fx-padding: 16 20 16 20;
+    -fx-background-radius: 12 12 0 0;
+}
+.dialog-pane > .header-panel > .label {
+    -fx-text-fill: -rts-text;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+.dialog-pane > .content {
+    -fx-padding: 20;
+}
+.dialog-pane .content .label {
+    -fx-text-fill: -rts-text-2;
+    -fx-font-size: 13px;
+}
+.dialog-pane .button-bar {
+    -fx-background-color: -rts-surface-2;
+    -fx-padding: 12 16 12 16;
+    -fx-background-radius: 0 0 12 12;
+}
+.dialog-pane .button-bar .button {
+    -fx-background-color: white;
+    -fx-text-fill: -rts-text;
+    -fx-border-color: -rts-border-hl;
+}
+.dialog-pane .button-bar .button:default {
+    -fx-background-color: linear-gradient(
+        to bottom,
+        -rts-primary-light 0%,
+        -rts-primary 100%
+    );
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+    -fx-font-weight: 700;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  SÉPARATEURS                                                            ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.separator .line {
+    -fx-border-color: -rts-border;
+    -fx-border-width: 1 0 0 0;
+}
+
+.divider-h { -fx-pref-height: 1; -fx-background-color: -rts-border; }
+.divider-v { -fx-pref-width:  1; -fx-background-color: -rts-border; }
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  PAGINATION BAR                                                         ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.pagination-bar {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 10;
+    -fx-padding: 8 14 8 14;
+    -fx-border-color: -rts-border;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  MODAL                                                                  ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.modal-root {
+    -fx-background-color: white;
+    -fx-background-radius: 16;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 36, 0.0, 0, 14);
+}
+
+.modal-header {
+    -fx-background-color: linear-gradient(
+        to right,
+        -rts-primary 0%,
+        -rts-primary-dark 100%
+    );
+    -fx-background-radius: 16 16 0 0;
+    -fx-padding: 18 24 18 24;
+}
+
+.modal-title {
+    -fx-text-fill: white;
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.modal-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.78);
+    -fx-font-size: 11.5px;
+    -fx-font-weight: 500;
+}
+
+.button-close {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 6 10 6 10;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+}
+.button-close:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.25);
+}
+.button-close:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.10);
+}
+
+.modal-body {
+    -fx-background-color: white;
+    -fx-padding: 24 28 24 28;
+}
+
+.modal-footer {
+    -fx-background-color: -rts-surface-2;
+    -fx-background-radius: 0 0 16 16;
+    -fx-padding: 14 24 14 24;
+    -fx-border-color: -rts-border transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}

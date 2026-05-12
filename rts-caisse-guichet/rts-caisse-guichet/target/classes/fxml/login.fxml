@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<!--
+    Écran de connexion (authentification utilisateur).
+    Logo RTS officiel centré en haut de la carte.
+-->
+
+<StackPane styleClass="login-pane" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sn.rts.caisse.guichet.controller.LoginController">
+
+    <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="420" spacing="14" styleClass="login-card">
+
+        <!-- ======================== Logo RTS ======================== -->
+        <StackPane alignment="CENTER" styleClass="login-logo">
+            <ImageView fitHeight="76" fitWidth="76" preserveRatio="true" smooth="true">
+                <image>
+                    <Image url="@rts-logo.jpg" />
+                </image>
+            </ImageView>
+        </StackPane>
+
+        <Label styleClass="login-title" text="RTS Caisse" />
+        <Label styleClass="login-subtitle" text="Guichet  Radiodiffusion Télévision Sénégalaise" />
+
+        <!-- ===================== Formulaire ===================== -->
+        <VBox maxWidth="360" spacing="14">
+            <VBox.margin>
+                <Insets top="20" />
+            </VBox.margin>
+
+            <!-- Identifiant -->
+            <VBox spacing="6">
+                <Label styleClass="field-label" text="IDENTIFIANT" />
+                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="text-field-with-icon">
+                    <SVGPath content="M20 21 v-2 a4 4 0 0 0-4-4 H8 a4 4 0 0 0-4 4 v2 M12 11 a4 4 0 1 0 0-8 4 4 0 0 0 0 8 z" scaleX="0.8" scaleY="0.8" styleClass="icon, icon-muted" />
+                    <TextField fx:id="loginField" promptText="Votre identifiant" HBox.hgrow="ALWAYS" />
+                </HBox>
+            </VBox>
+
+            <!-- Mot de passe -->
+            <VBox spacing="6">
+                <Label styleClass="field-label" text="MOT DE PASSE" />
+                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="text-field-with-icon">
+                    <SVGPath content="M19 11 H5 a2 2 0 0 0-2 2 v7 a2 2 0 0 0 2 2 h14 a2 2 0 0 0 2-2 v-7 a2 2 0 0 0-2-2 z M7 11 V7 a5 5 0 0 1 10 0 v4" scaleX="0.8" scaleY="0.8" styleClass="icon, icon-muted" />
+                    <PasswordField fx:id="passwordField" promptText="••••••••" HBox.hgrow="ALWAYS" />
+                </HBox>
+            </VBox>
+
+            <!-- Message d'erreur -->
+            <Label fx:id="errorLabel" managed="false" styleClass="error-banner" visible="false" wrapText="true" />
+
+            <!-- Bouton Se connecter -->
+            <Button fx:id="loginButton" defaultButton="true" maxWidth="Infinity" onAction="#onLogin" prefHeight="46" styleClass="button, button-primary">
+                <graphic>
+                    <HBox alignment="CENTER" spacing="10">
+                        <SVGPath content="M15 3 h4 a2 2 0 0 1 2 2 v14 a2 2 0 0 1-2 2 h-4 M10 17 l5-5-5-5 M15 12 H3" scaleX="0.7" scaleY="0.7" styleClass="icon, icon-on-primary" />
+                        <Label fx:id="loginButtonLabel" style="-fx-text-fill: white; -fx-font-weight: 600; -fx-font-size: 13.5px;" text="Se connecter" />
+                    </HBox>
+                </graphic>
+            </Button>
+
+            <!-- Lien « Changer de serveur » -->
+            <HBox alignment="CENTER" spacing="6">
+                <SVGPath content="M19 12 H5 M12 19 l-7-7 7-7" scaleX="0.6" scaleY="0.6" styleClass="icon, icon-muted" />
+                <Hyperlink onAction="#onChangerServeur" styleClass="link-discreet" text="Changer de serveur" />
+            </HBox>
+
+            <Label fx:id="versionLabel" alignment="CENTER" maxWidth="Infinity" styleClass="login-subtitle" text="v1.0.0  © RTS" />
+        </VBox>
+
+    </VBox>
+
+</StackPane>

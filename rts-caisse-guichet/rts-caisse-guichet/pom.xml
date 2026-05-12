@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>sn.rts</groupId>
+    <artifactId>rts-caisse-guichet</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>RTS Caisse - Client Guichet</name>
+    <description>Client lourd JavaFX pour les guichets caissiers - RTS Caisse</description>
+
+    <!-- ======================================================== -->
+    <!-- Propriétés du projet                                      -->
+    <!-- ======================================================== -->
+    <properties>
+        <!-- Java 21 partout : aligné avec le JDK 21 et JavaFX 21 -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+
+        <!-- Versions des dépendances -->
+        <javafx.version>21.0.5</javafx.version>
+        <jackson.version>2.17.2</jackson.version>
+        <slf4j.version>2.0.16</slf4j.version>
+        <junit.version>5.11.0</junit.version>
+
+        <!-- Versions des plugins Maven -->
+        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+        <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
+        <maven.shade.plugin.version>3.5.3</maven.shade.plugin.version>
+        <maven.surefire.plugin.version>3.5.0</maven.surefire.plugin.version>
+        <javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
+
+        <!--
+            Classe d'entrée pour le fat-JAR.
+            On utilise Launcher (qui n'étend PAS Application) plutôt que
+            GuichetApplication directement, sinon le JDK 11+ refuse de
+            charger les classes JavaFX depuis le classpath d'un module
+            non nommé. Le Launcher est juste un wrapper qui appelle
+            Application.launch(GuichetApplication.class, args).
+        -->
+        <main.class>sn.rts.caisse.guichet.app.Launcher</main.class>
+
+        <!--
+            URL du backend : valeur par défaut compilée dans
+            application.properties. Surchargeable au build :
+                mvn clean package -Dbackend.url=http://prod-server:9090/api
+
+            En runtime, l'utilisateur peut aussi changer cette URL via :
+              - L'écran "Connexion au serveur" de l'application
+              - La propriété système -Drts.api.url=...
+              - La variable d'environnement RTS_API_URL
+        -->
+        <backend.url>http://localhost:9090/api</backend.url>
+    </properties>
+
+    <!-- ======================================================== -->
+    <!-- Dépendances                                               -->
+    <!-- ======================================================== -->
+    <dependencies>
+
+        <!-- ===================== JavaFX ===================== -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.32</version>
+        </dependency>
+
+        <!-- ===================== Sérialisation JSON ===================== -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- ===================== Logging ===================== -->
+        <!-- slf4j-simple : logger minimaliste, idéal pour un client desktop.
+             Affiche sur stderr selon le niveau configuré.                  -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- ===================== Tests ===================== -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- ======================================================== -->
+    <!-- Build                                                     -->
+    <!-- ======================================================== -->
+    <build>
+
+        <!--
+            Filtrage des ressources : permet de remplacer ${backend.url}
+            dans application.properties au moment du build.
+            On filtre UNIQUEMENT le .properties ; les FXML/CSS ne sont PAS
+            filtrés (sinon Maven essaierait de remplacer les ${} de JavaFX).
+        -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/application.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/application.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <plugins>
+
+            <!-- ===================== Compilation ===================== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.plugin.version}</version>
+                <configuration>
+                    <release>21</release>
+                </configuration>
+            </plugin>
+
+            <!-- ===================== Ressources ===================== -->
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven.resources.plugin.version}</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <!-- ===================== Tests ===================== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <!-- Évite les soucis avec JavaFX en environnement headless -->
+                    <argLine>-Djava.awt.headless=true</argLine>
+                </configuration>
+            </plugin>
+
+            <!--
+                ===================== maven-shade-plugin =====================
+                Produit un FAT-JAR contenant TOUTES les dépendances :
+                JavaFX, Jackson, SLF4J, etc. + le manifest avec la Main-Class
+                pointant sur Launcher.
+                Le résultat target/rts-caisse-guichet-1.0.0.jar est exécutable
+                via `java -jar` ET utilisable comme entrée de jpackage pour
+                produire le MSI.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven.shade.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <minimizeJar>false</minimizeJar>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>${main.class}</mainClass>
+                                    <manifestEntries>
+                                        <Implementation-Title>${project.artifactId}</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                        <Built-By>RTS-Sénégal</Built-By>
+                                    </manifestEntries>
+                                </transformer>
+                                <!-- Important pour Jackson, SLF4J, etc. :
+                                     fusionne les fichiers META-INF/services -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <!-- Évite les conflits de signatures dans le fat-JAR -->
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <!-- module-info.class : warnings inutiles dans un fat-JAR -->
+                                        <exclude>module-info.class</exclude>
+                                        <!-- Évite les collisions de licences entre artefacts -->
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/NOTICE.txt</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                ===================== javafx-maven-plugin =====================
+                Utile UNIQUEMENT pour `mvn javafx:run` (lancement en dev local).
+                PAS utilisé pour le packaging MSI (qui passe par maven-shade
+                puis jpackage). Pointe directement sur GuichetApplication car
+                le plugin gère lui-même le module-path JavaFX.
+            -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>${javafx.maven.plugin.version}</version>
+                <configuration>
+                    <mainClass>sn.rts.caisse.guichet.app.GuichetApplication</mainClass>
+                    <!-- Options JVM utiles en dev -->
+                    <options>
+                        <option>-Dfile.encoding=UTF-8</option>
+                    </options>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+    <!-- ======================================================== -->
+    <!-- Profils                                                   -->
+    <!-- ======================================================== -->
+    <profiles>
+
+        <!-- Profil dev : URL backend locale (par défaut) -->
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <backend.url>http://localhost:9090/api</backend.url>
+            </properties>
+        </profile>
+
+        <!-- Profil prod : URL backend production
+             Activer avec : mvn clean package -Pprod -->
+        <profile>
+            <id>prod</id>
+            <properties>
+                <backend.url>http://srv-caisse.rts.local:9090/api</backend.url>
+            </properties>
+        </profile>
+
+    </profiles>
+
+</project>

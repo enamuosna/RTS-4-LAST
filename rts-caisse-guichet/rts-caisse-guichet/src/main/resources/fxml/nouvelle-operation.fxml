@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
+
+<!--
+    RTS Caisse — Modal "Nouvelle opération" (v5)
+
+    v5 :
+      - SUPPRIME la section MOTIF (champ retiré du formulaire)
+      - AJOUTE une section BANQUE, visible uniquement quand le mode
+        de paiement est CHEQUE ou VIREMENT
+      - Conserve la bascule client Existant / + Nouveau de la v4
+      - Conserve le ScrollPane de la v4.1
+-->
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="sn.rts.caisse.guichet.controller.NouvelleOperationController"
+      styleClass="modal-root"
+      prefWidth="680"  minWidth="600"  maxWidth="760"
+      prefHeight="600" minHeight="460" maxHeight="780">
+
+    <!-- ====================== HEADER MODAL ====================== -->
+    <HBox styleClass="modal-header" alignment="CENTER_LEFT" spacing="14">
+        <padding><Insets top="20" right="22" bottom="20" left="26"/></padding>
+
+        <SVGPath content="M12 5 v14 M5 12 h14"
+                 styleClass="icon, icon-on-primary"
+                 scaleX="0.85" scaleY="0.85"
+                 style="-fx-stroke-width: 2.5;"/>
+
+        <VBox spacing="2" HBox.hgrow="ALWAYS">
+            <Label styleClass="modal-title" text="Nouvelle opération"/>
+            <Label fx:id="caisseLabel" styleClass="modal-subtitle"
+                   text="Caisse sélectionnée"/>
+        </VBox>
+
+        <Button fx:id="fermerButton" styleClass="button-close"
+                onAction="#onAnnuler" prefWidth="36" prefHeight="36">
+            <graphic>
+                <SVGPath content="M18 6 L6 18 M6 6 l12 12"
+                         styleClass="icon"
+                         scaleX="0.7" scaleY="0.7"
+                         style="-fx-fill: transparent; -fx-stroke: white; -fx-stroke-width: 2.5; -fx-stroke-line-cap: round;"/>
+            </graphic>
+        </Button>
+    </HBox>
+
+    <!-- ====================== CORPS DU FORMULAIRE ====================== -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                styleClass="modal-scroll-pane" VBox.vgrow="ALWAYS">
+
+        <VBox spacing="18" styleClass="modal-body">
+            <padding><Insets top="22" right="26" bottom="22" left="26"/></padding>
+
+            <!-- ========== Type d'opération ========== -->
+            <VBox spacing="6">
+                <Label styleClass="field-label" text="TYPE D'OPÉRATION"/>
+                <HBox spacing="10">
+                    <fx:define>
+                        <ToggleGroup fx:id="typeGroup"/>
+                    </fx:define>
+                    <ToggleButton fx:id="entreeToggle" text="ENCAISSEMENT"
+                                  styleClass="toggle-button, entree-toggle"
+                                  toggleGroup="$typeGroup"
+                                  onAction="#onTypeChange"
+                                  selected="true"
+                                  maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                    <ToggleButton fx:id="sortieToggle" text="DÉCAISSEMENT"
+                                  styleClass="toggle-button, sortie-toggle"
+                                  toggleGroup="$typeGroup"
+                                  onAction="#onTypeChange"
+                                  maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                </HBox>
+            </VBox>
+
+            <!-- ========== Catégorie + Mode de paiement ========== -->
+            <GridPane hgap="14" vgap="6">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50"/>
+                    <ColumnConstraints percentWidth="50"/>
+                </columnConstraints>
+
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="CATÉGORIE *"/>
+                    <ComboBox fx:id="categorieCombo" maxWidth="Infinity"
+                              promptText="Sélectionner une catégorie"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="MODE DE PAIEMENT *"/>
+                    <ComboBox fx:id="modePaiementCombo" maxWidth="Infinity"
+                              promptText="Mode de règlement"/>
+                </VBox>
+            </GridPane>
+            <!-- ========== Montant + Référence ========== -->
+            <GridPane hgap="14" vgap="6">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50"/>
+                    <ColumnConstraints percentWidth="50"/>
+                </columnConstraints>
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="MONTANT (FCFA) *"/>
+                    <TextField fx:id="montantField" promptText="ex : 150 000"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="RÉFÉRENCE"/>
+                    <TextField fx:id="referenceField"
+                               promptText="N° chèque, TX Wave/OM, bordereau..."/>
+                </VBox>
+            </GridPane>
+
+            <!-- ========== Banque (visible si CHEQUE / VIREMENT) ========== -->
+            <VBox fx:id="banqueBox" spacing="6"
+                  visible="false" managed="false">
+                <Label styleClass="field-label" text="BANQUE ÉMETTRICE *"/>
+                <ComboBox fx:id="banqueCombo" maxWidth="Infinity"
+                          promptText="Sélectionner la banque (code - libellé)"/>
+                <Label fx:id="banqueHintLabel"
+                       styleClass="client-nouveau-hint"
+                       text="Obligatoire pour les règlements par chèque ou virement."
+                       wrapText="true"/>
+            </VBox>
+
+            <!-- ========== SECTION CLIENT (mode Existant / + Nouveau) ========== -->
+            <VBox spacing="8" styleClass="client-section">
+
+                <HBox alignment="CENTER_LEFT" spacing="12">
+                    <Label styleClass="field-label" text="CLIENT (OPTIONNEL)"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+
+                    <fx:define>
+                        <ToggleGroup fx:id="clientModeGroup"/>
+                    </fx:define>
+                    <HBox spacing="0" styleClass="client-mode-switch">
+                        <ToggleButton fx:id="clientExistantToggle"
+                                      text="Existant"
+                                      styleClass="toggle-button, mode-switch-toggle"
+                                      toggleGroup="$clientModeGroup"
+                                      onAction="#onClientModeChange"
+                                      selected="true"/>
+                        <ToggleButton fx:id="clientNouveauToggle"
+                                      text="+ Nouveau"
+                                      styleClass="toggle-button, mode-switch-toggle"
+                                      toggleGroup="$clientModeGroup"
+                                      onAction="#onClientModeChange"/>
+                    </HBox>
+                </HBox>
+
+                <VBox fx:id="clientExistantPane" spacing="4">
+                    <ComboBox fx:id="clientCombo" maxWidth="Infinity"
+                              editable="true" promptText="Rechercher un client..."/>
+                </VBox>
+
+                <VBox fx:id="clientNouveauPane" spacing="10"
+                      visible="false" managed="false"
+                      styleClass="client-nouveau-pane">
+
+                    <VBox spacing="4">
+                        <Label styleClass="field-label-sub" text="RAISON SOCIALE *"/>
+                        <TextField fx:id="nouveauClientRaisonSocialeField"
+                                   promptText="Nom de l'entreprise ou du particulier"/>
+                    </VBox>
+
+                    <GridPane hgap="12" vgap="4">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="55"/>
+                            <ColumnConstraints percentWidth="45"/>
+                        </columnConstraints>
+
+                        <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label styleClass="field-label-sub" text="NINEA / RCCM / CNI"/>
+                            <TextField fx:id="nouveauClientIdentifiantField"
+                                       promptText="Identifiant fiscal ou pièce"/>
+                        </VBox>
+
+                        <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label styleClass="field-label-sub" text="TÉLÉPHONE"/>
+                            <TextField fx:id="nouveauClientTelephoneField"
+                                       promptText="+221 77 123 45 67"/>
+                        </VBox>
+                    </GridPane>
+
+                    <VBox spacing="4">
+                        <Label styleClass="field-label-sub" text="E-MAIL"/>
+                        <TextField fx:id="nouveauClientEmailField"
+                                   promptText="contact@exemple.sn"/>
+                    </VBox>
+
+                    <VBox spacing="4">
+                        <Label styleClass="field-label-sub" text="ADRESSE"/>
+                        <TextField fx:id="nouveauClientAdresseField"
+                                   promptText="Avenue, ville..."/>
+                    </VBox>
+
+                    <Label fx:id="nouveauClientHintLabel"
+                           styleClass="client-nouveau-hint"
+                           text="Le client sera créé en base lors de l'enregistrement de l'opération."
+                           wrapText="true"/>
+                </VBox>
+            </VBox>
+
+            <!-- (Section MOTIF supprimée en v5) -->
+
+        </VBox>
+    </ScrollPane>
+
+    <!-- ====================== FOOTER ====================== -->
+    <HBox styleClass="modal-footer" alignment="CENTER_LEFT" spacing="12">
+        <padding><Insets top="16" right="26" bottom="20" left="26"/></padding>
+
+        <Button text="Effacer" styleClass="button, button-ghost"
+                onAction="#onReset">
+            <graphic>
+                <SVGPath content="M3 6 h18 M8 6 V4 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2 m3 0 v14 a2 2 0 0 1-2 2 H7 a2 2 0 0 1-2-2 V6"
+                         styleClass="icon, icon-muted"
+                         scaleX="0.65" scaleY="0.65"/>
+            </graphic>
+        </Button>
+
+        <Region HBox.hgrow="ALWAYS"/>
+
+        <Button text="Annuler" styleClass="button, button-secondary"
+                onAction="#onAnnuler"/>
+
+        <Button fx:id="enregistrerButton"
+                text="Enregistrer l'opération"
+                styleClass="button, button-primary"
+                onAction="#onEnregistrer"
+                defaultButton="true">
+            <graphic>
+                <SVGPath content="M19 21 H5 a2 2 0 0 1-2-2 V5 a2 2 0 0 1 2-2 h11 l5 5 v11 a2 2 0 0 1-2 2 z M17 21 v-8 H7 v8 M7 3 v5 h8"
+                         styleClass="icon, icon-on-primary"
+                         scaleX="0.6" scaleY="0.6"/>
+            </graphic>
+        </Button>
+    </HBox>
+</VBox>

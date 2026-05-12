@@ -176,8 +176,15 @@ class JournalCaisseServiceIT extends AbstractTestcontainersIT {
 
     private void enregistrer(TypeOperation type, Long categorieId, String montant) {
         operationService.enregistrer(new OperationCaisseRequest(
-                caisse.getId(), categorieId, null,
-                type, new BigDecimal(montant), ModePaiement.ESPECES,
-                "Test", null), caissier.getLogin());
+                caisse.getId(),
+                categorieId,
+                null,
+                type,
+                new BigDecimal(montant),
+                ModePaiement.ESPECES,
+                "Test",
+                null,
+                null // <-- CORRECTION ICI : Ajout du 9ème paramètre manquant
+        ), caissier.getLogin());
     }
 }

@@ -66,10 +66,10 @@ class RecuPdfServiceIT extends AbstractTestcontainersIT {
                 new OuvertureCaisseRequest(new BigDecimal("100000")),
                 caissier.getLogin());
 
-        operation = operationService.enregistrer(new OperationCaisseRequest(
-                caisse.getId(), cat.getId(), null,
-                TypeOperation.ENTREE, new BigDecimal("150000"),
-                ModePaiement.WAVE, "Spot publicitaire JT 20h", "TX-WAVE-1234"),
+        operationService.enregistrer(new OperationCaisseRequest(
+                        caisse.getId(), cat.getId(), null,
+                        TypeOperation.ENTREE, new BigDecimal("150000"),
+                        ModePaiement.WAVE, "Spot publicitaire JT 20h", "TX-WAVE-1234", null),
                 caissier.getLogin());
     }
 

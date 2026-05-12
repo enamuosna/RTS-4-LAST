@@ -173,8 +173,15 @@ class OperationCaisseServiceIT extends AbstractTestcontainersIT {
 
     private OperationCaisseRequest buildRequest(TypeOperation type, Long categorieId, BigDecimal montant) {
         return new OperationCaisseRequest(
-                caisse.getId(), categorieId, null,
-                type, montant, ModePaiement.ESPECES,
-                "Opération de test", "REF-TEST");
+                caisse.getId(),
+                categorieId,
+                null,
+                type,
+                montant,
+                ModePaiement.ESPECES,
+                "Opération de test",
+                "REF-TEST",
+                null // <-- CORRECTION ICI : Ajout du 9ème paramètre (Long)
+        );
     }
 }

@@ -15,6 +15,8 @@ import {
   TypeOperation,
   Utilisateur
 } from '../models/models';
+import { Banque } from '../models/models';
+
 
 // ======================================================
 //  UTILISATEURS
@@ -64,6 +66,37 @@ export class UtilisateurService {
 
   supprimer(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class BanqueService {
+  private readonly http = inject(HttpClient);
+  private readonly url = `${environment.apiUrl}/banques`;
+
+  lister(uniquementActives = false): Observable<Banque[]> {
+    const params = new HttpParams().set('actives', String(uniquementActives));
+    return this.http.get<Banque[]>(this.url, { params });
+  }
+
+  obtenir(id: number): Observable<Banque> {
+    return this.http.get<Banque>(`${this.url}/${id}`);
+  }
+
+  creer(b: Banque): Observable<Banque> {
+    return this.http.post<Banque>(this.url, b);
+  }
+
+  modifier(id: number, b: Banque): Observable<Banque> {
+    return this.http.put<Banque>(`${this.url}/${id}`, b);
+  }
+
+  basculerActif(id: number): Observable<Banque> {
+    return this.http.patch<Banque>(`${this.url}/${id}/toggle-actif`, {});
+  }
+
+  supprimer(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${id}`);
   }
 }
 

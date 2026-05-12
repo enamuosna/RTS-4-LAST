@@ -102,6 +102,17 @@ export interface OperationCaisseRequest {
   reference?: string;
 }
 
+// ──────────────────────────────
+export interface Banque {
+  id?: number;
+  code: string;
+  libelle: string;
+  pays: string;
+  codeEtablissement?: string | null;
+  siteInternet?: string | null;
+  actif: boolean;
+}
+
 export interface OperationCaisse {
   id: number;
   numeroRecu: string;

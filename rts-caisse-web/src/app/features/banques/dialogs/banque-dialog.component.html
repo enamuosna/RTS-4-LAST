@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>
+    <mat-icon>account_balance</mat-icon>
+    {{ data ? 'Modifier la banque' : 'Nouvelle banque' }}
+</h2>
+
+<form [formGroup]="form" (ngSubmit)="valider()">
+    <mat-dialog-content class="banque-dialog-content">
+
+        <mat-form-field appearance="outline">
+            <mat-label>Code</mat-label>
+            <input matInput formControlName="code" maxlength="10" placeholder="B01, BHS…" />
+            <mat-hint align="end">Majuscules / chiffres uniquement</mat-hint>
+            @if (form.controls.code.hasError('pattern')) {
+                <mat-error>Caractères autorisés : A-Z, 0-9</mat-error>
+            }
+            @if (form.controls.code.hasError('required')) {
+                <mat-error>Le code est requis</mat-error>
+            }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Libellé</mat-label>
+            <input matInput formControlName="libelle" maxlength="200" />
+            @if (form.controls.libelle.hasError('required')) {
+                <mat-error>Le libellé est requis</mat-error>
+            }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Pays</mat-label>
+            <input matInput formControlName="pays" maxlength="80" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Code établissement</mat-label>
+            <input matInput formControlName="codeEtablissement" maxlength="20" placeholder="SN010" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Site Internet</mat-label>
+            <input matInput formControlName="siteInternet" maxlength="255" placeholder="https://…" />
+        </mat-form-field>
+
+        <div class="toggle-row">
+            <mat-slide-toggle formControlName="actif" color="primary">
+                Banque active
+            </mat-slide-toggle>
+        </div>
+
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+        <button mat-button type="button" (click)="annuler()">Annuler</button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+            <mat-icon>save</mat-icon>
+            Enregistrer
+        </button>
+    </mat-dialog-actions>
+</form>

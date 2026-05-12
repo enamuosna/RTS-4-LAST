@@ -1,0 +1,25 @@
+:host {
+    display: block;
+}
+
+h2[mat-dialog-title] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1565c0;
+}
+
+.banque-dialog-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 460px;
+    padding-top: 8px;
+}
+
+.banque-dialog-content mat-form-field {
+    width: 100%;
+}
+
+.toggle-row {
+    padding: 8px 0;
+}

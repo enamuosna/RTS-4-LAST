@@ -70,7 +70,7 @@ export class MainLayoutComponent {
     { label: 'Clients',          icon: 'business',       route: '/clients',      roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER'] },
     { label: 'Catégories',       icon: 'category',       route: '/categories',   roles: ['ADMIN'] },
     { label: 'Utilisateurs',     icon: 'people',         route: '/utilisateurs', roles: ['ADMIN'] },
-    { label: 'Banques',          icon: 'account_balance',route: '/banques', roles: ['ADMIN'] },
+    { label: 'Banques',          icon: 'account_balance',route: '/banques',      roles: ['ADMIN'] },
     { label: 'Journal d\'audit', icon: 'fact_check',     route: '/audit',        roles: ['ADMIN'] }
   ]);
 

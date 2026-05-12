@@ -1,5 +1,7 @@
 package sn.rts.caisse.service;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.rts.caisse.audit.AuditAction;
 import sn.rts.caisse.audit.AuditService;
+import sn.rts.caisse.dto.EnvoiWhatsAppResponse;
 import sn.rts.caisse.dto.OperationCaisseRequest;
 import sn.rts.caisse.dto.OperationCaisseResponse;
 import sn.rts.caisse.exception.BusinessException;
@@ -307,5 +310,9 @@ public class OperationCaisseService {
         return (type == TypeOperation.ENTREE)
                 ? soldeCourant.add(montant)
                 : soldeCourant.subtract(montant);
+    }
+
+    public EnvoiWhatsAppResponse envoyerWhatsApp(Long id, @NotBlank @Size(max = 20) String telephone) {
+        return null;
     }
 }

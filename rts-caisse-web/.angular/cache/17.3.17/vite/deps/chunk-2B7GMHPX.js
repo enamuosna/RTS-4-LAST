@@ -1,7 +1,7 @@
 import {
   MatCommonModule,
   coerceBooleanProperty
-} from "./chunk-AZV5BF7O.js";
+} from "./chunk-75VZWZLG.js";
 import {
   ChangeDetectionStrategy,
   Component,
@@ -131,4 +131,4 @@ export {
   MatDivider,
   MatDividerModule
 };
-//# sourceMappingURL=chunk-PLNVPFSP.js.map
+//# sourceMappingURL=chunk-2B7GMHPX.js.map

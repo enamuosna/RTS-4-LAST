@@ -23,7 +23,9 @@ package sn.rts.caisse.security;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import sn.rts.caisse.model.Utilisateur;
 
 import javax.crypto.SecretKey;
 
@@ -65,6 +67,22 @@ public class JwtService {
         this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(normalized));
         this.expirationMs = expirationMs;
         this.issuer = issuer;
+    }
+
+    public String extractUsername(String token) {
+        return token;
+    }
+
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        return false;
+    }
+
+    public String generateToken(Utilisateur utilisateur) {
+        return null;
+    }
+
+    public long getExpirationMs() {
+        return 0;
     }
 
     // ... le reste de la classe est INCHANGE ...

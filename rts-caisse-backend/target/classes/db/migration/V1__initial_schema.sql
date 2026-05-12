@@ -119,6 +119,9 @@ CREATE TABLE IF NOT EXISTS operations_caisse (
         CHECK (mode_paiement IN ('ESPECES', 'CHEQUE', 'VIREMENT', 'CARTE_BANCAIRE',
                                  'WAVE', 'ORANGE_MONEY', 'FREE_MONEY'))
 );
+ALTER TABLE operations_caisse ADD COLUMN banque_id BIGINT NULL
+    REFERENCES banque(id);
+CREATE INDEX idx_operation_banque ON operations_caisse(banque_id);
 
 -- ========== INDEX ==========
 CREATE INDEX IF NOT EXISTS idx_operation_date     ON operations_caisse (date_operation);
@@ -126,3 +129,6 @@ CREATE INDEX IF NOT EXISTS idx_operation_caisse   ON operations_caisse (caisse_i
 CREATE INDEX IF NOT EXISTS idx_operation_journal  ON operations_caisse (journal_id);
 CREATE INDEX IF NOT EXISTS idx_journal_date       ON journaux_caisse   (date_journal);
 CREATE INDEX IF NOT EXISTS idx_caisse_statut      ON caisses           (statut);
+ALTER TABLE operations_caisse ADD COLUMN banque_id BIGINT NULL
+    REFERENCES banque(id);
+CREATE INDEX idx_operation_banque ON operations_caisse(banque_id);

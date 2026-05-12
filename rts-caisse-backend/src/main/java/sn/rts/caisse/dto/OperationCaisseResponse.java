@@ -1,5 +1,7 @@
 package sn.rts.caisse.dto;
 
+import sn.rts.caisse.model.Banque;
+import sn.rts.caisse.model.Client;
 import sn.rts.caisse.model.ModePaiement;
 import sn.rts.caisse.model.OperationCaisse;
 import sn.rts.caisse.model.TypeOperation;
@@ -11,35 +13,73 @@ import java.time.LocalDateTime;
  * Réponse renvoyée par l'API après enregistrement / consultation
  * d'une opération de caisse.
  *
- * <p><b>Évolution :</b> ajout des champs {@code clientTelephone} et
- * {@code clientAdresse} pour permettre au client lourd JavaFX d'imprimer
- * un reçu enrichi avec les coordonnées complètes du client et de
- * l'envoyer directement par WhatsApp.</p>
+ * <p>L'ordre des champs ci-dessous est l'ordre de référence : la méthode
+ * {@link #from(OperationCaisse)} appelle le constructeur positionnel et
+ * doit respecter strictement ce même ordre.</p>
+ *
+ * <p>Évolutions :</p>
+ * <ul>
+ *   <li><b>v2</b> : ajout de {@code clientTelephone} et {@code clientAdresse}
+ *       pour l'impression du reçu enrichi.</li>
+ *   <li><b>v3 (mai 2026)</b> : ajout de {@code clientIdentifiantFiscal} et
+ *       du bloc {@code banqueId / banqueCode / banqueLibelle /
+ *       banqueCodeEtablissement / banqueSiteInternet} pour l'affichage
+ *       sur le reçu lors des règlements par chèque ou virement.</li>
+ * </ul>
  */
 public record OperationCaisseResponse(
-        Long id,
-        String numeroRecu,
+
+        // ---------- Identification de l'opération ----------
+        Long          id,
+        String        numeroRecu,
         TypeOperation typeOperation,
-        BigDecimal montant,
-        String motif,
-        ModePaiement modePaiement,
-        String reference,
+        BigDecimal    montant,
+        String        motif,
+        ModePaiement  modePaiement,
+        String        reference,
         LocalDateTime dateOperation,
-        Long caisseId,
+
+        // ---------- Caisse ----------
+        Long   caisseId,
         String caisseLibelle,
-        Long caissierId,
+
+        // ---------- Caissier ----------
+        Long   caissierId,
         String caissierNomComplet,
-        Long categorieId,
+
+        // ---------- Catégorie ----------
+        Long   categorieId,
         String categorieLibelle,
-        Long clientId,
+
+        // ---------- Client (optionnel) ----------
+        Long   clientId,
         String clientRaisonSociale,
+        String clientIdentifiantFiscal,
         String clientTelephone,
         String clientAdresse,
+
+        // ---------- Banque (CHEQUE / VIREMENT) ----------
+        Long   banqueId,
+        String banqueCode,
+        String banqueLibelle,
+        String banqueCodeEtablissement,
+        String banqueSiteInternet,
+
+        // ---------- Annulation ----------
         boolean annulee,
-        String motifAnnulation
+        String  motifAnnulation
 ) {
+
+    /**
+     * Conversion entité → DTO. À appeler dans une transaction active
+     * (lazy loading des relations client et banque).
+     */
     public static OperationCaisseResponse from(OperationCaisse o) {
+        Client c = o.getClient();
+        Banque b = o.getBanque();
+
         return new OperationCaisseResponse(
+                // Identification
                 o.getId(),
                 o.getNumeroRecu(),
                 o.getTypeOperation(),
@@ -48,16 +88,34 @@ public record OperationCaisseResponse(
                 o.getModePaiement(),
                 o.getReference(),
                 o.getDateOperation(),
+
+                // Caisse
                 o.getCaisse().getId(),
                 o.getCaisse().getLibelle(),
+
+                // Caissier
                 o.getCaissier().getId(),
                 o.getCaissier().getNomComplet(),
+
+                // Catégorie
                 o.getCategorie().getId(),
                 o.getCategorie().getLibelle(),
-                o.getClient() != null ? o.getClient().getId() : null,
-                o.getClient() != null ? o.getClient().getRaisonSociale() : null,
-                o.getClient() != null ? o.getClient().getTelephone() : null,
-                o.getClient() != null ? o.getClient().getAdresse() : null,
+
+                // Client
+                c != null ? c.getId()                : null,
+                c != null ? c.getRaisonSociale()     : null,
+                c != null ? c.getIdentifiantFiscal() : null,
+                c != null ? c.getTelephone()         : null,
+                c != null ? c.getAdresse()           : null,
+
+                // Banque
+                b != null ? b.getId()                : null,
+                b != null ? b.getCode()              : null,
+                b != null ? b.getLibelle()           : null,
+                b != null ? b.getCodeEtablissement() : null,
+                b != null ? b.getSiteInternet()      : null,
+
+                // Annulation
                 o.isAnnulee(),
                 o.getMotifAnnulation()
         );

@@ -10,5 +10,9 @@ public enum ModePaiement {
     CARTE_BANCAIRE,
     WAVE,
     ORANGE_MONEY,
-    FREE_MONEY
+    FREE_MONEY;
+
+    public String getLibelle() {
+        return "";
+    }
 }

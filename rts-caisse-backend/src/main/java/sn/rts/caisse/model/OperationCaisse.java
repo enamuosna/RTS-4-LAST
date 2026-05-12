@@ -41,6 +41,10 @@ public class OperationCaisse extends Auditable {
     @Column(nullable = false, length = 10)
     private TypeOperation typeOperation;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "banque_id")
+    private Banque banque;
+
     @NotNull
     @Positive
     @Column(nullable = false, precision = 15, scale = 2)

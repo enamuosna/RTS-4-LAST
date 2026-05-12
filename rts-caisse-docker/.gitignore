@@ -1,6 +1,6 @@
 # Variables sensibles : ne JAMAIS commit le .env réel
-.env
-.env.*
+#.env
+#.env.*
 !.env.example
 
 # IDE

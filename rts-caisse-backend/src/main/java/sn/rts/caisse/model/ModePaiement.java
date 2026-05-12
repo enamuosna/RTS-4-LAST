@@ -1,18 +1,21 @@
 package sn.rts.caisse.model;
 
-/**
- * Moyens de paiement couramment utilisés à la RTS et au Sénégal.
- */
 public enum ModePaiement {
-    ESPECES,
-    CHEQUE,
-    VIREMENT,
-    CARTE_BANCAIRE,
-    WAVE,
-    ORANGE_MONEY,
-    FREE_MONEY;
+    ESPECES("Espèces"),
+    CHEQUE("Chèque"),
+    VIREMENT("Virement bancaire"),
+    CARTE_BANCAIRE("Carte bancaire"),
+    WAVE("Wave"),
+    ORANGE_MONEY("Orange Money"),
+    FREE_MONEY("Free Money");
+
+    private final String libelle;
+
+    ModePaiement(String libelle) {
+        this.libelle = libelle;
+    }
 
     public String getLibelle() {
-        return "";
+        return libelle;
     }
 }

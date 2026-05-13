@@ -79,11 +79,17 @@ services:
     networks:
       - rts-internal
 
-  gateway:
-    build:
-      context: ./gateway
-    image: ${DOCKER_REGISTRY:-vnsu}/rts-caisse-gateway:${APP_VERSION:-latest}
-    container_name: rts-caisse-gateway
+  # ==========================================================
+  #  CADDY - reverse proxy local (HTTP simple, pas de TLS)
+  # ==========================================================
+  #  Remplace l'ancien service "gateway" nginx (dossier supprime).
+  #  Pour la prod HTTPS avec Let's Encrypt, utiliser plutot
+  #  docker-compose.caddy.yml (qui consomme les images deja
+  #  publiees sur le registry).
+  # ==========================================================
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: rts-caisse-caddy
     restart: unless-stopped
     depends_on:
       backend:
@@ -94,12 +100,26 @@ services:
       - "${GATEWAY_PORT:-8090}:80"
     environment:
       TZ: Africa/Dakar
+    volumes:
+      - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     networks:
       - rts-internal
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
 volumes:
   postgres_data:
     name: rts-caisse-postgres-data
+  caddy_data:
+    name: rts-caisse-caddy-data-local
+  caddy_config:
+    name: rts-caisse-caddy-config-local
 
 networks:
   rts-internal:

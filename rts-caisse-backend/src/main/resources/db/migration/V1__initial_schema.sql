@@ -1,6 +1,11 @@
 -- ============================================================
---  RTS CAISSE - Schéma initial
---  Baseline reflétant l'état généré auparavant par ddl-auto=update
+--  RTS CAISSE - Schéma initial (baseline)
+--  Reflète l'état des entités JPA : utilisateurs, caisses,
+--  catégories, clients, banques, journaux, opérations, audit.
+-- ============================================================
+--  Note : si la base contient déjà ce schéma (créé par
+--  ddl-auto=update en docker), Flyway pose un repère
+--  baseline et ne rejoue PAS ce script (baseline-on-migrate=true).
 -- ============================================================
 
 -- ========== UTILISATEURS ==========
@@ -47,7 +52,7 @@ CREATE TABLE IF NOT EXISTS categories_operation (
     actif           BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMP    NOT NULL,
     updated_at      TIMESTAMP,
-    CONSTRAINT uk_categorie_code UNIQUE (code),
+    CONSTRAINT uk_categorie_code  UNIQUE (code),
     CONSTRAINT chk_categorie_type CHECK (type_operation IN ('ENTREE', 'SORTIE'))
 );
 
@@ -63,6 +68,24 @@ CREATE TABLE IF NOT EXISTS clients (
     created_at          TIMESTAMP    NOT NULL,
     updated_at          TIMESTAMP
 );
+
+-- ========== BANQUES ==========
+-- (entité Banque : table autonome, créé/maj horodatés via @PrePersist/@PreUpdate)
+CREATE TABLE IF NOT EXISTS banque (
+    id                  BIGSERIAL PRIMARY KEY,
+    code                VARCHAR(10)  NOT NULL,
+    libelle             VARCHAR(200) NOT NULL,
+    pays                VARCHAR(80)  NOT NULL DEFAULT 'SÉNÉGAL',
+    code_etablissement  VARCHAR(20),
+    site_internet       VARCHAR(255),
+    actif               BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at          TIMESTAMP    NOT NULL,
+    updated_at          TIMESTAMP,
+    CONSTRAINT uk_banque_code UNIQUE (code)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_banque_code  ON banque (code);
+CREATE INDEX        IF NOT EXISTS idx_banque_actif ON banque (actif);
 
 -- ========== JOURNAUX DE CAISSE ==========
 CREATE TABLE IF NOT EXISTS journaux_caisse (
@@ -84,9 +107,9 @@ CREATE TABLE IF NOT EXISTS journaux_caisse (
     created_at        TIMESTAMP       NOT NULL,
     updated_at        TIMESTAMP,
     CONSTRAINT uk_journal_caisse_date UNIQUE (caisse_id, date_journal),
-    CONSTRAINT fk_journal_caisse     FOREIGN KEY (caisse_id)      REFERENCES caisses(id),
-    CONSTRAINT fk_journal_caissier   FOREIGN KEY (caissier_id)    REFERENCES utilisateurs(id),
-    CONSTRAINT fk_journal_validateur FOREIGN KEY (valide_par_id)  REFERENCES utilisateurs(id)
+    CONSTRAINT fk_journal_caisse     FOREIGN KEY (caisse_id)     REFERENCES caisses(id),
+    CONSTRAINT fk_journal_caissier   FOREIGN KEY (caissier_id)   REFERENCES utilisateurs(id),
+    CONSTRAINT fk_journal_validateur FOREIGN KEY (valide_par_id) REFERENCES utilisateurs(id)
 );
 
 -- ========== OPERATIONS DE CAISSE ==========
@@ -104,31 +127,56 @@ CREATE TABLE IF NOT EXISTS operations_caisse (
     categorie_id        BIGINT         NOT NULL,
     client_id           BIGINT,
     journal_id          BIGINT,
+    banque_id           BIGINT,
     annulee             BOOLEAN        NOT NULL DEFAULT FALSE,
     motif_annulation    VARCHAR(255),
     created_at          TIMESTAMP      NOT NULL,
     updated_at          TIMESTAMP,
     CONSTRAINT uk_operation_numero_recu UNIQUE (numero_recu),
-    CONSTRAINT fk_operation_caisse     FOREIGN KEY (caisse_id)    REFERENCES caisses(id),
-    CONSTRAINT fk_operation_caissier   FOREIGN KEY (caissier_id)  REFERENCES utilisateurs(id),
-    CONSTRAINT fk_operation_categorie  FOREIGN KEY (categorie_id) REFERENCES categories_operation(id),
-    CONSTRAINT fk_operation_client     FOREIGN KEY (client_id)    REFERENCES clients(id),
-    CONSTRAINT fk_operation_journal    FOREIGN KEY (journal_id)   REFERENCES journaux_caisse(id),
-    CONSTRAINT chk_operation_type      CHECK (type_operation IN ('ENTREE', 'SORTIE')),
+    CONSTRAINT fk_operation_caisse    FOREIGN KEY (caisse_id)    REFERENCES caisses(id),
+    CONSTRAINT fk_operation_caissier  FOREIGN KEY (caissier_id)  REFERENCES utilisateurs(id),
+    CONSTRAINT fk_operation_categorie FOREIGN KEY (categorie_id) REFERENCES categories_operation(id),
+    CONSTRAINT fk_operation_client    FOREIGN KEY (client_id)    REFERENCES clients(id),
+    CONSTRAINT fk_operation_journal   FOREIGN KEY (journal_id)   REFERENCES journaux_caisse(id),
+    CONSTRAINT fk_operation_banque    FOREIGN KEY (banque_id)    REFERENCES banque(id),
+    CONSTRAINT chk_operation_type     CHECK (type_operation IN ('ENTREE', 'SORTIE')),
     CONSTRAINT chk_operation_mode
         CHECK (mode_paiement IN ('ESPECES', 'CHEQUE', 'VIREMENT', 'CARTE_BANCAIRE',
                                  'WAVE', 'ORANGE_MONEY', 'FREE_MONEY'))
 );
-ALTER TABLE operations_caisse ADD COLUMN banque_id BIGINT NULL
-    REFERENCES banque(id);
-CREATE INDEX idx_operation_banque ON operations_caisse(banque_id);
 
--- ========== INDEX ==========
-CREATE INDEX IF NOT EXISTS idx_operation_date     ON operations_caisse (date_operation);
-CREATE INDEX IF NOT EXISTS idx_operation_caisse   ON operations_caisse (caisse_id);
-CREATE INDEX IF NOT EXISTS idx_operation_journal  ON operations_caisse (journal_id);
-CREATE INDEX IF NOT EXISTS idx_journal_date       ON journaux_caisse   (date_journal);
-CREATE INDEX IF NOT EXISTS idx_caisse_statut      ON caisses           (statut);
-ALTER TABLE operations_caisse ADD COLUMN banque_id BIGINT NULL
-    REFERENCES banque(id);
-CREATE INDEX idx_operation_banque ON operations_caisse(banque_id);
+-- ========== AUDIT LOGS ==========
+-- (consultations admin uniquement, voir AuditLog entité)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id                BIGSERIAL PRIMARY KEY,
+    created_at        TIMESTAMP    NOT NULL,
+    action            VARCHAR(40)  NOT NULL,
+    user_id           BIGINT,
+    user_login        VARCHAR(50),
+    user_matricule    VARCHAR(30),
+    user_nom_complet  VARCHAR(200),
+    user_role         VARCHAR(20),
+    entity_type       VARCHAR(60),
+    entity_id         BIGINT,
+    entity_label      VARCHAR(200),
+    ip_address        VARCHAR(45),
+    user_agent        VARCHAR(500),
+    http_method       VARCHAR(10),
+    http_path         VARCHAR(255),
+    success           BOOLEAN      NOT NULL,
+    error_message     VARCHAR(500),
+    details           VARCHAR(2000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs (created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_action     ON audit_logs (action);
+CREATE INDEX IF NOT EXISTS idx_audit_user_id    ON audit_logs (user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_entity     ON audit_logs (entity_type, entity_id);
+
+-- ========== INDEX (opérations / journaux / caisses) ==========
+CREATE INDEX IF NOT EXISTS idx_operation_date    ON operations_caisse (date_operation);
+CREATE INDEX IF NOT EXISTS idx_operation_caisse  ON operations_caisse (caisse_id);
+CREATE INDEX IF NOT EXISTS idx_operation_journal ON operations_caisse (journal_id);
+CREATE INDEX IF NOT EXISTS idx_operation_banque  ON operations_caisse (banque_id);
+CREATE INDEX IF NOT EXISTS idx_journal_date      ON journaux_caisse   (date_journal);
+CREATE INDEX IF NOT EXISTS idx_caisse_statut     ON caisses           (statut);

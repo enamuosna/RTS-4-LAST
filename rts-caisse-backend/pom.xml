@@ -12,10 +12,10 @@
     </parent>
 
     <groupId>sn.rts</groupId>
-    <artifactId>rts-caisse-guichet</artifactId>
+    <artifactId>rts-caisse-backend</artifactId>
     <version>1.0.0</version>
-    <name>rts-caisse-guichet</name>
-    <description>Système de gestion de guichet - Radiodiffusion Télévision Sénégalaise</description>
+    <name>rts-caisse-backend</name>
+    <description>Backend Spring Boot - Radiodiffusion Télévision Sénégalaise (gestion de caisse)</description>
 
     <properties>
         <java.version>21</java.version>

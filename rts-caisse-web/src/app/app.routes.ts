@@ -52,8 +52,7 @@ export const routes: Routes = [
         path: 'banques',
         loadComponent: () => import('./features/banques/banques.component')
             .then(m => m.BanquesComponent),
-        canActivate: [authGuard, roleGuard],
-        data: { roles: ['ADMIN'] }
+        canActivate: [roleGuard(['ADMIN'])]
       },
       {
         path: 'clients',

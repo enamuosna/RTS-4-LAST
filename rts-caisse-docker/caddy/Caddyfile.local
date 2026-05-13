@@ -1,0 +1,64 @@
+# =============================================================
+#  RTS Caisse - Caddy LOCAL (HTTP only, pas de TLS)
+# =============================================================
+#  Utilise par docker-compose.yml (build local depuis le code
+#  source). Pour la production HTTPS + Let's Encrypt, voir
+#  caddy/Caddyfile + docker-compose.caddy.yml.
+#
+#  Caddy ecoute sur :80 dans le container ; le compose mappe ce
+#  port sur GATEWAY_PORT (8090 par defaut).
+# =============================================================
+
+{
+	# Pas de Let's Encrypt en local : on desactive l'auto-HTTPS
+	auto_https off
+
+	log {
+		output stderr
+		format console
+		level INFO
+	}
+}
+
+# Site sur le port 80 du container (HTTP simple)
+:80 {
+	encode zstd gzip
+
+	# Matcher API : Spring Boot
+	@api {
+		path /api/* /actuator /actuator/* /v3/api-docs /v3/api-docs/* /swagger-ui /swagger-ui/*
+	}
+
+	handle @api {
+		reverse_proxy backend:9090 {
+			# Host et X-Forwarded-* sont injectes par defaut par Caddy
+			header_up X-Real-IP {remote_host}
+
+			transport http {
+				dial_timeout            10s
+				read_timeout            300s
+				write_timeout           300s
+				response_header_timeout 60s
+			}
+
+			@error status 502 503 504
+			handle_response @error {
+				header Content-Type "application/json"
+				respond `{"status":"DOWN","message":"Backend indisponible"}` 503
+			}
+		}
+	}
+
+	# Fallback : tout le reste va au frontend Angular (nginx)
+	handle {
+		reverse_proxy frontend:80 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	log {
+		output stderr
+		format console
+		level WARN
+	}
+}

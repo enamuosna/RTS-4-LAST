@@ -5,7 +5,6 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToggleGroup?>
@@ -17,12 +16,12 @@
 <?import javafx.scene.shape.SVGPath?>
 
 <!--
-    RTS Caisse — Modal "Nouvelle opération" (v5.1)
+    RTS Caisse — Modal "Nouvelle opération" (v5.2)
 
-    v5.1 :
-      - REINTRODUIT le champ MOTIF, requis par le contrôleur et par
-        la contrainte NOT NULL côté backend (operations_caisse.motif).
-        Son retrait en v5 provoquait un NPE à l'enregistrement.
+    v5.2 :
+      - RETIRE définitivement le champ MOTIF. Le contrôleur ne
+        l'utilise plus et le backend l'accepte null (migration V3
+        + entity OperationCaisse.motif nullable).
     v5 :
       - AJOUTE une section BANQUE, visible uniquement quand le mode
         de paiement est CHEQUE ou VIREMENT
@@ -217,14 +216,9 @@
                 </VBox>
             </VBox>
 
-            <!-- ========== Motif (obligatoire côté backend) ========== -->
-            <VBox spacing="6">
-                <Label styleClass="field-label" text="MOTIF *"/>
-                <TextArea fx:id="motifArea"
-                          promptText="Objet de l'opération (obligatoire)"
-                          wrapText="true"
-                          prefRowCount="3"/>
-            </VBox>
+            <!-- Section MOTIF retirée définitivement (v5.2) :
+                 le contrôleur ne lit plus motifArea et le backend
+                 traite le champ comme optionnel (migration V3). -->
 
         </VBox>
     </ScrollPane>

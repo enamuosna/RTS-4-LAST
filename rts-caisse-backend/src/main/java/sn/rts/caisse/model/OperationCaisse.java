@@ -50,7 +50,7 @@ public class OperationCaisse extends Auditable {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal montant;
 
-    @Column(nullable = false, length = 255)
+    @Column(length = 500)
     private String motif;
 
     @Enumerated(EnumType.STRING)

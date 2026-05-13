@@ -288,11 +288,16 @@ public class RecuPdfService {
     }
 
     private void ecrireMotif(Document document, OperationCaisse op) throws Exception {
+        // Motif est optionnel depuis la v5 du formulaire guichet :
+        // on n'imprime la section que s'il a réellement été saisi.
+        String texte = op.getMotif();
+        if (texte == null || texte.isBlank()) {
+            return;
+        }
         Paragraph label = new Paragraph("MOTIF", font(7, Font.BOLD, RTS_GRAY_500));
         document.add(label);
 
-        Paragraph motif = new Paragraph(op.getMotif(),
-                font(9, Font.NORMAL, RTS_GRAY_900));
+        Paragraph motif = new Paragraph(texte, font(9, Font.NORMAL, RTS_GRAY_900));
         motif.setSpacingBefore(2);
         document.add(motif);
     }

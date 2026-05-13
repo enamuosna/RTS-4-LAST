@@ -9,7 +9,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
@@ -58,7 +57,6 @@ public class NouvelleOperationController {
     @FXML private ComboBox<ModePaiement> modePaiementCombo;
     @FXML private TextField montantField;
     @FXML private TextField referenceField;
-    @FXML private TextArea  motifArea;
 
     // ---------------- Banque (conditionnel) ----------------
     @FXML private VBox banqueBox;
@@ -261,7 +259,6 @@ public class NouvelleOperationController {
     public void onReset() {
         montantField.clear();
         referenceField.clear();
-        motifArea.clear();
 
         clientCombo.getSelectionModel().clearSelection();
         clientCombo.setValue(null);
@@ -400,12 +397,6 @@ public class NouvelleOperationController {
             montantField.requestFocus();
             return null;
         }
-        String motif = motifArea.getText();
-        if (motif == null || motif.trim().isEmpty()) {
-            Ui.erreur("Motif manquant", "Le motif est obligatoire.");
-            motifArea.requestFocus();
-            return null;
-        }
 
         OperationCaisseRequest req = new OperationCaisseRequest();
         req.caisseId      = caisse.id;
@@ -413,7 +404,7 @@ public class NouvelleOperationController {
         req.typeOperation = getTypeSelectionne();
         req.montant       = montant;
         req.modePaiement  = mode;
-        req.motif         = motif.trim();
+        req.motif         = null;
         req.reference     = (referenceField.getText() == null
                 || referenceField.getText().isBlank())
                 ? null

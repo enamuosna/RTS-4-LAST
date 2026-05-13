@@ -16,10 +16,13 @@
 <?import javafx.scene.shape.SVGPath?>
 
 <!--
-    RTS Caisse — Modal "Nouvelle opération" (v5)
+    RTS Caisse — Modal "Nouvelle opération" (v5.2)
 
+    v5.2 :
+      - RETIRE définitivement le champ MOTIF. Le contrôleur ne
+        l'utilise plus et le backend l'accepte null (migration V3
+        + entity OperationCaisse.motif nullable).
     v5 :
-      - SUPPRIME la section MOTIF (champ retiré du formulaire)
       - AJOUTE une section BANQUE, visible uniquement quand le mode
         de paiement est CHEQUE ou VIREMENT
       - Conserve la bascule client Existant / + Nouveau de la v4
@@ -213,7 +216,9 @@
                 </VBox>
             </VBox>
 
-            <!-- (Section MOTIF supprimée en v5) -->
+            <!-- Section MOTIF retirée définitivement (v5.2) :
+                 le contrôleur ne lit plus motifArea et le backend
+                 traite le champ comme optionnel (migration V3). -->
 
         </VBox>
     </ScrollPane>

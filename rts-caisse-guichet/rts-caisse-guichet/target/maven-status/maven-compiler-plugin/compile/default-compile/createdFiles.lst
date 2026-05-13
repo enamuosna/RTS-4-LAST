@@ -5,10 +5,13 @@ sn\rts\caisse\guichet\controller\SelectionCaisseController$1.class
 sn\rts\caisse\guichet\model\StatutCaisse.class
 sn\rts\caisse\guichet\print\RecuExporter.class
 sn\rts\caisse\guichet\api\ApiClient$PingResult.class
+sn\rts\caisse\guichet\model\Dto$BanqueDTO.class
 sn\rts\caisse\guichet\util\AsyncRunner$1.class
+sn\rts\caisse\guichet\controller\NouvelleOperationController$3.class
 sn\rts\caisse\guichet\controller\CaissierController$2.class
 sn\rts\caisse\guichet\util\Ui.class
 sn\rts\caisse\guichet\print\PrintRecu.class
+sn\rts\caisse\guichet\api\CaisseApi$5.class
 sn\rts\caisse\guichet\model\Dto$LoginRequest.class
 sn\rts\caisse\guichet\api\ApiException.class
 sn\rts\caisse\guichet\model\Dto$EnvoiWhatsAppRequest.class
@@ -24,6 +27,7 @@ sn\rts\caisse\guichet\model\Dto$CategorieDTO.class
 sn\rts\caisse\guichet\controller\LoginController.class
 sn\rts\caisse\guichet\model\Dto$AuthResponse.class
 sn\rts\caisse\guichet\controller\CaissierController.class
+sn\rts\caisse\guichet\controller\NouvelleOperationController$2.class
 sn\rts\caisse\guichet\controller\CaissierController$1.class
 sn\rts\caisse\guichet\model\Dto$OperationCaisseResponse.class
 sn\rts\caisse\guichet\model\ModePaiement.class

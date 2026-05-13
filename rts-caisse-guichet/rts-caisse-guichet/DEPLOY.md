@@ -4,7 +4,7 @@
 
 ```powershell
 # Build standard (backend = localhost:8080)
-.\build-msi.ps1
+
 
 # Build pour environnement de prod
 .\build-msi.ps1 -Version "1.0.0" -BackendUrl "http://srv-caisse.rts.local:8080/api" -Clean

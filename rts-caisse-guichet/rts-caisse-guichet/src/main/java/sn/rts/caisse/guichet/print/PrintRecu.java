@@ -166,26 +166,27 @@ public final class PrintRecu {
     }
 
     // ==================================================================
-    //  En-tête : logo haut-gauche + infos entreprise en dessous (centrées)
+    //  En-tête : logo à gauche, infos entreprise à droite (côte à côte)
     // ==================================================================
 
     private static Node construireEntete() {
-        VBox header = new VBox(8);
-        header.setAlignment(Pos.TOP_CENTER);
+        HBox header = new HBox(14);
+        header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(0, 0, 8, 0));
 
-        // ── Ligne 1 : logo aligné à gauche ──
-        HBox logoRow = new HBox();
-        logoRow.setAlignment(Pos.CENTER_LEFT);
+        // ── Colonne 1 : logo, centré verticalement ──
+        VBox logoBox = new VBox();
+        logoBox.setAlignment(Pos.CENTER);
         ImageView logo = chargerLogo();
         if (logo != null) {
-            logoRow.getChildren().add(logo);
+            logoBox.getChildren().add(logo);
         }
-        header.getChildren().add(logoRow);
+        header.getChildren().add(logoBox);
 
-        // ── Ligne 2 : informations entreprise centrées sous le logo ──
+        // ── Colonne 2 : informations entreprise, alignées à gauche ──
         VBox infos = new VBox(1);
-        infos.setAlignment(Pos.CENTER);
+        infos.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(infos, javafx.scene.layout.Priority.ALWAYS);
 
         Label raisonSociale = new Label("SOCIÉTÉ NATIONALE DE RADIODIFFUSION");
         raisonSociale.setFont(Font.font("Arial", FontWeight.BOLD, 11));

@@ -85,27 +85,23 @@ public final class PrintRecu {
         double maxWidth  = layout.getPrintableWidth();
         double maxHeight = layout.getPrintableHeight();
 
-        // Mise à l'échelle si le reçu déborde
+        // On force le reçu à occuper 92% de la largeur imprimable de la page,
+        // qu'il soit plus petit ou plus grand au départ. Ça évite à la fois :
+        //  - le reçu minuscule sur une A4 (380 px sur 595 pt = 64%)
+        //  - les marges asymétriques que Windows applique parfois quand on
+        //    laisse le centrage à StackPane.
+        Scene scene = new Scene(new StackPane(recu));
+        scene.getRoot().applyCss();
+        ((javafx.scene.Parent) scene.getRoot()).layout();
+
         double recuWidth = recu.getBoundsInLocal().getWidth();
-        if (recuWidth > 0 && recuWidth > maxWidth) {
-            double scale = maxWidth / recuWidth;
+        if (recuWidth > 0) {
+            double scale = (maxWidth * 0.92) / recuWidth;
             recu.getTransforms().add(
                     javafx.scene.transform.Transform.scale(scale, scale));
         }
 
-        // ✅ Centrage horizontal du reçu sur la page imprimée
-        StackPane wrapper = new StackPane(recu);
-        wrapper.setAlignment(Pos.TOP_CENTER);
-        wrapper.setPrefSize(maxWidth, maxHeight);
-        wrapper.setMinSize(maxWidth, maxHeight);
-        wrapper.setMaxSize(maxWidth, maxHeight);
-        wrapper.setBackground(new Background(new BackgroundFill(
-                Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY)));
-        new Scene(wrapper);
-        wrapper.applyCss();
-        wrapper.layout();
-
-        boolean printed = job.printPage(wrapper);
+        boolean printed = job.printPage(recu);
         if (printed) {
             job.endJob();
         }

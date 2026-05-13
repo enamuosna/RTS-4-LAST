@@ -1,25 +1,8 @@
-// =============================================================
-//  PATCH JwtService.java — accepter Base64 standard ET URL-safe
-// =============================================================
-//  Probleme : Decoders.BASE64.decode(secret) rejette les caracteres
-//  '_' et '-' utilises par le Base64 URL-safe (RFC 4648 §5).
-//  Cause classique : openssl rand -base64 64 produit du Base64
-//  STANDARD, mais beaucoup d'outils PowerShell/Java/Node utilisent
-//  par defaut le Base64 URL-safe (Convert.ToBase64UrlString,
-//  Base64.getUrlEncoder...). Le secret fini par contenir '_' et
-//  le decodeur explose au demarrage.
-//
-//  Fix : on detecte le format et on convertit URL-safe -> standard
-//  AVANT de decoder. Le code accepte donc les DEUX formats.
-//
-//  ATTENTION : remplacer UNIQUEMENT le constructeur, le reste de
-//  la classe (generateToken, validateToken...) ne change pas.
-// =============================================================
-
 package sn.rts.caisse.security;
 
-// ... imports existants ...
-
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,7 +11,20 @@ import org.springframework.stereotype.Service;
 import sn.rts.caisse.model.Utilisateur;
 
 import javax.crypto.SecretKey;
+import java.util.Date;
+import java.util.Map;
+import java.util.function.Function;
 
+/**
+ * Génération et validation des JWT signés HMAC-SHA256.
+ *
+ * <p>Le secret de signature ({@code app.jwt.secret}) est attendu en Base64,
+ * soit en variante standard (RFC 4648 §4, alphabet {@code + /}) soit en
+ * variante URL-safe (RFC 4648 §5, alphabet {@code - _}). Cette classe
+ * normalise la chaîne reçue avant de décoder, de sorte que les secrets
+ * générés par {@code openssl rand -base64} ou par {@code Convert.ToBase64UrlString}
+ * fonctionnent indifféremment.</p>
+ */
 @Service
 public class JwtService {
 
@@ -40,19 +36,6 @@ public class JwtService {
                       @Value("${app.jwt.expiration-ms}") long expirationMs,
                       @Value("${app.jwt.issuer}") String issuer) {
 
-        // -----------------------------------------------------
-        //  Normalisation du secret
-        //  Accepte les DEUX formats Base64 :
-        //    - Standard (RFC 4648 §4) : caracteres + / =
-        //    - URL-safe (RFC 4648 §5) : caracteres - _
-        //
-        //  La conversion URL-safe -> standard est triviale :
-        //    '-' -> '+'  et  '_' -> '/'
-        //
-        //  Padding optionnel : Base64 URL-safe omet souvent les '='
-        //  finaux. On les rajoute pour que la longueur soit un
-        //  multiple de 4 (sinon Decoders.BASE64 echoue aussi).
-        // -----------------------------------------------------
         String normalized = secret
                 .trim()
                 .replace('-', '+')
@@ -63,29 +46,69 @@ public class JwtService {
             normalized = normalized + "=".repeat(padding);
         }
 
-        // La cle doit faire au moins 256 bits -> on attend du Base64.
         this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(normalized));
         this.expirationMs = expirationMs;
         this.issuer = issuer;
     }
 
-    public String extractUsername(String token) {
-        return token;
-    }
-
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        return false;
-    }
+    // ----------------------------------------------------------------
+    //  Génération
+    // ----------------------------------------------------------------
 
     public String generateToken(Utilisateur utilisateur) {
-        return null;
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + expirationMs);
+
+        return Jwts.builder()
+                .subject(utilisateur.getLogin())
+                .issuer(issuer)
+                .issuedAt(now)
+                .expiration(expiration)
+                .claims(Map.of(
+                        "uid",       utilisateur.getId(),
+                        "matricule", utilisateur.getMatricule(),
+                        "role",      utilisateur.getRole().name(),
+                        "nom",       utilisateur.getNomComplet()
+                ))
+                .signWith(signingKey)
+                .compact();
     }
 
     public long getExpirationMs() {
-        return 0;
+        return expirationMs;
     }
 
-    // ... le reste de la classe est INCHANGE ...
-    // generateToken(), buildToken(), validateToken(),
-    // extractUsername(), etc.
+    // ----------------------------------------------------------------
+    //  Lecture / validation
+    // ----------------------------------------------------------------
+
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        try {
+            String login = extractUsername(token);
+            return login != null
+                    && login.equals(userDetails.getUsername())
+                    && !isExpired(token);
+        } catch (JwtException ex) {
+            return false;
+        }
+    }
+
+    private boolean isExpired(String token) {
+        Date exp = extractClaim(token, Claims::getExpiration);
+        return exp != null && exp.before(new Date());
+    }
+
+    private <T> T extractClaim(String token, Function<Claims, T> resolver) {
+        Claims claims = Jwts.parser()
+                .verifyWith(signingKey)
+                .requireIssuer(issuer)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        return resolver.apply(claims);
+    }
 }

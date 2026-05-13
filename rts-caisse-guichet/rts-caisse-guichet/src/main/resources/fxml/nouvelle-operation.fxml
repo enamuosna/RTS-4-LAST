@@ -5,6 +5,7 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToggleGroup?>
@@ -16,10 +17,13 @@
 <?import javafx.scene.shape.SVGPath?>
 
 <!--
-    RTS Caisse — Modal "Nouvelle opération" (v5)
+    RTS Caisse — Modal "Nouvelle opération" (v5.1)
 
+    v5.1 :
+      - REINTRODUIT le champ MOTIF, requis par le contrôleur et par
+        la contrainte NOT NULL côté backend (operations_caisse.motif).
+        Son retrait en v5 provoquait un NPE à l'enregistrement.
     v5 :
-      - SUPPRIME la section MOTIF (champ retiré du formulaire)
       - AJOUTE une section BANQUE, visible uniquement quand le mode
         de paiement est CHEQUE ou VIREMENT
       - Conserve la bascule client Existant / + Nouveau de la v4
@@ -213,7 +217,14 @@
                 </VBox>
             </VBox>
 
-            <!-- (Section MOTIF supprimée en v5) -->
+            <!-- ========== Motif (obligatoire côté backend) ========== -->
+            <VBox spacing="6">
+                <Label styleClass="field-label" text="MOTIF *"/>
+                <TextArea fx:id="motifArea"
+                          promptText="Objet de l'opération (obligatoire)"
+                          wrapText="true"
+                          prefRowCount="3"/>
+            </VBox>
 
         </VBox>
     </ScrollPane>

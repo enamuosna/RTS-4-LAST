@@ -82,32 +82,36 @@ public final class PrintRecu {
         }
 
         PageLayout layout = job.getJobSettings().getPageLayout();
-        double maxWidth  = layout.getPrintableWidth();
-        double maxHeight = layout.getPrintableHeight();
+        double pageW = layout.getPrintableWidth();
+        double pageH = layout.getPrintableHeight();
 
-        // On élargit le VBox du reçu pour occuper ~92% de la largeur
-        // imprimable, AVANT d'attacher à une scène et de lancer le layout.
-        // Pas de Transform.scale : printPage(node) utilise les bounds non
-        // transformés, donc un scale rend le contenu plus grand mais
-        // tronqué dans la zone de mapping d'origine (380 px). En modifiant
-        // directement prefWidth, le VBox est NATURELLEMENT à la bonne
-        // taille et printPage le mappe correctement sur la page.
+        // 1. On élargit le reçu à 90 % de la largeur imprimable, mais sans
+        //    descendre sous sa largeur naturelle (380 px).
         if (recu instanceof Region region) {
-            double targetWidth = Math.max(LARGEUR_RECU, maxWidth * 0.92);
+            double targetWidth = Math.max(LARGEUR_RECU, pageW * 0.90);
             region.setMinWidth(targetWidth);
             region.setPrefWidth(targetWidth);
             region.setMaxWidth(targetWidth);
         }
 
-        // Attache à une scène temporaire pour forcer le layout. Sans ça,
-        // les bounds restent à 0 et printPage rend un node fantôme.
-        new Scene(new StackPane(recu));
-        recu.applyCss();
-        if (recu instanceof Region region) {
-            region.layout();
-        }
+        // 2. On enveloppe le reçu dans un VBox EXPLICITEMENT dimensionné à
+        //    la page imprimable, avec le reçu centré horizontalement et collé
+        //    en haut. Le VBox est ce qu'on imprime — JavaFX mappe ses bounds
+        //    1:1 sur la page, donc plus de risque de débordement.
+        VBox pageBox = new VBox(recu);
+        pageBox.setAlignment(Pos.TOP_CENTER);
+        pageBox.setFillWidth(false);
+        pageBox.setPrefSize(pageW, pageH);
+        pageBox.setMinSize(pageW, pageH);
+        pageBox.setMaxSize(pageW, pageH);
+        pageBox.setBackground(new Background(new BackgroundFill(
+                Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY)));
 
-        boolean printed = job.printPage(recu);
+        new Scene(pageBox, pageW, pageH);
+        pageBox.applyCss();
+        pageBox.layout();
+
+        boolean printed = job.printPage(pageBox);
         if (printed) {
             job.endJob();
         }

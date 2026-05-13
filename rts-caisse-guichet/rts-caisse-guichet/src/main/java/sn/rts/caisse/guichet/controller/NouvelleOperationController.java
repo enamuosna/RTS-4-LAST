@@ -149,28 +149,54 @@ public class NouvelleOperationController {
         AsyncRunner.run(
                 () -> api.listerCategories(null),
                 cats -> {
-                    toutesCategories = cats;
+                    log.info("Catégories reçues : {}", cats == null ? 0 : cats.size());
+                    toutesCategories = cats == null ? List.of() : cats;
                     filtrerCategoriesPourType();
                 },
-                e -> log.warn("Catégories indisponibles : {}", e.getMessage()));
+                e -> {
+                    log.error("Catégories indisponibles", e);
+                    Ui.erreur("Catégories indisponibles",
+                            "Impossible de charger les catégories.\n\n" + describe(e));
+                });
 
         // Clients
         AsyncRunner.run(
                 () -> api.rechercherClients(null),
                 clients -> {
-                    tousClients = new ArrayList<>(clients);
+                    log.info("Clients reçus : {}", clients == null ? 0 : clients.size());
+                    tousClients = clients == null ? new ArrayList<>() : new ArrayList<>(clients);
                     clientCombo.setItems(FXCollections.observableArrayList(tousClients));
                 },
-                e -> log.warn("Clients indisponibles : {}", e.getMessage()));
+                e -> {
+                    log.error("Clients indisponibles", e);
+                    Ui.erreur("Clients indisponibles",
+                            "Impossible de charger la liste des clients.\n\n" + describe(e));
+                });
 
         // Banques actives
         AsyncRunner.run(
                 () -> api.listerBanques(),
                 banques -> {
-                    toutesBanques = banques;
-                    banqueCombo.setItems(FXCollections.observableArrayList(banques));
+                    log.info("Banques reçues : {}", banques == null ? 0 : banques.size());
+                    toutesBanques = banques == null ? List.of() : banques;
+                    banqueCombo.setItems(FXCollections.observableArrayList(toutesBanques));
                 },
-                e -> log.warn("Banques indisponibles : {}", e.getMessage()));
+                e -> {
+                    log.error("Banques indisponibles", e);
+                    Ui.erreur("Banques indisponibles",
+                            "Impossible de charger la liste des banques.\n\n" + describe(e));
+                });
+    }
+
+    /** Formate proprement une exception API pour l'affichage utilisateur. */
+    private static String describe(Throwable t) {
+        if (t == null) return "Erreur inconnue.";
+        Throwable cause = t.getCause() != null ? t.getCause() : t;
+        String msg = cause.getMessage();
+        if (msg == null || msg.isBlank()) {
+            msg = cause.getClass().getSimpleName();
+        }
+        return msg;
     }
 
     private void filtrerCategoriesPourType() {

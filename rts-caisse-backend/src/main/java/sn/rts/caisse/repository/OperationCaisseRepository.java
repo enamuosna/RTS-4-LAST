@@ -38,7 +38,7 @@ public interface OperationCaisseRepository extends JpaRepository<OperationCaisse
      */
     @Query(value = """
         SELECT COALESCE(MAX(CAST(SUBSTRING(numero_recu FROM LENGTH(:prefixe) + 1) AS INTEGER)), 0)
-        FROM operation_caisse
+        FROM operations_caisse
         WHERE numero_recu LIKE :prefixe || '%'
         """, nativeQuery = true)
     Optional<Integer> findMaxSequenceForPrefix(@Param("prefixe") String prefixe);

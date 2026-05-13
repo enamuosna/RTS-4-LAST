@@ -85,20 +85,26 @@ public final class PrintRecu {
         double maxWidth  = layout.getPrintableWidth();
         double maxHeight = layout.getPrintableHeight();
 
-        // On force le reçu à occuper 92% de la largeur imprimable de la page,
-        // qu'il soit plus petit ou plus grand au départ. Ça évite à la fois :
-        //  - le reçu minuscule sur une A4 (380 px sur 595 pt = 64%)
-        //  - les marges asymétriques que Windows applique parfois quand on
-        //    laisse le centrage à StackPane.
-        Scene scene = new Scene(new StackPane(recu));
-        scene.getRoot().applyCss();
-        ((javafx.scene.Parent) scene.getRoot()).layout();
+        // On élargit le VBox du reçu pour occuper ~92% de la largeur
+        // imprimable, AVANT d'attacher à une scène et de lancer le layout.
+        // Pas de Transform.scale : printPage(node) utilise les bounds non
+        // transformés, donc un scale rend le contenu plus grand mais
+        // tronqué dans la zone de mapping d'origine (380 px). En modifiant
+        // directement prefWidth, le VBox est NATURELLEMENT à la bonne
+        // taille et printPage le mappe correctement sur la page.
+        if (recu instanceof Region region) {
+            double targetWidth = Math.max(LARGEUR_RECU, maxWidth * 0.92);
+            region.setMinWidth(targetWidth);
+            region.setPrefWidth(targetWidth);
+            region.setMaxWidth(targetWidth);
+        }
 
-        double recuWidth = recu.getBoundsInLocal().getWidth();
-        if (recuWidth > 0) {
-            double scale = (maxWidth * 0.92) / recuWidth;
-            recu.getTransforms().add(
-                    javafx.scene.transform.Transform.scale(scale, scale));
+        // Attache à une scène temporaire pour forcer le layout. Sans ça,
+        // les bounds restent à 0 et printPage rend un node fantôme.
+        new Scene(new StackPane(recu));
+        recu.applyCss();
+        if (recu instanceof Region region) {
+            region.layout();
         }
 
         boolean printed = job.printPage(recu);

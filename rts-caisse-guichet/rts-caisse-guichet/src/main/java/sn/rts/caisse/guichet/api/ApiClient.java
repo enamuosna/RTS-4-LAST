@@ -66,12 +66,18 @@ public class ApiClient {
      * @throws ApiException si le serveur refuse (400, 409, etc.) ou
      *                      si le réseau échoue
      */
-    /** Client HTTP moderne pour les appels metier. HTTP/1.1 force. */
+    /** Client HTTP moderne pour les appels metier. HTTP/1.1 force.
+     *  connectTimeout généreux (30s) car les premières poignées de main TLS
+     *  Let's Encrypt sont parfois lentes, surtout quand plusieurs appels
+     *  partent en parallèle au chargement d'un écran. */
     private final HttpClient http = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
-            .connectTimeout(Duration.ofSeconds(5))
+            .connectTimeout(Duration.ofSeconds(30))
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
+
+    /** Nombre maximum de tentatives en cas de timeout de connexion. */
+    private static final int MAX_RETRIES_ON_CONNECT_TIMEOUT = 2;
 
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -262,7 +268,7 @@ public class ApiClient {
     private HttpRequest.Builder requestBuilder(String path) {
         URI uri = URI.create(Config.getInstance().getApiUrl() + path);
         HttpRequest.Builder builder = HttpRequest.newBuilder(uri)
-                .timeout(Duration.ofSeconds(15))
+                .timeout(Duration.ofSeconds(60))
                 .header("Accept", "application/json");
         String token = Session.getInstance().getToken();
         if (token != null) {
@@ -287,33 +293,55 @@ public class ApiClient {
 
     @SuppressWarnings("unchecked")
     private <T> T send(HttpRequest req, Class<T> responseClass, TypeReference<T> typeRef) {
-        try {
-            HttpResponse<String> response = http.send(req, BodyHandlers.ofString(StandardCharsets.UTF_8));
-            int status = response.statusCode();
-            String body = response.body();
+        // Réessais transparents sur HttpConnectTimeoutException : la première
+        // poignée de main TLS peut dépasser le délai si le pool de connexions
+        // est froid (cas typique au chargement initial d'un écran).
+        int attempt = 0;
+        Exception lastConnectError = null;
+        while (attempt <= MAX_RETRIES_ON_CONNECT_TIMEOUT) {
+            try {
+                HttpResponse<String> response = http.send(req, BodyHandlers.ofString(StandardCharsets.UTF_8));
+                int status = response.statusCode();
+                String body = response.body();
 
-            if (status >= 200 && status < 300) {
-                if (responseClass == Void.class || body == null || body.isBlank()) {
-                    return null;
+                if (status >= 200 && status < 300) {
+                    if (responseClass == Void.class || body == null || body.isBlank()) {
+                        return null;
+                    }
+                    if (typeRef != null) {
+                        return mapper.readValue(body, typeRef);
+                    }
+                    return mapper.readValue(body, responseClass);
                 }
-                if (typeRef != null) {
-                    return mapper.readValue(body, typeRef);
+
+                String message = extractErrorMessage(body, status);
+                log.warn("API {} {} → {}: {}", req.method(), req.uri(), status, message);
+                throw new ApiException(status, message);
+
+            } catch (ApiException e) {
+                throw e;
+            } catch (java.net.http.HttpConnectTimeoutException | java.net.ConnectException e) {
+                lastConnectError = e;
+                attempt++;
+                if (attempt > MAX_RETRIES_ON_CONNECT_TIMEOUT) break;
+                log.warn("Timeout de connexion {} {} (tentative {} sur {}). Nouvelle tentative...",
+                        req.method(), req.uri(), attempt, MAX_RETRIES_ON_CONNECT_TIMEOUT + 1);
+                try {
+                    Thread.sleep(500L * attempt); // backoff progressif : 0.5s, 1s
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
-                return mapper.readValue(body, responseClass);
+            } catch (Exception e) {
+                log.error("Erreur appel API {} {}", req.method(), req.uri(), e);
+                throw new ApiException("Erreur réseau : " + e.getMessage());
             }
-
-            String message = extractErrorMessage(body, status);
-            log.warn("API {} {} → {}: {}", req.method(), req.uri(), status, message);
-            throw new ApiException(status, message);
-
-        } catch (ApiException e) {
-            throw e;
-        } catch (java.net.ConnectException e) {
-            throw new ApiException(0, "Serveur injoignable à " + Config.getInstance().getApiUrl());
-        } catch (Exception e) {
-            log.error("Erreur appel API {} {}", req.method(), req.uri(), e);
-            throw new ApiException("Erreur réseau : " + e.getMessage());
         }
+
+        log.error("Échec définitif après {} tentatives : {} {}",
+                MAX_RETRIES_ON_CONNECT_TIMEOUT + 1, req.method(), req.uri(), lastConnectError);
+        throw new ApiException(0, "Serveur injoignable (délai de connexion dépassé). "
+                + "Vérifiez que le backend RTS Caisse répond à " + Config.getInstance().getApiUrl());
     }
 
     private String extractErrorMessage(String body, int status) {

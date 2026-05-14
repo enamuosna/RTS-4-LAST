@@ -27,6 +27,14 @@ public class ParametresRecu {
     @Column(name = "logo_texte", length = 40)
     private String logoTexte;
 
+    /** Logo uploadé (PNG, JPG, etc.). Prioritaire sur {@link #logoTexte} si présent. */
+    @Lob
+    @Column(name = "logo_image")
+    private byte[] logoImage;
+
+    @Column(name = "logo_content_type", length = 80)
+    private String logoContentType;
+
     @Column(name = "raison_sociale", length = 200)
     private String raisonSociale;
 

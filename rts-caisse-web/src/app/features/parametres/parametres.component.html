@@ -42,9 +42,53 @@
             <mat-icon>info</mat-icon>
             <h3>Informations statiques</h3>
           </div>
+          <!-- Upload du logo (PNG, JPG, GIF, WEBP — 2 Mo max) -->
+          <div class="logo-uploader">
+            <div class="logo-preview">
+              @if (logoUrl(); as url) {
+                <img [src]="url" alt="Logo" />
+              } @else {
+                <div class="logo-placeholder">
+                  <mat-icon>image</mat-icon>
+                  <span>Aucun logo</span>
+                </div>
+              }
+            </div>
+            <div class="logo-actions">
+              <input
+                type="file"
+                #fileInput
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                style="display: none"
+                (change)="onLogoSelected($event)"
+              />
+              <button mat-stroked-button color="primary"
+                      (click)="fileInput.click()"
+                      [disabled]="uploadingLogo()">
+                @if (uploadingLogo()) {
+                  <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+                  Envoi…
+                } @else {
+                  <mat-icon>upload</mat-icon>
+                  {{ logoUrl() ? 'Remplacer le logo' : 'Choisir une image' }}
+                }
+              </button>
+              @if (logoUrl()) {
+                <button mat-button color="warn" (click)="supprimerLogo()"
+                        [disabled]="uploadingLogo()">
+                  <mat-icon>delete</mat-icon>
+                  Supprimer
+                </button>
+              }
+              <div class="logo-hint">
+                PNG, JPG, GIF ou WEBP. 2 Mo maximum. Fallback sur le texte ci-dessous si aucune image.
+              </div>
+            </div>
+          </div>
+
           <div class="form-grid">
             <mat-form-field appearance="outline">
-              <mat-label>Logo (texte)</mat-label>
+              <mat-label>Logo (texte de secours)</mat-label>
               <input matInput [(ngModel)]="params.logoTexte" maxlength="40" />
             </mat-form-field>
 

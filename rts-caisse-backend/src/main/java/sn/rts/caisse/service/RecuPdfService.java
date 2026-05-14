@@ -7,6 +7,7 @@ import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
+import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfPCell;
@@ -142,17 +143,34 @@ public class RecuPdfService {
         PdfPTable header = new PdfPTable(new float[]{25, 75});
         header.setWidthPercentage(100);
 
-        // Cellule logo
+        // Cellule logo : image si présente, sinon texte
         PdfPCell cLogo = new PdfPCell();
         cLogo.setBorder(PdfPCell.NO_BORDER);
-        cLogo.setBackgroundColor(cPrim);
-        cLogo.setPadding(10);
+        cLogo.setPadding(4);
         cLogo.setHorizontalAlignment(Element.ALIGN_CENTER);
         cLogo.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        Paragraph logo = new Paragraph(blankIfNull(p.getLogoTexte(), "RTS"),
-                font(tEntete + 4, Font.BOLD, Color.WHITE));
-        logo.setAlignment(Element.ALIGN_CENTER);
-        cLogo.addElement(logo);
+
+        boolean logoImageAjoute = false;
+        if (p.getLogoImage() != null && p.getLogoImage().length > 0) {
+            try {
+                Image img = Image.getInstance(p.getLogoImage());
+                img.scaleToFit(60, 60);
+                img.setAlignment(Image.ALIGN_CENTER);
+                cLogo.addElement(img);
+                logoImageAjoute = true;
+            } catch (Exception ex) {
+                log.warn("Logo image illisible ({}), fallback sur le texte.",
+                        ex.getMessage());
+            }
+        }
+        if (!logoImageAjoute) {
+            cLogo.setBackgroundColor(cPrim);
+            cLogo.setPadding(10);
+            Paragraph logo = new Paragraph(blankIfNull(p.getLogoTexte(), "RTS"),
+                    font(tEntete + 4, Font.BOLD, Color.WHITE));
+            logo.setAlignment(Element.ALIGN_CENTER);
+            cLogo.addElement(logo);
+        }
         header.addCell(cLogo);
 
         // Cellule infos

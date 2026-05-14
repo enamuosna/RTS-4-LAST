@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
@@ -181,5 +181,28 @@ export class ParametresRecuService {
   /** Renvoie l'URL d'aperçu PDF (consommée dans une balise <iframe>). */
   urlApercu(): string {
     return `${this.recusBase}/apercu?_t=${Date.now()}`;
+  }
+
+  /**
+   * Charge le logo binaire. Renvoie un Blob ou null s'il n'y a pas de logo
+   * (réponse 404). Le composant transforme ensuite le blob en object URL
+   * pour l'afficher dans <img>.
+   */
+  obtenirLogo(): Observable<Blob | null> {
+    return this.http
+      .get(`${this.base}/logo`, { responseType: 'blob' })
+      .pipe(catchError(() => of<Blob | null>(null)));
+  }
+
+  /** Upload du logo (PNG, JPG, GIF, WEBP — 2 Mo max). */
+  uploadLogo(file: File): Observable<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<void>(`${this.base}/logo`, formData);
+  }
+
+  /** Supprime le logo image. Le PDF retombera sur le texte du logo. */
+  supprimerLogo(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/logo`);
   }
 }

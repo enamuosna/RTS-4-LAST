@@ -61,9 +61,12 @@ export class ParametresComponent implements OnInit {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly snack = inject(MatSnackBar);
 
-  readonly loading = signal(true);
-  readonly saving  = signal(false);
-  readonly previewUrl = signal<SafeResourceUrl | null>(null);
+  readonly loading      = signal(true);
+  readonly saving       = signal(false);
+  readonly uploadingLogo = signal(false);
+  readonly previewUrl   = signal<SafeResourceUrl | null>(null);
+  readonly logoUrl      = signal<SafeResourceUrl | null>(null);
+  private currentLogoObjectUrl: string | null = null;
 
   /** Modèle bindé en deux sens à toute la page. */
   params: ParametresRecu | null = null;
@@ -93,6 +96,7 @@ export class ParametresComponent implements OnInit {
         this.params = p;
         this.loading.set(false);
         this.rafraichirApercu();
+        this.rafraichirLogo();
       },
       error: () => {
         this.loading.set(false);
@@ -100,6 +104,73 @@ export class ParametresComponent implements OnInit {
           { duration: 4000, panelClass: 'snackbar-error' });
       }
     });
+  }
+
+  /** Recharge l'image du logo depuis le backend, l'affiche en object URL. */
+  rafraichirLogo(): void {
+    this.api.obtenirLogo().subscribe((blob) => {
+      this.revoquerLogoUrl();
+      if (blob) {
+        const objectUrl = URL.createObjectURL(blob);
+        this.currentLogoObjectUrl = objectUrl;
+        this.logoUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
+      } else {
+        this.logoUrl.set(null);
+      }
+    });
+  }
+
+  /** Sélection d'un fichier dans l'<input type="file"> : upload immédiat. */
+  onLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      this.snack.open('Image trop volumineuse (2 Mo max).', 'OK',
+        { duration: 4000, panelClass: 'snackbar-error' });
+      input.value = '';
+      return;
+    }
+    this.uploadingLogo.set(true);
+    this.api.uploadLogo(file).subscribe({
+      next: () => {
+        this.uploadingLogo.set(false);
+        this.snack.open('Logo mis à jour.', 'OK',
+          { duration: 2500, panelClass: 'snackbar-success' });
+        this.rafraichirLogo();
+        this.rafraichirApercu();
+        input.value = '';
+      },
+      error: (err) => {
+        this.uploadingLogo.set(false);
+        const message = err?.error?.message ?? "Échec du téléversement du logo.";
+        this.snack.open(message, 'OK',
+          { duration: 4000, panelClass: 'snackbar-error' });
+        input.value = '';
+      }
+    });
+  }
+
+  supprimerLogo(): void {
+    this.api.supprimerLogo().subscribe({
+      next: () => {
+        this.snack.open('Logo supprimé.', 'OK',
+          { duration: 2500, panelClass: 'snackbar-success' });
+        this.rafraichirLogo();
+        this.rafraichirApercu();
+      },
+      error: () => {
+        this.snack.open("Échec de la suppression du logo.", 'OK',
+          { duration: 4000, panelClass: 'snackbar-error' });
+      }
+    });
+  }
+
+  private revoquerLogoUrl(): void {
+    if (this.currentLogoObjectUrl) {
+      URL.revokeObjectURL(this.currentLogoObjectUrl);
+      this.currentLogoObjectUrl = null;
+    }
   }
 
   metaPourSection(id: string): SectionMeta {

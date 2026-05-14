@@ -14,6 +14,7 @@ import sn.rts.caisse.repository.ParametresRecuRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service singleton qui gère la lecture et la mise à jour des paramètres
@@ -61,6 +62,47 @@ public class ParametresRecuService {
         repository.save(entity);
         log.info("Paramètres du reçu mis à jour par {}", loginAdmin);
         return toDto(entity);
+    }
+
+    // ==================================================================
+    //  LOGO (binaire)
+    // ==================================================================
+
+    /** Logo image + type MIME — vide si aucun logo n'a été uploadé. */
+    public record LogoBinaire(byte[] image, String contentType) {}
+
+    @Transactional(readOnly = true)
+    public Optional<LogoBinaire> obtenirLogo() {
+        ParametresRecu e = loadEntity();
+        if (e.getLogoImage() == null || e.getLogoImage().length == 0) {
+            return Optional.empty();
+        }
+        String ct = e.getLogoContentType() != null
+                ? e.getLogoContentType() : "image/png";
+        return Optional.of(new LogoBinaire(e.getLogoImage(), ct));
+    }
+
+    @Transactional
+    public void enregistrerLogo(byte[] image, String contentType, String loginAdmin) {
+        ParametresRecu e = loadEntity();
+        e.setLogoImage(image);
+        e.setLogoContentType(contentType);
+        e.setUpdatedAt(LocalDateTime.now());
+        e.setUpdatedBy(loginAdmin);
+        repository.save(e);
+        log.info("Logo téléversé par {} ({} octets, {})",
+                loginAdmin, image.length, contentType);
+    }
+
+    @Transactional
+    public void supprimerLogo(String loginAdmin) {
+        ParametresRecu e = loadEntity();
+        e.setLogoImage(null);
+        e.setLogoContentType(null);
+        e.setUpdatedAt(LocalDateTime.now());
+        e.setUpdatedBy(loginAdmin);
+        repository.save(e);
+        log.info("Logo supprimé par {}", loginAdmin);
     }
 
     // ==================================================================

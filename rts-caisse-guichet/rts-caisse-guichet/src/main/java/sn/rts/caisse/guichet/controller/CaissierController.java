@@ -686,11 +686,14 @@ public class CaissierController {
             modal.setResizable(false);
 
             Scene scene = new Scene(root);
-            // Réutilise la feuille de style globale
-            URL css = GuichetApplication.class.getResource("/css/style.css");
-            if (css != null) {
-                scene.getStylesheets().add(css.toExternalForm());
-            }
+
+            // Enregistre la scène dans le ThemeManager :
+            // - applique immédiatement le CSS du thème actuel (dark ou light)
+            // - la scène suivra automatiquement tous les basculements light/dark
+            ThemeManager.getInstance().register(scene);
+            // Nettoie la référence dès que la fenêtre est fermée (anti-fuite mémoire)
+            modal.setOnHidden(e -> ThemeManager.getInstance().unregister(scene));
+
             modal.setScene(scene);
 
             // Initialise le contrôleur avec la caisse + le callback

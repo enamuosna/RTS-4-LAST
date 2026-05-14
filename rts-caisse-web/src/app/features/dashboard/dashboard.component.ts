@@ -53,7 +53,9 @@ export class DashboardComponent implements OnInit {
   readonly loading = signal(false);
   readonly data = signal<DashboardResponse | null>(null);
 
-  selectedDate: Date = new Date();
+  /** Bornes de la plage de dates (incluses). Par défaut : aujourd'hui → aujourd'hui. */
+  dateDebut: Date = new Date();
+  dateFin: Date   = new Date();
 
   readonly colonnesCaisse = ['code', 'libelle', 'entrees', 'sorties', 'solde'];
   readonly colonnesCategorie = ['code', 'libelle', 'type', 'nombre', 'montant'];
@@ -127,14 +129,29 @@ export class DashboardComponent implements OnInit {
 
   charger(): void {
     this.loading.set(true);
-    const isoDate = this.selectedDate.toISOString().slice(0, 10);
-    this.reporting.dashboard(isoDate).subscribe({
+    // Si l'utilisateur a inversé les bornes, on les remet dans l'ordre avant l'appel
+    let debut = this.dateDebut;
+    let fin   = this.dateFin;
+    if (debut && fin && fin < debut) {
+      [debut, fin] = [fin, debut];
+    }
+    const isoDebut = debut ? this.toIso(debut) : undefined;
+    const isoFin   = fin   ? this.toIso(fin)   : undefined;
+    this.reporting.dashboard(isoDebut, isoFin).subscribe({
       next: (resp) => {
         this.data.set(resp);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  /** Convertit en yyyy-MM-dd dans le fuseau local (évite le décalage UTC). */
+  private toIso(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const j = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${j}`;
   }
 
   rafraichir(): void {

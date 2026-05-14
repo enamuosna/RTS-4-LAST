@@ -148,9 +148,14 @@ export class ReportingService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/reporting`;
 
-  dashboard(date?: string): Observable<DashboardResponse> {
+  /**
+   * @param dateDebut format ISO yyyy-MM-dd, facultatif (par défaut aujourd'hui)
+   * @param dateFin   format ISO yyyy-MM-dd, facultatif (par défaut = dateDebut)
+   */
+  dashboard(dateDebut?: string, dateFin?: string): Observable<DashboardResponse> {
     let params = new HttpParams();
-    if (date) params = params.set('date', date);
+    if (dateDebut) params = params.set('dateDebut', dateDebut);
+    if (dateFin)   params = params.set('dateFin', dateFin);
     return this.http.get<DashboardResponse>(`${this.base}/dashboard`, { params });
   }
 }

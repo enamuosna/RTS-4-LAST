@@ -80,8 +80,10 @@ public class SecurityConfig {
                         //  fait déjà le travail, mais on double ici pour défense en profondeur)
                         .requestMatchers("/api/audit/**").hasRole("ADMIN")
 
-                        // Reporting / supervision
-                        .requestMatchers("/api/reporting/**").hasAnyRole("ADMIN", "SUPERVISEUR")
+                        // Reporting : tous les rôles authentifiés peuvent accéder ;
+                        // le service applique automatiquement un filtre par caissier
+                        // pour les utilisateurs CAISSIER (cf. ReportingService).
+                        .requestMatchers("/api/reporting/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/journaux/*/valider")
                             .hasAnyRole("ADMIN", "SUPERVISEUR")
 

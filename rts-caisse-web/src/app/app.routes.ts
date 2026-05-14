@@ -27,7 +27,8 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR'])]
+        // CAISSIER autorisé : le backend filtre automatiquement sur ses propres opérations.
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER'])]
       },
       {
         path: 'utilisateurs',

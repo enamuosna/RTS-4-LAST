@@ -9,7 +9,8 @@ import java.util.List;
  * journaliers, répartition par caisse, répartition par catégorie.
  */
 public record DashboardResponse(
-        LocalDate date,
+        LocalDate dateDebut,
+        LocalDate dateFin,
         BigDecimal totalEntreesJour,
         BigDecimal totalSortiesJour,
         BigDecimal soldeNetJour,

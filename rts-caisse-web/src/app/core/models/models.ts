@@ -185,7 +185,8 @@ export interface LigneCategorie {
 }
 
 export interface DashboardResponse {
-  date: string;
+  dateDebut: string;
+  dateFin: string;
   totalEntreesJour: number;
   totalSortiesJour: number;
   soldeNetJour: number;

@@ -4,12 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.rts.caisse.dto.DashboardResponse;
+import sn.rts.caisse.exception.BusinessException;
 import sn.rts.caisse.model.Caisse;
 import sn.rts.caisse.model.OperationCaisse;
+import sn.rts.caisse.model.Role;
 import sn.rts.caisse.model.StatutCaisse;
 import sn.rts.caisse.model.TypeOperation;
+import sn.rts.caisse.model.Utilisateur;
 import sn.rts.caisse.repository.CaisseRepository;
 import sn.rts.caisse.repository.OperationCaisseRepository;
+import sn.rts.caisse.repository.UtilisateurRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,6 +25,10 @@ import java.util.stream.Collectors;
 
 /**
  * Agrégations pour le tableau de bord Angular Material.
+ *
+ * <p>Le filtrage par caissier est appliqué automatiquement : un utilisateur
+ * de rôle {@link Role#CAISSIER} ne voit que ses propres opérations, tandis
+ * que les {@link Role#ADMIN} et {@link Role#SUPERVISEUR} ont la vue globale.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,25 +37,70 @@ public class ReportingService {
 
     private final OperationCaisseRepository operationRepository;
     private final CaisseRepository caisseRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
-    public DashboardResponse dashboard(LocalDate date) {
-        LocalDate target = (date != null) ? date : LocalDate.now();
-        LocalDateTime debut = target.atStartOfDay();
-        LocalDateTime fin = debut.plusDays(1);
+    /**
+     * @param dateDebut début de période (incluse). Si null, prend la valeur
+     *                  de {@code dateFin}, ou {@code LocalDate.now()} si les
+     *                  deux sont null.
+     * @param dateFin   fin de période (incluse). Si null, prend la valeur
+     *                  de {@code dateDebut}, ou {@code LocalDate.now()} si
+     *                  les deux sont null.
+     * @param login     login de l'utilisateur connecté ; utilisé pour
+     *                  appliquer le filtre par caissier si le rôle est
+     *                  {@link Role#CAISSIER}.
+     */
+    public DashboardResponse dashboard(LocalDate dateDebut, LocalDate dateFin, String login) {
+        LocalDate aujourdhui = LocalDate.now();
+        LocalDate debutEffectif = dateDebut != null ? dateDebut
+                : (dateFin != null ? dateFin : aujourdhui);
+        LocalDate finEffective  = dateFin != null ? dateFin
+                : (dateDebut != null ? dateDebut : aujourdhui);
+
+        // Si le client a inversé les bornes par erreur, on les remet dans l'ordre.
+        if (finEffective.isBefore(debutEffectif)) {
+            LocalDate tmp = debutEffectif;
+            debutEffectif = finEffective;
+            finEffective = tmp;
+        }
+
+        LocalDateTime debut = debutEffectif.atStartOfDay();
+        LocalDateTime fin   = finEffective.plusDays(1).atStartOfDay();
+
+        // Filtre par caissier si rôle CAISSIER
+        Utilisateur utilisateur = utilisateurRepository.findByLogin(login)
+                .orElseThrow(() -> new BusinessException(
+                        "Utilisateur introuvable : " + login));
+        boolean restreintAuCaissier = utilisateur.getRole() == Role.CAISSIER;
+        Long caissierId = utilisateur.getId();
 
         List<OperationCaisse> operations = operationRepository
                 .findByDateOperationBetween(debut, fin).stream()
                 .filter(o -> !o.isAnnulee())
+                .filter(o -> !restreintAuCaissier
+                        || (o.getCaissier() != null
+                            && caissierId.equals(o.getCaissier().getId())))
                 .toList();
 
         BigDecimal totalEntrees = sommerParType(operations, TypeOperation.ENTREE);
         BigDecimal totalSorties = sommerParType(operations, TypeOperation.SORTIE);
         BigDecimal soldeNet = totalEntrees.subtract(totalSorties);
 
-        long caissesOuvertes = caisseRepository.findByStatut(StatutCaisse.OUVERTE).size();
+        // Nombre de caisses ouvertes : pour un caissier, on ne compte que
+        // celles dont il est l'agent affecté (cohérent avec la restriction).
+        long caissesOuvertes;
+        if (restreintAuCaissier) {
+            caissesOuvertes = caisseRepository.findByStatut(StatutCaisse.OUVERTE).stream()
+                    .filter(c -> c.getCaissier() != null
+                            && caissierId.equals(c.getCaissier().getId()))
+                    .count();
+        } else {
+            caissesOuvertes = caisseRepository.findByStatut(StatutCaisse.OUVERTE).size();
+        }
 
         return new DashboardResponse(
-                target,
+                debutEffectif,
+                finEffective,
                 totalEntrees,
                 totalSorties,
                 soldeNet,

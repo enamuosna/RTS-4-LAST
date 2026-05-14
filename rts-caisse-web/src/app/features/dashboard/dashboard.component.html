@@ -4,7 +4,11 @@
       <h1>Tableau de bord</h1>
       <div class="page-subtitle">
         @if (data(); as d) {
-          Vue consolidée du {{ d.date | date: 'fullDate' }}
+          @if (d.dateDebut === d.dateFin) {
+            Vue consolidée du {{ d.dateDebut | date: 'fullDate' }}
+          } @else {
+            Vue consolidée du {{ d.dateDebut | date: 'longDate' }} au {{ d.dateFin | date: 'longDate' }}
+          }
         }
       </div>
     </div>
@@ -12,15 +16,27 @@
 
   <div class="filter-bar">
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Date du rapport</mat-label>
+      <mat-label>Date de début</mat-label>
       <input
         matInput
-        [matDatepicker]="picker"
-        [(ngModel)]="selectedDate"
+        [matDatepicker]="pickerDebut"
+        [(ngModel)]="dateDebut"
         (dateChange)="charger()"
       />
-      <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-      <mat-datepicker #picker></mat-datepicker>
+      <mat-datepicker-toggle matSuffix [for]="pickerDebut"></mat-datepicker-toggle>
+      <mat-datepicker #pickerDebut></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Date de fin</mat-label>
+      <input
+        matInput
+        [matDatepicker]="pickerFin"
+        [(ngModel)]="dateFin"
+        (dateChange)="charger()"
+      />
+      <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
+      <mat-datepicker #pickerFin></mat-datepicker>
     </mat-form-field>
 
     <button mat-stroked-button color="primary" (click)="rafraichir()">

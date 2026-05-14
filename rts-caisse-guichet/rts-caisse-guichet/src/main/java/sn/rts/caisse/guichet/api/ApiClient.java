@@ -261,6 +261,30 @@ public class ApiClient {
         send(req, Void.class, null);
     }
 
+    /**
+     * GET sur un endpoint binaire (image, PDF, etc.). Renvoie les octets
+     * bruts. Utilisé pour récupérer le logo image du reçu côté guichet.
+     *
+     * @throws ApiException si le serveur renvoie un code non-2xx (404 pour
+     *                      un logo absent, par exemple).
+     */
+    public byte[] getBytes(String path) {
+        HttpRequest req = requestBuilder(path).GET().build();
+        try {
+            HttpResponse<byte[]> resp = http.send(req,
+                    HttpResponse.BodyHandlers.ofByteArray());
+            int sc = resp.statusCode();
+            if (sc < 200 || sc >= 300) {
+                throw new ApiException(sc, "HTTP " + sc + " sur " + path);
+            }
+            return resp.body();
+        } catch (java.io.IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw new ApiException(
+                    "Erreur réseau sur " + path + " : " + e.getMessage());
+        }
+    }
+
     // ==================================================================
     //  Helpers
     // ==================================================================

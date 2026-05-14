@@ -27,24 +27,25 @@ import javafx.scene.text.FontWeight;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sn.rts.caisse.guichet.model.Dto.OperationCaisseResponse;
+import sn.rts.caisse.guichet.model.Dto.ParametresRecuDto;
+import sn.rts.caisse.guichet.model.Dto.SectionRecu;
+import sn.rts.caisse.guichet.util.ParametresRecuCache;
 import sn.rts.caisse.guichet.util.Ui;
 
+import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Construction et impression du reçu de caisse.
  *
- * <p>Évolutions (mai 2026) :</p>
- * <ul>
- *   <li>En-tête en disposition verticale : logo en haut à gauche,
- *       puis informations de l'entreprise juste en dessous (centrées).</li>
- *   <li>Reçu centré horizontalement sur la page d'impression
- *       (via {@link StackPane}).</li>
- *   <li>Nouveau bloc « BANQUE ÉMETTRICE » affiché uniquement pour
- *       les règlements par chèque ou virement.</li>
- * </ul>
+ * <p>Le rendu est <b>data-driven</b> : couleurs, textes statiques, ordre
+ * et visibilité des sections sont lus depuis {@link ParametresRecuCache}
+ * (qui interroge le backend). Si le backend est inaccessible, on retombe
+ * sur les valeurs RTS d'origine pour rester opérationnel hors ligne.</p>
  */
 public final class PrintRecu {
 
@@ -55,11 +56,14 @@ public final class PrintRecu {
 
     private static final double LARGEUR_RECU = 380;
 
-    private static final Color RTS_RED   = Color.web("#E30613");
-    private static final Color GRAY_900  = Color.web("#0f172a");
-    private static final Color GRAY_700  = Color.web("#334155");
-    private static final Color GRAY_500  = Color.web("#64748b");
-    private static final Color GRAY_300  = Color.web("#cbd5e1");
+    // Couleurs de fallback (si backend KO ou champ null)
+    private static final Color FB_PRIMAIRE = Color.web("#E30613");
+    private static final Color FB_TEXTE    = Color.web("#0f172a");
+    private static final Color FB_TEXTE2   = Color.web("#334155");
+    private static final Color FB_MUTED    = Color.web("#64748b");
+    private static final Color FB_BORDURE  = Color.web("#cbd5e1");
+    private static final Color FB_DANGER   = Color.web("#dc2626");
+    private static final Color FB_FOND_MNT = Color.web("#e8f1fa");
 
     private PrintRecu() {}
 
@@ -85,27 +89,11 @@ public final class PrintRecu {
         double pageW = layout.getPrintableWidth();
         double pageH = layout.getPrintableHeight();
 
-        // 1. On élargit le reçu à 90 % de la largeur imprimable, mais sans
-        //    descendre sous sa largeur naturelle (380 px).
-        if (recu instanceof Region region) {
-            double targetWidth = Math.max(LARGEUR_RECU, pageW * 0.90);
-            region.setMinWidth(targetWidth);
-            region.setPrefWidth(targetWidth);
-            region.setMaxWidth(targetWidth);
-        }
-
-        // 2. On enveloppe le reçu dans un VBox EXPLICITEMENT dimensionné à
-        //    la page imprimable, avec le reçu centré horizontalement et collé
-        //    en haut. Le VBox est ce qu'on imprime — JavaFX mappe ses bounds
-        //    1:1 sur la page, donc plus de risque de débordement.
-        VBox pageBox = new VBox(recu);
+        StackPane pageBox = new StackPane(recu);
         pageBox.setAlignment(Pos.TOP_CENTER);
-        pageBox.setFillWidth(false);
         pageBox.setPrefSize(pageW, pageH);
         pageBox.setMinSize(pageW, pageH);
         pageBox.setMaxSize(pageW, pageH);
-        pageBox.setBackground(new Background(new BackgroundFill(
-                Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY)));
 
         new Scene(pageBox, pageW, pageH);
         pageBox.applyCss();
@@ -124,10 +112,12 @@ public final class PrintRecu {
     }
 
     // ==================================================================
-    //  Construction du reçu
+    //  Construction du reçu (data-driven)
     // ==================================================================
 
     public static Node construireRecu(OperationCaisseResponse op) {
+        Ctx ctx = Ctx.charger(op);
+
         VBox root = new VBox(0);
         root.setPrefWidth(LARGEUR_RECU);
         root.setMaxWidth(LARGEUR_RECU);
@@ -135,99 +125,140 @@ public final class PrintRecu {
         root.setBackground(new Background(new BackgroundFill(
                 Color.WHITE, CornerRadii.EMPTY, Insets.EMPTY)));
         root.setBorder(new Border(new BorderStroke(
-                GRAY_900, BorderStrokeStyle.SOLID,
+                ctx.texte, BorderStrokeStyle.SOLID,
                 new CornerRadii(4), new BorderWidths(1.5))));
         root.setPadding(new Insets(16, 18, 16, 18));
 
-        root.getChildren().add(construireEntete());
-        root.getChildren().add(separateurDouble());
-        root.getChildren().add(construireNumero(op));
-        root.getChildren().add(separateur());
-        root.getChildren().add(construireMetadonnees(op));
-        root.getChildren().add(separateur());
+        List<SectionRecu> sections = ctx.sections();
+        boolean separateurDouble = false; // après le header
+        for (int i = 0; i < sections.size(); i++) {
+            SectionRecu s = sections.get(i);
+            if (!s.visible) continue;
 
-        if (aDesInfosClient(op)) {
-            root.getChildren().add(construireBlocClient(op));
-            root.getChildren().add(separateur());
+            Node node = rendreSection(s.id, ctx);
+            if (node == null) continue; // section conditionnelle absente
+
+            // Séparateurs entre sections (visuels)
+            if (root.getChildren().size() > 0) {
+                root.getChildren().add(
+                        separateurDouble ? separateurDouble(ctx) : separateur(ctx));
+                separateurDouble = false;
+            }
+            root.getChildren().add(node);
+
+            // Le double séparateur (gros trait) apparaît après l'en-tête.
+            if ("header".equals(s.id)) {
+                separateurDouble = true;
+            }
         }
 
-        root.getChildren().add(construireDetailsOperation(op));
-
-        if (aDesInfosBanque(op)) {
-            root.getChildren().add(separateur());
-            root.getChildren().add(construireBlocBanque(op));
-        }
-
-        root.getChildren().add(separateur());
-        root.getChildren().add(construireMontant(op));
-
-        if (op.annulee) {
-            root.getChildren().add(construireBandeauAnnulee(op));
-        }
-        root.getChildren().add(separateurDouble());
-        root.getChildren().add(construirePiedDePage(op));
         return root;
     }
 
+    /**
+     * Renvoie le Node correspondant à une section, ou null si la section
+     * doit rester vide (cas conditionnel : pas de client/motif/annulation).
+     */
+    private static Node rendreSection(String id, Ctx ctx) {
+        return switch (id) {
+            case "header"     -> sectionHeader(ctx);
+            case "titre"      -> sectionTitre(ctx);
+            case "numero"     -> sectionNumero(ctx);
+            case "details"    -> sectionDetails(ctx);
+            case "client"     -> ctx.aDesInfosClient() ? sectionClient(ctx) : null;
+            case "montant"    -> sectionMontant(ctx);
+            case "motif"      -> ctx.aDuMotif()        ? sectionMotif(ctx)  : null;
+            case "annulation" -> ctx.op != null && ctx.op.annulee
+                                                       ? sectionAnnulation(ctx) : null;
+            case "signature"  -> sectionSignature(ctx);
+            case "footer"     -> sectionFooter(ctx);
+            default           -> {
+                log.warn("Section inconnue ignorée : {}", id);
+                yield null;
+            }
+        };
+    }
+
     // ==================================================================
-    //  En-tête : logo à gauche, infos entreprise à droite (côte à côte)
+    //  Sections
     // ==================================================================
 
-    private static Node construireEntete() {
+    private static Node sectionHeader(Ctx ctx) {
         HBox header = new HBox(14);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(0, 0, 8, 0));
 
-        // ── Colonne 1 : logo, centré verticalement ──
         VBox logoBox = new VBox();
         logoBox.setAlignment(Pos.CENTER);
-        ImageView logo = chargerLogo();
-        if (logo != null) {
-            logoBox.getChildren().add(logo);
-        }
+        ImageView logo = chargerLogo(ctx);
+        if (logo != null) logoBox.getChildren().add(logo);
+        else logoBox.getChildren().add(logoTexteFallback(ctx));
         header.getChildren().add(logoBox);
 
-        // ── Colonne 2 : informations entreprise, alignées à gauche ──
         VBox infos = new VBox(1);
         infos.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(infos, javafx.scene.layout.Priority.ALWAYS);
 
-        Label raisonSociale = new Label("SOCIÉTÉ NATIONALE DE RADIODIFFUSION");
+        Label raisonSociale = new Label(orDefault(ctx.params == null ? null : ctx.params.raisonSociale,
+                "SOCIÉTÉ NATIONALE DE RADIODIFFUSION TÉLÉVISION DU SÉNÉGAL"));
         raisonSociale.setFont(Font.font("Arial", FontWeight.BOLD, 11));
-        raisonSociale.setTextFill(RTS_RED);
+        raisonSociale.setTextFill(ctx.primaire);
+        raisonSociale.setWrapText(true);
+        raisonSociale.setMaxWidth(LARGEUR_RECU - 80);
 
-        Label sousTitre = new Label("TÉLÉVISION DU SÉNÉGAL");
-        sousTitre.setFont(Font.font("Arial", FontWeight.BOLD, 11));
-        sousTitre.setTextFill(RTS_RED);
+        infos.getChildren().add(raisonSociale);
 
-        Label loi = new Label("Créée par la loi n° 92-02 du 06 janvier 1992");
-        loi.setFont(Font.font("Arial", 8));
-        loi.setTextFill(GRAY_700);
+        ajouterLigneInfo(infos, ctx, ctx.params == null ? null : ctx.params.sousTitreEntete);
+        ajouterLigneInfo(infos, ctx, ctx.params == null ? "Créée par la loi n° 92-02 du 06 janvier 1992"
+                : ctx.params.ligneLegale);
+        ajouterLigneInfo(infos, ctx, ctx.params == null ? "Capital : 7 milliards FCFA"
+                : ctx.params.capital);
+        ajouterLigneInfo(infos, ctx, ctx.params == null ? "Triangle Sud"
+                : ctx.params.adresse);
+        ajouterLigneInfo(infos, ctx, ctx.params == null ? "Tél. (221) 33 849 12 12"
+                : ctx.params.telephone);
+        ajouterLigneInfo(infos, ctx, ctx.params == null ? "B.P. 1765 — DAKAR"
+                : ctx.params.boitePostale);
 
-        Label capital = new Label("Capital : 7 milliards FCFA");
-        capital.setFont(Font.font("Arial", 8));
-        capital.setTextFill(GRAY_700);
+        String ninea = ctx.params == null ? "NINEA : 2059782 2G3" : ctx.params.ninea;
+        if (ninea != null && !ninea.isBlank()) {
+            Label l = new Label(ninea);
+            l.setFont(Font.font("Arial", FontWeight.BOLD, 8));
+            l.setTextFill(ctx.texte);
+            infos.getChildren().add(l);
+        }
 
-        Label adresse1 = new Label("Triangle Sud — Tél. (221) 33 849 12 12");
-        adresse1.setFont(Font.font("Arial", 8));
-        adresse1.setTextFill(GRAY_700);
-
-        Label adresse2 = new Label("B.P. 1765 — DAKAR");
-        adresse2.setFont(Font.font("Arial", 8));
-        adresse2.setTextFill(GRAY_700);
-
-        Label ninea = new Label("NINEA : 2059782 2G3");
-        ninea.setFont(Font.font("Arial", FontWeight.BOLD, 8));
-        ninea.setTextFill(GRAY_700);
-
-        infos.getChildren().addAll(
-                raisonSociale, sousTitre, loi, capital, adresse1, adresse2, ninea);
         header.getChildren().add(infos);
-
         return header;
     }
 
-    private static ImageView chargerLogo() {
+    private static void ajouterLigneInfo(VBox box, Ctx ctx, String texte) {
+        if (texte == null || texte.isBlank()) return;
+        Label l = new Label(texte);
+        l.setFont(Font.font("Arial", 8));
+        l.setTextFill(ctx.texte2);
+        box.getChildren().add(l);
+    }
+
+    private static ImageView chargerLogo(Ctx ctx) {
+        // 1) Logo binaire fourni par le backend (cache)
+        if (ctx.logoImage != null && ctx.logoImage.length > 0) {
+            try {
+                Image img = new Image(new ByteArrayInputStream(ctx.logoImage),
+                        56, 56, true, true);
+                ImageView iv = new ImageView(img);
+                iv.setFitWidth(56);
+                iv.setFitHeight(56);
+                iv.setPreserveRatio(true);
+                iv.setSmooth(true);
+                return iv;
+            } catch (Exception e) {
+                log.warn("Logo backend illisible, fallback ressource locale : {}",
+                        e.getMessage());
+            }
+        }
+
+        // 2) Ressource locale (ancien comportement)
         String[] cheminsCandidats = {
                 "/fxml/rts-logo.jpg",
                 "/images/rts-logo.jpg",
@@ -246,182 +277,172 @@ public final class PrintRecu {
                     iv.setSmooth(true);
                     return iv;
                 } catch (Exception e) {
-                    log.warn("Logo trouvé à {} mais illisible : {}",
-                            chemin, e.getMessage());
+                    log.warn("Logo trouvé à {} mais illisible : {}", chemin, e.getMessage());
                 }
             }
         }
-        log.warn("Logo RTS introuvable dans le classpath, en-tête sans image.");
         return null;
     }
 
-    // ==================================================================
-    //  Numéro de reçu
-    // ==================================================================
+    /** Fallback texte type pastille rouge "RTS" si aucune image. */
+    private static Node logoTexteFallback(Ctx ctx) {
+        String texte = ctx.params != null && ctx.params.logoTexte != null
+                && !ctx.params.logoTexte.isBlank()
+                ? ctx.params.logoTexte : "RTS";
+        StackPane pastille = new StackPane();
+        pastille.setPrefSize(56, 56);
+        pastille.setMinSize(56, 56);
+        pastille.setMaxSize(56, 56);
+        pastille.setBackground(new Background(new BackgroundFill(
+                ctx.primaire, new CornerRadii(6), Insets.EMPTY)));
+        Label l = new Label(texte);
+        l.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        l.setTextFill(Color.WHITE);
+        pastille.getChildren().add(l);
+        return pastille;
+    }
 
-    private static Node construireNumero(OperationCaisseResponse op) {
-        VBox box = new VBox(2);
+    private static Node sectionTitre(Ctx ctx) {
+        VBox box = new VBox();
         box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(6, 0, 6, 0));
-
-        Label libelle = new Label("REÇU");
-        libelle.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        libelle.setTextFill(GRAY_900);
-
-        Label numero = new Label("N°  " + (op.numeroRecu == null ? "—" : op.numeroRecu));
-        numero.setFont(Font.font("Consolas", FontWeight.BOLD, 18));
-        numero.setTextFill(RTS_RED);
-
-        box.getChildren().addAll(libelle, numero);
+        box.setPadding(new Insets(6, 0, 0, 0));
+        Label l = new Label("REÇU");
+        l.setFont(Font.font("Arial", FontWeight.BOLD, ctx.tailleTitre));
+        l.setTextFill(ctx.texte);
+        box.getChildren().add(l);
         return box;
     }
 
-    // ==================================================================
-    //  Métadonnées (date, caisse, agent)
-    // ==================================================================
+    private static Node sectionNumero(Ctx ctx) {
+        VBox box = new VBox();
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(0, 0, 6, 0));
+        String numero = ctx.op != null && ctx.op.numeroRecu != null
+                ? ctx.op.numeroRecu : "RTS-AAAA-XXX-00000";
+        Label l = new Label("N°  " + numero);
+        l.setFont(Font.font("Consolas", FontWeight.BOLD, 18));
+        l.setTextFill(ctx.primaire);
+        box.getChildren().add(l);
+        return box;
+    }
 
-    private static Node construireMetadonnees(OperationCaisseResponse op) {
+    private static Node sectionDetails(Ctx ctx) {
         VBox box = new VBox(3);
-        box.getChildren().add(ligneCleValeur("Date",
-                op.dateOperation == null ? "—" : Ui.formatDateTimeFull(op.dateOperation)));
-        box.getChildren().add(ligneCleValeur("Caisse",
-                op.caisseLibelle == null ? "—" : op.caisseLibelle));
-        box.getChildren().add(ligneCleValeur("Agent",
-                op.caissierNomComplet == null ? "—" : op.caissierNomComplet));
+        if (ctx.op != null) {
+            box.getChildren().add(ligneCleValeur(ctx, "Date",
+                    ctx.op.dateOperation == null ? "—" : Ui.formatDateTimeFull(ctx.op.dateOperation)));
+            box.getChildren().add(ligneCleValeur(ctx, "Caisse",
+                    ctx.op.caisseLibelle == null ? "—" : ctx.op.caisseLibelle));
+            box.getChildren().add(ligneCleValeur(ctx, "Agent",
+                    ctx.op.caissierNomComplet == null ? "—" : ctx.op.caissierNomComplet));
+            box.getChildren().add(ligneCleValeur(ctx, "Type",
+                    ctx.op.typeOperation == null ? "—" : ctx.op.typeOperation.getLibelle()));
+            box.getChildren().add(ligneCleValeur(ctx, "Catégorie",
+                    ctx.op.categorieLibelle == null ? "—" : ctx.op.categorieLibelle));
+            box.getChildren().add(ligneCleValeur(ctx, "Mode régl.",
+                    ctx.op.modePaiement == null ? "—" : ctx.op.modePaiement.getLibelle()));
+            if (ctx.op.reference != null && !ctx.op.reference.isBlank()) {
+                box.getChildren().add(ligneCleValeur(ctx, "Référence", ctx.op.reference));
+            }
+            if (aDesInfosBanque(ctx.op)) {
+                box.getChildren().add(blocBanque(ctx));
+            }
+        }
         return box;
     }
 
-    // ==================================================================
-    //  Bloc Client
-    // ==================================================================
-
-    private static boolean aDesInfosClient(OperationCaisseResponse op) {
-        return (op.clientRaisonSociale != null && !op.clientRaisonSociale.isBlank())
-                || (op.clientTelephone != null && !op.clientTelephone.isBlank())
-                || (op.clientAdresse != null && !op.clientAdresse.isBlank());
-    }
-
-    private static Node construireBlocClient(OperationCaisseResponse op) {
+    private static Node sectionClient(Ctx ctx) {
         VBox box = new VBox(3);
         Label titre = new Label("CLIENT");
         titre.setFont(Font.font("Arial", FontWeight.BOLD, 9));
-        titre.setTextFill(GRAY_500);
+        titre.setTextFill(ctx.muted);
         box.getChildren().add(titre);
 
-        if (op.clientRaisonSociale != null && !op.clientRaisonSociale.isBlank()) {
-            box.getChildren().add(ligneCleValeur("M.", op.clientRaisonSociale));
+        if (ctx.op == null) return box;
+        if (ctx.op.clientRaisonSociale != null && !ctx.op.clientRaisonSociale.isBlank()) {
+            box.getChildren().add(ligneCleValeur(ctx, "M.", ctx.op.clientRaisonSociale));
         }
-        if (op.clientTelephone != null && !op.clientTelephone.isBlank()) {
-            box.getChildren().add(ligneCleValeur("Téléphone", op.clientTelephone));
+        if (ctx.op.clientTelephone != null && !ctx.op.clientTelephone.isBlank()) {
+            box.getChildren().add(ligneCleValeur(ctx, "Téléphone", ctx.op.clientTelephone));
         }
-        if (op.clientAdresse != null && !op.clientAdresse.isBlank()) {
-            box.getChildren().add(ligneCleValeur("Adresse", op.clientAdresse));
-        }
-        return box;
-    }
-
-    // ==================================================================
-    //  Détails de l'opération
-    // ==================================================================
-
-    private static Node construireDetailsOperation(OperationCaisseResponse op) {
-        VBox box = new VBox(3);
-        box.getChildren().add(ligneCleValeur("Type",
-                op.typeOperation == null ? "—" : op.typeOperation.getLibelle()));
-        box.getChildren().add(ligneCleValeur("Catégorie",
-                op.categorieLibelle == null ? "—" : op.categorieLibelle));
-        box.getChildren().add(ligneCleValeur("Mode règl.",
-                op.modePaiement == null ? "—" : op.modePaiement.getLibelle()));
-        if (op.reference != null && !op.reference.isBlank()) {
-            box.getChildren().add(ligneCleValeur("Référence", op.reference));
-        }
-        if (op.motif != null && !op.motif.isBlank()) {
-            VBox motifBox = new VBox(1);
-            Label cle = new Label("Motif");
-            cle.setFont(Font.font("Arial", FontWeight.BOLD, 9));
-            cle.setTextFill(GRAY_500);
-            Label valeur = new Label(op.motif);
-            valeur.setFont(Font.font("Arial", 10));
-            valeur.setTextFill(GRAY_900);
-            valeur.setWrapText(true);
-            valeur.setMaxWidth(LARGEUR_RECU - 36);
-            motifBox.getChildren().addAll(cle, valeur);
-            box.getChildren().add(motifBox);
+        if (ctx.op.clientAdresse != null && !ctx.op.clientAdresse.isBlank()) {
+            box.getChildren().add(ligneCleValeur(ctx, "Adresse", ctx.op.clientAdresse));
         }
         return box;
     }
 
-    // ==================================================================
-    //  Bloc Banque (CHEQUE / VIREMENT)
-    // ==================================================================
-
-    private static boolean aDesInfosBanque(OperationCaisseResponse op) {
-        return op.banqueCode != null && !op.banqueCode.isBlank();
-    }
-
-    private static Node construireBlocBanque(OperationCaisseResponse op) {
+    private static Node blocBanque(Ctx ctx) {
         VBox box = new VBox(3);
+        box.setPadding(new Insets(4, 0, 0, 0));
         Label titre = new Label("BANQUE ÉMETTRICE");
         titre.setFont(Font.font("Arial", FontWeight.BOLD, 9));
-        titre.setTextFill(GRAY_500);
+        titre.setTextFill(ctx.muted);
         box.getChildren().add(titre);
 
-        box.getChildren().add(ligneCleValeur("Code", op.banqueCode));
-        if (op.banqueLibelle != null && !op.banqueLibelle.isBlank()) {
-            box.getChildren().add(ligneCleValeur("Libellé", op.banqueLibelle));
+        box.getChildren().add(ligneCleValeur(ctx, "Code", ctx.op.banqueCode));
+        if (ctx.op.banqueLibelle != null && !ctx.op.banqueLibelle.isBlank()) {
+            box.getChildren().add(ligneCleValeur(ctx, "Libellé", ctx.op.banqueLibelle));
         }
-        if (op.banqueCodeEtablissement != null
-                && !op.banqueCodeEtablissement.isBlank()) {
-            box.getChildren().add(ligneCleValeur("Code étab.",
-                    op.banqueCodeEtablissement));
+        if (ctx.op.banqueCodeEtablissement != null
+                && !ctx.op.banqueCodeEtablissement.isBlank()) {
+            box.getChildren().add(ligneCleValeur(ctx, "Code étab.",
+                    ctx.op.banqueCodeEtablissement));
         }
-        if (op.banqueSiteInternet != null && !op.banqueSiteInternet.isBlank()) {
-            box.getChildren().add(ligneCleValeur("Site", op.banqueSiteInternet));
+        if (ctx.op.banqueSiteInternet != null && !ctx.op.banqueSiteInternet.isBlank()) {
+            box.getChildren().add(ligneCleValeur(ctx, "Site", ctx.op.banqueSiteInternet));
         }
         return box;
     }
 
-    // ==================================================================
-    //  Montant total
-    // ==================================================================
-
-    private static Node construireMontant(OperationCaisseResponse op) {
+    private static Node sectionMontant(Ctx ctx) {
         VBox box = new VBox(2);
         box.setAlignment(Pos.CENTER);
         box.setPadding(new Insets(8, 0, 8, 0));
         box.setBackground(new Background(new BackgroundFill(
-                Color.web("#e8f1fa"), new CornerRadii(4), Insets.EMPTY)));
+                ctx.fondMontant, new CornerRadii(4), Insets.EMPTY)));
 
         Label libelle = new Label("MONTANT TOTAL");
         libelle.setFont(Font.font("Arial", FontWeight.BOLD, 9));
-        libelle.setTextFill(GRAY_700);
+        libelle.setTextFill(ctx.texte2);
 
-        Label valeur = new Label(Ui.formatMontant(op.montant));
-        valeur.setFont(Font.font("Consolas", FontWeight.BOLD, 20));
-        valeur.setTextFill(RTS_RED);
+        String montantTxt = ctx.op != null
+                ? Ui.formatMontant(ctx.op.montant) : "0";
+        Label valeur = new Label(montantTxt);
+        valeur.setFont(Font.font("Consolas", FontWeight.BOLD, ctx.tailleMontant));
+        valeur.setTextFill(ctx.primaire);
 
         box.getChildren().addAll(libelle, valeur);
         return box;
     }
 
-    // ==================================================================
-    //  Bandeau d'annulation
-    // ==================================================================
+    private static Node sectionMotif(Ctx ctx) {
+        VBox box = new VBox(2);
+        Label cle = new Label("MOTIF");
+        cle.setFont(Font.font("Arial", FontWeight.BOLD, 9));
+        cle.setTextFill(ctx.muted);
+        Label valeur = new Label(ctx.op.motif);
+        valeur.setFont(Font.font("Arial", 10));
+        valeur.setTextFill(ctx.texte);
+        valeur.setWrapText(true);
+        valeur.setMaxWidth(LARGEUR_RECU - 36);
+        box.getChildren().addAll(cle, valeur);
+        return box;
+    }
 
-    private static Node construireBandeauAnnulee(OperationCaisseResponse op) {
+    private static Node sectionAnnulation(Ctx ctx) {
         VBox box = new VBox(2);
         box.setAlignment(Pos.CENTER);
         box.setPadding(new Insets(6, 0, 6, 0));
 
         Label tag = new Label("◆ OPÉRATION ANNULÉE ◆");
         tag.setFont(Font.font("Arial", FontWeight.BOLD, 11));
-        tag.setTextFill(Color.web("#dc2626"));
+        tag.setTextFill(ctx.danger);
         box.getChildren().add(tag);
 
-        if (op.motifAnnulation != null && !op.motifAnnulation.isBlank()) {
-            Label raison = new Label("Motif : " + op.motifAnnulation);
+        if (ctx.op.motifAnnulation != null && !ctx.op.motifAnnulation.isBlank()) {
+            Label raison = new Label("Motif : " + ctx.op.motifAnnulation);
             raison.setFont(Font.font("Arial", 9));
-            raison.setTextFill(Color.web("#dc2626"));
+            raison.setTextFill(ctx.danger);
             raison.setWrapText(true);
             raison.setMaxWidth(LARGEUR_RECU - 36);
             box.getChildren().add(raison);
@@ -429,11 +450,7 @@ public final class PrintRecu {
         return box;
     }
 
-    // ==================================================================
-    //  Pied de page
-    // ==================================================================
-
-    private static Node construirePiedDePage(OperationCaisseResponse op) {
+    private static Node sectionSignature(Ctx ctx) {
         VBox box = new VBox(8);
         box.setPadding(new Insets(2, 0, 0, 0));
 
@@ -441,36 +458,51 @@ public final class PrintRecu {
         signature.setAlignment(Pos.CENTER_LEFT);
         Label sigLabel = new Label("Signature du Caissier :");
         sigLabel.setFont(Font.font("Arial", FontWeight.BOLD, 9));
-        sigLabel.setTextFill(GRAY_700);
+        sigLabel.setTextFill(ctx.texte2);
         Region trait = new Region();
         trait.setPrefHeight(1);
         trait.setMinHeight(1);
         trait.setMaxHeight(1);
         trait.setPrefWidth(180);
         trait.setBackground(new Background(new BackgroundFill(
-                GRAY_500, CornerRadii.EMPTY, Insets.EMPTY)));
+                ctx.muted, CornerRadii.EMPTY, Insets.EMPTY)));
         signature.getChildren().addAll(sigLabel, trait);
 
-        String dateImpression = (op.dateOperation == null
+        String dateImpression = (ctx.op == null || ctx.op.dateOperation == null
                 ? LocalDate.now()
-                : op.dateOperation.toLocalDate()).format(DATE_FR);
-        Label dakar = new Label("Dakar, le " + dateImpression);
+                : ctx.op.dateOperation.toLocalDate()).format(DATE_FR);
+        String ville = ctx.params != null && ctx.params.villeSignature != null
+                && !ctx.params.villeSignature.isBlank()
+                ? ctx.params.villeSignature : "Dakar";
+        Label dakar = new Label(ville + ", le " + dateImpression);
         dakar.setFont(Font.font("Arial", FontWeight.NORMAL, 9));
-        dakar.setTextFill(GRAY_700);
+        dakar.setTextFill(ctx.texte2);
 
-        Label merci = new Label("Merci de votre passage.");
+        box.getChildren().addAll(signature, dakar);
+        return box;
+    }
+
+    private static Node sectionFooter(Ctx ctx) {
+        VBox box = new VBox(1);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(6, 0, 0, 0));
+
+        String l1 = ctx.params != null && ctx.params.footerLigne1 != null
+                && !ctx.params.footerLigne1.isBlank()
+                ? ctx.params.footerLigne1 : "Merci de votre passage.";
+        String l2 = ctx.params != null && ctx.params.footerLigne2 != null
+                && !ctx.params.footerLigne2.isBlank()
+                ? ctx.params.footerLigne2 : "RTS — Conservez ce reçu comme preuve.";
+
+        Label merci = new Label(l1);
         merci.setFont(Font.font("Arial", FontWeight.NORMAL, 9));
-        merci.setTextFill(GRAY_700);
+        merci.setTextFill(ctx.texte2);
 
-        Label conserve = new Label("RTS — Conservez ce reçu comme preuve.");
+        Label conserve = new Label(l2);
         conserve.setFont(Font.font("Arial", 8));
-        conserve.setTextFill(GRAY_500);
+        conserve.setTextFill(ctx.muted);
 
-        VBox footerLabels = new VBox(1, merci, conserve);
-        footerLabels.setAlignment(Pos.CENTER);
-        footerLabels.setPadding(new Insets(6, 0, 0, 0));
-
-        box.getChildren().addAll(signature, dakar, footerLabels);
+        box.getChildren().addAll(merci, conserve);
         return box;
     }
 
@@ -478,19 +510,19 @@ public final class PrintRecu {
     //  Helpers de rendu
     // ==================================================================
 
-    private static Node ligneCleValeur(String cle, String valeur) {
+    private static Node ligneCleValeur(Ctx ctx, String cle, String valeur) {
         HBox box = new HBox(6);
         box.setAlignment(Pos.BASELINE_LEFT);
 
         Label labelCle = new Label(cle + " :");
         labelCle.setFont(Font.font("Arial", FontWeight.BOLD, 9));
-        labelCle.setTextFill(GRAY_500);
+        labelCle.setTextFill(ctx.muted);
         labelCle.setMinWidth(78);
         labelCle.setPrefWidth(78);
 
         Label labelValeur = new Label(valeur == null ? "—" : valeur);
         labelValeur.setFont(Font.font("Arial", 10));
-        labelValeur.setTextFill(GRAY_900);
+        labelValeur.setTextFill(ctx.texte);
         labelValeur.setWrapText(true);
         labelValeur.setMaxWidth(LARGEUR_RECU - 78 - 36);
 
@@ -498,28 +530,134 @@ public final class PrintRecu {
         return box;
     }
 
-    private static Region separateur() {
+    private static Region separateur(Ctx ctx) {
         Region r = new Region();
         r.setPrefHeight(1);
         r.setMinHeight(1);
         r.setMaxHeight(1);
         r.setBackground(new Background(new BackgroundFill(
-                GRAY_300, CornerRadii.EMPTY, Insets.EMPTY)));
+                ctx.bordure, CornerRadii.EMPTY, Insets.EMPTY)));
         VBox.setMargin(r, new Insets(8, 0, 8, 0));
         return r;
     }
 
-    private static VBox separateurDouble() {
+    private static VBox separateurDouble(Ctx ctx) {
         Region trait1 = new Region();
         trait1.setPrefHeight(1.2);
         trait1.setBackground(new Background(new BackgroundFill(
-                GRAY_900, CornerRadii.EMPTY, Insets.EMPTY)));
+                ctx.texte, CornerRadii.EMPTY, Insets.EMPTY)));
         Region trait2 = new Region();
         trait2.setPrefHeight(0.5);
         trait2.setBackground(new Background(new BackgroundFill(
-                GRAY_900, CornerRadii.EMPTY, Insets.EMPTY)));
+                ctx.texte, CornerRadii.EMPTY, Insets.EMPTY)));
         VBox box = new VBox(1.5, trait1, trait2);
         VBox.setMargin(box, new Insets(8, 0, 8, 0));
         return box;
+    }
+
+    private static boolean aDesInfosBanque(OperationCaisseResponse op) {
+        return op != null && op.banqueCode != null && !op.banqueCode.isBlank();
+    }
+
+    private static String orDefault(String value, String fallback) {
+        return (value == null || value.isBlank()) ? fallback : value;
+    }
+
+    // ==================================================================
+    //  Contexte de rendu : agrège op + params + couleurs + tailles résolues
+    // ==================================================================
+
+    private static final class Ctx {
+        final OperationCaisseResponse op;
+        final ParametresRecuDto params;
+        final byte[] logoImage;
+
+        // Couleurs résolues (jamais null)
+        final Color primaire, texte, texte2, muted, bordure, danger, fondMontant;
+
+        // Tailles résolues
+        final int tailleTitre, tailleMontant;
+
+        private Ctx(OperationCaisseResponse op, ParametresRecuDto params, byte[] logo,
+                    Color primaire, Color texte, Color texte2, Color muted,
+                    Color bordure, Color danger, Color fondMontant,
+                    int tailleTitre, int tailleMontant) {
+            this.op = op;
+            this.params = params;
+            this.logoImage = logo;
+            this.primaire = primaire;
+            this.texte = texte;
+            this.texte2 = texte2;
+            this.muted = muted;
+            this.bordure = bordure;
+            this.danger = danger;
+            this.fondMontant = fondMontant;
+            this.tailleTitre = tailleTitre;
+            this.tailleMontant = tailleMontant;
+        }
+
+        static Ctx charger(OperationCaisseResponse op) {
+            ParametresRecuDto p = null;
+            byte[] logo = null;
+            try {
+                p = ParametresRecuCache.getInstance().obtenir();
+                logo = ParametresRecuCache.getInstance().obtenirLogo();
+            } catch (Exception e) {
+                log.warn("Paramètres reçu indisponibles, fallback défaut : {}",
+                        e.getMessage());
+            }
+
+            return new Ctx(op, p, logo,
+                    hex(p == null ? null : p.couleurPrimaire,        FB_PRIMAIRE),
+                    hex(p == null ? null : p.couleurTexte,           FB_TEXTE),
+                    hex(p == null ? null : p.couleurTexteSecondaire, FB_TEXTE2),
+                    hex(p == null ? null : p.couleurTexteSecondaire, FB_MUTED),
+                    FB_BORDURE,
+                    hex(p == null ? null : p.couleurDanger,          FB_DANGER),
+                    hex(p == null ? null : p.couleurFondMontant,     FB_FOND_MNT),
+                    nz(p == null ? null : p.tailleTitre,             14),
+                    nz(p == null ? null : p.tailleMontant,           20));
+        }
+
+        boolean aDesInfosClient() {
+            return op != null
+                    && ((op.clientRaisonSociale != null && !op.clientRaisonSociale.isBlank())
+                    || (op.clientTelephone != null && !op.clientTelephone.isBlank())
+                    || (op.clientAdresse != null && !op.clientAdresse.isBlank()));
+        }
+
+        boolean aDuMotif() {
+            return op != null && op.motif != null && !op.motif.isBlank();
+        }
+
+        List<SectionRecu> sections() {
+            if (params != null && params.sections != null && !params.sections.isEmpty()) {
+                return params.sections;
+            }
+            // Ordre par défaut (cohérent avec le backend)
+            String[] ids = {"header","titre","numero","details","client","montant",
+                            "motif","annulation","signature","footer"};
+            List<SectionRecu> list = new ArrayList<>();
+            for (String id : ids) {
+                SectionRecu s = new SectionRecu();
+                s.id = id;
+                s.visible = true;
+                list.add(s);
+            }
+            return list;
+        }
+
+        private static Color hex(String hexValue, Color fallback) {
+            if (hexValue == null || hexValue.isBlank()) return fallback;
+            try {
+                return Color.web(hexValue);
+            } catch (Exception e) {
+                return fallback;
+            }
+        }
+
+        private static int nz(Integer v, int fallback) {
+            return v != null && v > 0 ? v : fallback;
+        }
     }
 }

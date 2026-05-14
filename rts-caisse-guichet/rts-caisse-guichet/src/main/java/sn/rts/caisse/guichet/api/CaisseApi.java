@@ -205,4 +205,23 @@ public class CaisseApi {
                 body,
                 EnvoiWhatsAppResponse.class);
     }
+
+    // ====================================================================
+    //  PARAMÈTRES DU REÇU (personnalisation admin)
+    // ====================================================================
+
+    public sn.rts.caisse.guichet.model.Dto.ParametresRecuDto obtenirParametresRecu() {
+        return client.get("/parametres/recu",
+                sn.rts.caisse.guichet.model.Dto.ParametresRecuDto.class);
+    }
+
+    /** Renvoie l'image du logo en octets, ou null si aucun logo n'a été déposé. */
+    public byte[] obtenirLogoRecu() {
+        try {
+            return client.getBytes("/parametres/recu/logo");
+        } catch (ApiException e) {
+            // 404 si pas de logo
+            return null;
+        }
+    }
 }

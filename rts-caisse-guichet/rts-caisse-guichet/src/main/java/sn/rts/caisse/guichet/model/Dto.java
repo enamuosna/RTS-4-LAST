@@ -199,6 +199,60 @@ public final class Dto {
     /**
      * Référentiel d'une banque (réception depuis le backend, lecture seule).
      */
+    // ====================================================
+    //  PARAMÈTRES DU REÇU
+    // ====================================================
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SectionRecu {
+        public String id;
+        public boolean visible;
+        public SectionRecu() {}
+    }
+
+    /** Miroir de {@code ParametresRecuDto} côté backend. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ParametresRecuDto {
+        // En-tête
+        public String logoTexte;
+        public String raisonSociale;
+        public String sousTitreEntete;
+        public String ligneLegale;
+        public String capital;
+        public String adresse;
+        public String telephone;
+        public String boitePostale;
+        public String ninea;
+
+        // Footer
+        public String footerLigne1;
+        public String footerLigne2;
+        public String villeSignature;
+
+        // Couleurs (hex #RRGGBB)
+        public String couleurPrimaire;
+        public String couleurAccent;
+        public String couleurTexte;
+        public String couleurTexteSecondaire;
+        public String couleurSuccess;
+        public String couleurDanger;
+        public String couleurFondMontant;
+
+        // Tailles (pt)
+        public Integer tailleTitre;
+        public Integer tailleEntete;
+        public Integer tailleCorps;
+        public Integer tailleMontant;
+        public Integer tailleFooter;
+
+        // Layout
+        public java.util.List<SectionRecu> sections;
+
+        public boolean logoPresent;
+
+        public ParametresRecuDto() {}
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BanqueDTO {
         public Long id;

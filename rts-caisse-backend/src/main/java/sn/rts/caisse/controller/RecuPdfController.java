@@ -71,6 +71,10 @@ public class RecuPdfController {
                 .filename("apercu-recu.pdf").build());
         headers.setContentType(MediaType.APPLICATION_PDF);
         headers.setContentLength(pdf.length);
+        // Pas de cache : chaque demande d'aperçu doit refléter les
+        // derniers paramètres sauvegardés.
+        headers.setCacheControl("no-store, no-cache, must-revalidate");
+        headers.setPragma("no-cache");
 
         return ResponseEntity.ok()
                 .headers(headers)

@@ -178,9 +178,14 @@ export class ParametresRecuService {
     return this.http.put<ParametresRecu>(this.base, dto);
   }
 
-  /** Renvoie l'URL d'aperçu PDF (consommée dans une balise <iframe>). */
-  urlApercu(): string {
-    return `${this.recusBase}/apercu?_t=${Date.now()}`;
+  /**
+   * Renvoie l'aperçu PDF sous forme de Blob. Pas de cache navigateur
+   * (Cache-Control: no-store côté serveur) et pas de paramètre dans
+   * l'URL (les bloqueurs de pub bloquent souvent les params type
+   * `?_t=`, ce qui faisait planter l'iframe avec ERR_BLOCKED_BY_CLIENT).
+   */
+  obtenirApercu(): Observable<Blob> {
+    return this.http.get(`${this.recusBase}/apercu`, { responseType: 'blob' });
   }
 
   /**

@@ -237,6 +237,9 @@ export interface ParametresRecu {
 
   // Layout
   sections: SectionRecu[];
+
+  /** True si un logo image a été uploadé côté backend. */
+  logoPresent: boolean;
 }
 
 // ---------- Pagination Spring ----------

@@ -45,7 +45,11 @@ public record ParametresRecuDto(
         Integer tailleFooter,
 
         // Layout
-        List<Section> sections
+        List<Section> sections,
+
+        /** True si un logo image a été uploadé. Évite un appel HTTP inutile
+         *  côté frontend pour récupérer une image qui n'existe pas. */
+        boolean logoPresent
 ) {
     public record Section(String id, boolean visible) {}
 }

@@ -142,7 +142,8 @@ public class ParametresRecuService {
                 e.getTailleCorps(),
                 e.getTailleMontant(),
                 e.getTailleFooter(),
-                deserializeSections(e.getLayoutJson())
+                deserializeSections(e.getLayoutJson()),
+                e.getLogoImage() != null && e.getLogoImage().length > 0
         );
     }
 

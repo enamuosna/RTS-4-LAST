@@ -1,5 +1,4 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -14,7 +13,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { environment } from '../../../environments/environment';
 import { ParametresRecu, SectionRecu } from '../../core/models/models';
 import { ParametresRecuService } from '../../core/services/caisse.services';
 
@@ -57,7 +55,6 @@ interface SectionMeta {
 })
 export class ParametresComponent implements OnInit {
   private readonly api = inject(ParametresRecuService);
-  private readonly http = inject(HttpClient);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly snack = inject(MatSnackBar);
 
@@ -106,10 +103,16 @@ export class ParametresComponent implements OnInit {
     });
   }
 
-  /** Recharge l'image du logo depuis le backend, l'affiche en object URL. */
+  /** Recharge l'image du logo depuis le backend, l'affiche en object URL.
+   *  N'appelle l'API que si le backend a indiqué qu'un logo existe
+   *  (champ logoPresent du DTO) — évite un 404 inutile dans la console. */
   rafraichirLogo(): void {
+    this.revoquerLogoUrl();
+    if (!this.params?.logoPresent) {
+      this.logoUrl.set(null);
+      return;
+    }
     this.api.obtenirLogo().subscribe((blob) => {
-      this.revoquerLogoUrl();
       if (blob) {
         const objectUrl = URL.createObjectURL(blob);
         this.currentLogoObjectUrl = objectUrl;
@@ -135,6 +138,7 @@ export class ParametresComponent implements OnInit {
     this.api.uploadLogo(file).subscribe({
       next: () => {
         this.uploadingLogo.set(false);
+        if (this.params) this.params.logoPresent = true;
         this.snack.open('Logo mis à jour.', 'OK',
           { duration: 2500, panelClass: 'snackbar-success' });
         this.rafraichirLogo();
@@ -154,6 +158,7 @@ export class ParametresComponent implements OnInit {
   supprimerLogo(): void {
     this.api.supprimerLogo().subscribe({
       next: () => {
+        if (this.params) this.params.logoPresent = false;
         this.snack.open('Logo supprimé.', 'OK',
           { duration: 2500, panelClass: 'snackbar-success' });
         this.rafraichirLogo();
@@ -206,10 +211,13 @@ export class ParametresComponent implements OnInit {
    * Recharge l'aperçu PDF en faisant un GET authentifié (le navigateur ne peut
    * pas attacher le JWT à un <iframe src="...">), puis on transforme le blob
    * en URL locale qui s'affiche dans l'iframe.
+   *
+   * <p>L'URL ne porte plus de paramètre type {@code ?_t=...} : il était
+   * bloqué par les extensions anti-tracking (ERR_BLOCKED_BY_CLIENT). Le
+   * cache HTTP est désactivé côté serveur via {@code Cache-Control: no-store}.</p>
    */
   rafraichirApercu(): void {
-    const url = `${environment.apiUrl}/recus/apercu?_t=${Date.now()}`;
-    this.http.get(url, { responseType: 'blob' }).subscribe({
+    this.api.obtenirApercu().subscribe({
       next: (blob) => {
         const objectUrl = URL.createObjectURL(blob);
         this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));

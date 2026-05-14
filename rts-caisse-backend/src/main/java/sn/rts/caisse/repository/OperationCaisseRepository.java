@@ -67,4 +67,17 @@ public interface OperationCaisseRepository extends JpaRepository<OperationCaisse
      */
     long countByCaisseIdAndDateOperationBetweenAndJournalIsNullAndAnnuleeFalse(
             Long caisseId, LocalDateTime debut, LocalDateTime fin);
+
+    /**
+     * Opérations de la <b>session de caisse en cours</b> pour une caisse donnée,
+     * c'est-à-dire celles dont {@code journal_id} est encore NULL (le journal
+     * n'a pas encore été clôturé). Triées par date d'opération décroissante.
+     *
+     * <p>Utilisé par le client guichet JavaFX : tant que la caisse est ouverte,
+     * le caissier voit ses opérations courantes ; après clôture, elles sont
+     * rattachées au journal et disparaissent de cette liste — elles restent
+     * consultables côté application web via l'historique paginé.</p>
+     */
+    List<OperationCaisse> findByCaisseIdAndJournalIsNullAndAnnuleeFalseOrderByDateOperationDesc(
+            Long caisseId);
 }

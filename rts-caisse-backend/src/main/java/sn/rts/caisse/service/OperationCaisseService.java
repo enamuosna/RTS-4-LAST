@@ -290,6 +290,22 @@ public class OperationCaisseService {
                 .toList();
     }
 
+    /**
+     * Opérations de la <b>session de caisse en cours</b> (journal pas encore
+     * clôturé). Utilisé par le guichet JavaFX : tant que la caisse est ouverte
+     * le caissier voit ses opérations, après clôture la liste est vide côté
+     * guichet — les opérations restent consultables côté admin (web) via
+     * l'historique paginé.
+     */
+    @Transactional(readOnly = true)
+    public List<OperationCaisseResponse> historiqueSessionCourante(Long caisseId) {
+        return operationRepository
+                .findByCaisseIdAndJournalIsNullAndAnnuleeFalseOrderByDateOperationDesc(caisseId)
+                .stream()
+                .map(OperationCaisseResponse::from)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public OperationCaisseResponse obtenir(Long id) {
         return OperationCaisseResponse.from(trouver(id));

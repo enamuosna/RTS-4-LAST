@@ -536,17 +536,23 @@ public class CaissierController {
     }
 
     /**
-     * Charge les opérations du jour depuis le backend, les <b>trie par
-     * date décroissante</b> (la plus récente en premier) puis met à jour
-     * la liste maître. Les listeners de FilteredList et de pagination
-     * répercutent automatiquement le changement vers le tableau visible.
+     * Charge les opérations de la <b>session de caisse en cours</b> depuis le
+     * backend (journal pas encore clôturé), les <b>trie par date décroissante</b>
+     * (la plus récente en premier) puis met à jour la liste maître. Les
+     * listeners de FilteredList et de pagination répercutent automatiquement
+     * le changement vers le tableau visible.
+     *
+     * <p>Dès que la caisse est clôturée, le backend renvoie une liste vide
+     * (les opérations ont été rattachées au journal). Le tableau du guichet
+     * se vide donc automatiquement ; l'historique complet reste accessible
+     * côté admin via l'application web.</p>
      */
     private void chargerOperationsDuJour() {
         CaisseDTO caisse = Session.getInstance().getCaisseActive();
         if (caisse == null) return;
 
         AsyncRunner.run(
-                () -> api.operationsDuJour(caisse.id),
+                () -> api.operationsSessionCourante(caisse.id),
                 ops -> {
                     List<OperationCaisseResponse> triees = ops == null
                             ? List.of()

@@ -169,6 +169,15 @@ public class CaisseApi {
                 new TypeReference<List<OperationCaisseResponse>>() {});
     }
 
+    /**
+     * Opérations de la <b>session de caisse en cours</b> (journal pas encore
+     * clôturé). Utilisé par le guichet : la liste devient vide après clôture.
+     */
+    public List<OperationCaisseResponse> operationsSessionCourante(Long caisseId) {
+        return client.get("/operations/caisse/" + caisseId + "/session",
+                new TypeReference<List<OperationCaisseResponse>>() {});
+    }
+
     public OperationCaisseResponse annulerOperation(Long operationId, String motif) {
         return client.patch("/operations/" + operationId + "/annuler?motif="
                 + ApiClient.encode(motif), null, OperationCaisseResponse.class);

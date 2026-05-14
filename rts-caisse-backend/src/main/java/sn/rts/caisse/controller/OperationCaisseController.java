@@ -62,6 +62,19 @@ public class OperationCaisseController {
     public ResponseEntity<List<OperationCaisseResponse>> historiqueJour(@PathVariable Long caisseId) {
         return ResponseEntity.ok(service.historiqueDuJour(caisseId));
     }
+
+    @GetMapping("/caisse/{caisseId}/session")
+    @Operation(
+            summary = "Opérations de la session de caisse en cours (journal non clôturé)",
+            description = "Renvoie uniquement les opérations dont le journal de clôture "
+                    + "n'a pas encore été rattaché (journal_id IS NULL). Utilisé par "
+                    + "le guichet JavaFX : après clôture, la liste devient vide côté "
+                    + "guichet ; les opérations restent consultables côté admin via "
+                    + "l'historique paginé."
+    )
+    public ResponseEntity<List<OperationCaisseResponse>> historiqueSession(@PathVariable Long caisseId) {
+        return ResponseEntity.ok(service.historiqueSessionCourante(caisseId));
+    }
     @PostMapping("/{id}/whatsapp")
     @Operation(
             summary = "Envoie le reçu PDF d'une opération par WhatsApp",

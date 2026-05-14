@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import sn.rts.caisse.exception.BusinessException;
 import sn.rts.caisse.service.BackupService;
 
@@ -52,19 +52,28 @@ public class BackupController {
     @GetMapping("/export")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Télécharge un dump SQL complet de la BDD")
-    public ResponseEntity<StreamingResponseBody> exporter(Authentication authentication) {
+    public ResponseEntity<ByteArrayResource> exporter(Authentication authentication) {
         String login = authentication.getName();
         String nomFichier = "rts-caisse-backup-"
                 + LocalDateTime.now().format(NOM_FICHIER_FMT) + ".sql";
 
-        StreamingResponseBody body = out -> backupService.exporter(out, login);
+        // Génération bufferisée en mémoire : la réponse est renvoyée d'un
+        // bloc avec Content-Length connu. Évite les problèmes de protocole
+        // (HTTP/3 / QUIC + StreamingResponseBody = ERR_QUIC_PROTOCOL_ERROR
+        // sur Edge derrière Caddy).
+        byte[] dump = backupService.exporter(login);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(
+                org.springframework.http.ContentDisposition.attachment()
+                        .filename(nomFichier).build());
+        headers.setContentType(MediaType.parseMediaType("application/sql"));
+        headers.setContentLength(dump.length);
+        headers.setCacheControl("no-store, no-cache, must-revalidate");
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + nomFichier + "\"")
-                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate")
-                .contentType(MediaType.parseMediaType("application/sql"))
-                .body(body);
+                .headers(headers)
+                .body(new ByteArrayResource(dump));
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

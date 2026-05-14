@@ -11,7 +11,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,12 +57,20 @@ public class BackupService {
     // ==================================================================
 
     /**
-     * Lance {@code pg_dump} et redirige sa sortie vers {@code out}.
-     * Le dump est au format SQL plain text avec instructions {@code DROP IF EXISTS}
-     * et {@code CREATE}, donc rejouable avec {@code psql} sur une BDD vide ou
-     * existante (les objets existants sont remplacés).
+     * Lance {@code pg_dump} et renvoie le dump SQL complet en mémoire.
+     *
+     * <p>L'ancien design streamait directement vers la réponse HTTP via
+     * {@code StreamingResponseBody}, mais Caddy + HTTP/3 (QUIC) coupe les
+     * connexions de ce type avec {@code ERR_QUIC_PROTOCOL_ERROR} sur Edge.
+     * On bufferise donc en mémoire et on renvoie un byte[] complet : le
+     * navigateur connaît la taille à l'avance, plus de problème de
+     * protocole. Pour une BDD RTS Caisse (qq Mo max) c'est négligeable.</p>
+     *
+     * <p>Le dump est au format SQL plain text avec instructions
+     * {@code DROP IF EXISTS} et {@code CREATE}, donc rejouable avec
+     * {@code psql} sur une BDD vide ou existante.</p>
      */
-    public void exporter(OutputStream out, String loginAdmin) {
+    public byte[] exporter(String loginAdmin) {
         log.info("Export BDD demandé par {}", loginAdmin);
         ProcessBuilder pb = new ProcessBuilder(
                 "pg_dump",
@@ -88,9 +95,9 @@ public class BackupService {
             errReader.setDaemon(true);
             errReader.start();
 
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
             try (InputStream in = p.getInputStream()) {
-                in.transferTo(out);
-                out.flush();
+                in.transferTo(buffer);
             }
 
             int exit = p.waitFor();
@@ -104,9 +111,13 @@ public class BackupService {
                         "Échec de l'export (pg_dump a retourné " + exit + ").");
             }
 
+            byte[] dump = buffer.toByteArray();
             auditService.logSuccess(AuditAction.EXPORTER_BDD, "Database", null,
-                    dbName, "Export BDD par " + loginAdmin);
-            log.info("Export BDD terminé avec succès pour {}", loginAdmin);
+                    dbName, "Export BDD par " + loginAdmin
+                            + " (" + dump.length + " octets)");
+            log.info("Export BDD terminé pour {} ({} octets)",
+                    loginAdmin, dump.length);
+            return dump;
 
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();

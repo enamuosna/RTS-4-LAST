@@ -5,31 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="81a927d6-817e-4d11-81f0-4d94e0a16a0a" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/rts-caisse-guichet.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/db/migration/V1__initial_schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/db/migration/V1__initial_schema.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/sn/rts/caisse/model/OperationCaisse.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/sn/rts/caisse/model/OperationCaisse.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/sn/rts/caisse/repository/OperationCaisseRepository.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/sn/rts/caisse/repository/OperationCaisseRepository.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/sn/rts/caisse/security/JwtService.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/sn/rts/caisse/security/JwtService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/sn/rts/caisse/service/RecuPdfService.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/classes/sn/rts/caisse/service/RecuPdfService.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/AbstractTestcontainersIT$Initializer.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/AbstractTestcontainersIT$Initializer.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/AbstractTestcontainersIT.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/AbstractTestcontainersIT.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/AuthControllerIT.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/AuthControllerIT.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/JournalCaisseServiceIT.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/JournalCaisseServiceIT.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/OperationCaisseServiceIT.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/OperationCaisseServiceIT.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/RecuPdfServiceIT.class" beforeDir="false" afterPath="$PROJECT_DIR$/../rts-caisse-backend/target/test-classes/sn/rts/caisse/integration/RecuPdfServiceIT.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.claude/worktrees/determined-hawking-0ddb62" beforeDir="false" afterPath="$PROJECT_DIR$/../.claude/worktrees/determined-hawking-0ddb62" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.claude/worktrees/pedantic-cray-0a5b1b" beforeDir="false" afterPath="$PROJECT_DIR$/../.claude/worktrees/pedantic-cray-0a5b1b" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/build/input/rts-caisse-guichet.jar" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/build/input/rts-caisse-guichet.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/build/msi/RTS Caisse Client-1.0.0.msi" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/build/msi/RTS Caisse Client-1.0.0.msi" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/src/main/java/sn/rts/caisse/guichet/controller/CaissierController.java" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/src/main/java/sn/rts/caisse/guichet/controller/CaissierController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/src/main/resources/fxml/serveur.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/src/main/resources/fxml/serveur.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/target/classes/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/target/classes/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/target/classes/fxml/serveur.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/target/classes/fxml/serveur.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/target/classes/sn/rts/caisse/guichet/controller/CaissierController.class" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/target/classes/sn/rts/caisse/guichet/controller/CaissierController.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/target/original-rts-caisse-guichet-1.0.0.jar" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/target/original-rts-caisse-guichet-1.0.0.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rts-caisse-guichet/target/rts-caisse-guichet-1.0.0.jar" beforeDir="false" afterPath="$PROJECT_DIR$/rts-caisse-guichet/target/rts-caisse-guichet-1.0.0.jar" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -91,7 +69,7 @@
       <updated>1778671005994</updated>
       <workItem from="1778671007022" duration="4564000" />
       <workItem from="1778676027983" duration="841000" />
-      <workItem from="1778761922785" duration="1260000" />
+      <workItem from="1778761922785" duration="2280000" />
     </task>
     <servers />
   </component>

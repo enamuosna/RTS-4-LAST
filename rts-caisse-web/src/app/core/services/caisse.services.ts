@@ -10,7 +10,8 @@ import {
   OperationCaisse,
   OperationCaisseRequest,
   OuvertureCaisseRequest,
-  Page
+  Page,
+  ParametresRecu
 } from '../models/models';
 
 // ======================================================
@@ -157,5 +158,28 @@ export class ReportingService {
     if (dateDebut) params = params.set('dateDebut', dateDebut);
     if (dateFin)   params = params.set('dateFin', dateFin);
     return this.http.get<DashboardResponse>(`${this.base}/dashboard`, { params });
+  }
+}
+
+// ======================================================
+//  PARAMÈTRES DU REÇU PDF
+// ======================================================
+@Injectable({ providedIn: 'root' })
+export class ParametresRecuService {
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/parametres/recu`;
+  private readonly recusBase = `${environment.apiUrl}/recus`;
+
+  obtenir(): Observable<ParametresRecu> {
+    return this.http.get<ParametresRecu>(this.base);
+  }
+
+  mettreAJour(dto: ParametresRecu): Observable<ParametresRecu> {
+    return this.http.put<ParametresRecu>(this.base, dto);
+  }
+
+  /** Renvoie l'URL d'aperçu PDF (consommée dans une balise <iframe>). */
+  urlApercu(): string {
+    return `${this.recusBase}/apercu?_t=${Date.now()}`;
   }
 }

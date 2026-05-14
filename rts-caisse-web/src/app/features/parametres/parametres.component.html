@@ -1,0 +1,244 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Paramètres du reçu</h1>
+      <div class="page-subtitle">
+        Personnalisation des informations, couleurs, polices et de la mise en page du reçu PDF.
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" (click)="rafraichirApercu()" [disabled]="loading()">
+        <mat-icon>refresh</mat-icon>
+        Aperçu
+      </button>
+      <button mat-flat-button color="primary" (click)="enregistrer()" [disabled]="loading() || saving() || !params">
+        @if (saving()) {
+          <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+          Enregistrement…
+        } @else {
+          <mat-icon>save</mat-icon>
+          Enregistrer
+        }
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-wrapper">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else if (params) {
+
+    <div class="parametres-layout">
+
+      <!-- ================================================================ -->
+      <!-- COLONNE GAUCHE : éditeur                                          -->
+      <!-- ================================================================ -->
+      <div class="editor-column">
+
+        <!-- ====================== INFOS STATIQUES ====================== -->
+        <mat-card class="section-card">
+          <div class="section-title">
+            <mat-icon>info</mat-icon>
+            <h3>Informations statiques</h3>
+          </div>
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Logo (texte)</mat-label>
+              <input matInput [(ngModel)]="params.logoTexte" maxlength="40" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Raison sociale</mat-label>
+              <input matInput [(ngModel)]="params.raisonSociale" maxlength="200" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Sous-titre</mat-label>
+              <input matInput [(ngModel)]="params.sousTitreEntete" maxlength="200" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Ligne légale</mat-label>
+              <input matInput [(ngModel)]="params.ligneLegale" maxlength="200" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Capital</mat-label>
+              <input matInput [(ngModel)]="params.capital" maxlength="100" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Adresse</mat-label>
+              <input matInput [(ngModel)]="params.adresse" maxlength="200" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Téléphone</mat-label>
+              <input matInput [(ngModel)]="params.telephone" maxlength="60" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Boîte postale</mat-label>
+              <input matInput [(ngModel)]="params.boitePostale" maxlength="60" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>NINEA</mat-label>
+              <input matInput [(ngModel)]="params.ninea" maxlength="60" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Ville signature</mat-label>
+              <input matInput [(ngModel)]="params.villeSignature" maxlength="100" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Pied de page — ligne 1</mat-label>
+              <input matInput [(ngModel)]="params.footerLigne1" maxlength="200" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Pied de page — ligne 2</mat-label>
+              <input matInput [(ngModel)]="params.footerLigne2" maxlength="200" />
+            </mat-form-field>
+          </div>
+        </mat-card>
+
+        <!-- ====================== COULEURS ====================== -->
+        <mat-card class="section-card">
+          <div class="section-title">
+            <mat-icon>palette</mat-icon>
+            <h3>Couleurs</h3>
+          </div>
+          <div class="color-grid">
+            <label class="color-row">
+              <span>Couleur primaire</span>
+              <input type="color" [(ngModel)]="params.couleurPrimaire" />
+              <code>{{ params.couleurPrimaire }}</code>
+            </label>
+            <label class="color-row">
+              <span>Accent</span>
+              <input type="color" [(ngModel)]="params.couleurAccent" />
+              <code>{{ params.couleurAccent }}</code>
+            </label>
+            <label class="color-row">
+              <span>Texte principal</span>
+              <input type="color" [(ngModel)]="params.couleurTexte" />
+              <code>{{ params.couleurTexte }}</code>
+            </label>
+            <label class="color-row">
+              <span>Texte secondaire</span>
+              <input type="color" [(ngModel)]="params.couleurTexteSecondaire" />
+              <code>{{ params.couleurTexteSecondaire }}</code>
+            </label>
+            <label class="color-row">
+              <span>Entrée (encaissement)</span>
+              <input type="color" [(ngModel)]="params.couleurSuccess" />
+              <code>{{ params.couleurSuccess }}</code>
+            </label>
+            <label class="color-row">
+              <span>Sortie (décaissement)</span>
+              <input type="color" [(ngModel)]="params.couleurDanger" />
+              <code>{{ params.couleurDanger }}</code>
+            </label>
+            <label class="color-row">
+              <span>Fond du montant</span>
+              <input type="color" [(ngModel)]="params.couleurFondMontant" />
+              <code>{{ params.couleurFondMontant }}</code>
+            </label>
+          </div>
+        </mat-card>
+
+        <!-- ====================== TAILLES DE POLICE ====================== -->
+        <mat-card class="section-card">
+          <div class="section-title">
+            <mat-icon>format_size</mat-icon>
+            <h3>Tailles de police (pt)</h3>
+          </div>
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Titre principal</mat-label>
+              <input matInput type="number" min="6" max="48" [(ngModel)]="params.tailleTitre" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>En-tête (logo)</mat-label>
+              <input matInput type="number" min="6" max="48" [(ngModel)]="params.tailleEntete" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Corps de texte</mat-label>
+              <input matInput type="number" min="6" max="20" [(ngModel)]="params.tailleCorps" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Montant</mat-label>
+              <input matInput type="number" min="10" max="48" [(ngModel)]="params.tailleMontant" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Pied de page</mat-label>
+              <input matInput type="number" min="5" max="14" [(ngModel)]="params.tailleFooter" />
+            </mat-form-field>
+          </div>
+        </mat-card>
+
+        <!-- ====================== SECTIONS (ORDRE + VISIBILITÉ) ====================== -->
+        <mat-card class="section-card">
+          <div class="section-title">
+            <mat-icon>drag_indicator</mat-icon>
+            <h3>Ordre et visibilité des sections</h3>
+            <button mat-icon-button (click)="reinitialiserOrdre()"
+                    matTooltip="Réinitialiser à l'ordre par défaut">
+              <mat-icon>restart_alt</mat-icon>
+            </button>
+          </div>
+          <div class="hint">
+            Glissez-déposez pour réordonner. Désactivez le toggle pour masquer une section.
+          </div>
+
+          <div cdkDropList class="sections-list" (cdkDropListDropped)="onDrop($event)">
+            @for (s of params.sections; track s.id) {
+              <div cdkDrag class="section-item" [class.disabled]="!s.visible">
+                <mat-icon class="drag-handle" cdkDragHandle>drag_handle</mat-icon>
+                <div class="section-info">
+                  <div class="section-name">
+                    {{ metaPourSection(s.id).libelle }}
+                    @if (metaPourSection(s.id).conditionnelle) {
+                      <span class="conditional-badge"
+                            matTooltip="Cette section apparaît uniquement si les données associées existent (ex : un client, un motif…)">
+                        conditionnelle
+                      </span>
+                    }
+                  </div>
+                  <div class="section-desc">{{ metaPourSection(s.id).description }}</div>
+                </div>
+                <mat-slide-toggle [(ngModel)]="s.visible" color="primary"></mat-slide-toggle>
+              </div>
+            }
+          </div>
+        </mat-card>
+
+      </div>
+
+      <!-- ================================================================ -->
+      <!-- COLONNE DROITE : aperçu PDF                                       -->
+      <!-- ================================================================ -->
+      <div class="preview-column">
+        <mat-card class="preview-card">
+          <div class="section-title">
+            <mat-icon>visibility</mat-icon>
+            <h3>Aperçu</h3>
+            <span class="preview-note">Cliquez sur « Aperçu » après chaque enregistrement pour rafraîchir.</span>
+          </div>
+          @if (previewUrl(); as url) {
+            <iframe [src]="url" class="preview-frame"></iframe>
+          } @else {
+            <div class="empty-preview">
+              <mat-icon>description</mat-icon>
+              <div>Aperçu en cours de chargement…</div>
+            </div>
+          }
+        </mat-card>
+      </div>
+
+    </div>
+  }
+</div>

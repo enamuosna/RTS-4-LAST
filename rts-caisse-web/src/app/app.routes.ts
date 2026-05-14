@@ -77,6 +77,12 @@ export const routes: Routes = [
           import('./features/audit/audit-list.component').then((m) => m.AuditListComponent),
         canActivate: [roleGuard(['ADMIN'])]
       },
+      {
+        path: 'parametres',
+        loadComponent: () =>
+          import('./features/parametres/parametres.component').then((m) => m.ParametresComponent),
+        canActivate: [roleGuard(['ADMIN'])]
+      },
       // Si un guard refuse un accès, on renvoie sur /caisses (page sûre pour tous)
       // plutôt que sur /login qui ferait croire à tort à une session expirée.
       { path: 'unauthorized', redirectTo: 'caisses' }

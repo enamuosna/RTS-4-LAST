@@ -196,6 +196,49 @@ export interface DashboardResponse {
   repartitionParCategorie: LigneCategorie[];
 }
 
+// ---------- Paramètres du reçu ----------
+export interface SectionRecu {
+  id: string;
+  visible: boolean;
+}
+
+export interface ParametresRecu {
+  // En-tête
+  logoTexte: string;
+  raisonSociale: string;
+  sousTitreEntete: string;
+  ligneLegale: string;
+  capital: string;
+  adresse: string;
+  telephone: string;
+  boitePostale: string;
+  ninea: string;
+
+  // Footer
+  footerLigne1: string;
+  footerLigne2: string;
+  villeSignature: string;
+
+  // Couleurs (hex #RRGGBB)
+  couleurPrimaire: string;
+  couleurAccent: string;
+  couleurTexte: string;
+  couleurTexteSecondaire: string;
+  couleurSuccess: string;
+  couleurDanger: string;
+  couleurFondMontant: string;
+
+  // Tailles (pt)
+  tailleTitre: number;
+  tailleEntete: number;
+  tailleCorps: number;
+  tailleMontant: number;
+  tailleFooter: number;
+
+  // Layout
+  sections: SectionRecu[];
+}
+
 // ---------- Pagination Spring ----------
 export interface Page<T> {
   content: T[];

@@ -110,7 +110,7 @@ public class CaissierController {
     @FXML private TableColumn<OperationCaisseResponse, String> colNumero;
     @FXML private TableColumn<OperationCaisseResponse, String> colType;
     @FXML private TableColumn<OperationCaisseResponse, String> colCategorie;
-    @FXML private TableColumn<OperationCaisseResponse, String> colMotif;
+    @FXML private TableColumn<OperationCaisseResponse, String> colClient;
     @FXML private TableColumn<OperationCaisseResponse, String> colMontant;
     @FXML private TableColumn<OperationCaisseResponse, OperationCaisseResponse> colActions;
     @FXML private Label compteurLabel;
@@ -229,7 +229,7 @@ public class CaissierController {
         colNumero.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().numeroRecu));
         colType.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().typeOperation.name()));
         colCategorie.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().categorieLibelle));
-        colMotif.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().motif));
+        colClient.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().clientRaisonSociale));
         colMontant.setCellValueFactory(c -> new SimpleStringProperty(Ui.formatMontant(c.getValue().montant)));
         colActions.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue()));
 

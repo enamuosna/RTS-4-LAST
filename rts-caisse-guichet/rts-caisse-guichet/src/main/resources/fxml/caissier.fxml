@@ -109,7 +109,7 @@
                     <!-- Champ de recherche automatique (filtre en temps réel) -->
                     <HBox alignment="CENTER_LEFT" maxWidth="320" prefWidth="320" spacing="8" styleClass="text-field-with-icon">
                         <SVGPath content="M21 21 l-6-6 m2-5 a7 7 0 1 1-14 0 a7 7 0 0 1 14 0 z" scaleX="0.6" scaleY="0.6" styleClass="icon, icon-muted" />
-                        <TextField fx:id="searchField" promptText="Rechercher (n° reçu, motif, client, montant…)" HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="searchField" promptText="Rechercher (n° reçu, catégorie, client, montant…)" HBox.hgrow="ALWAYS" />
                     </HBox>
 
                     <Button fx:id="refreshButton" onAction="#onRefresh" styleClass="button, button-icon">
@@ -128,7 +128,7 @@
                         <TableColumn fx:id="colNumero" prefWidth="180" sortable="false" text="N° Reçu" />
                         <TableColumn fx:id="colType" prefWidth="110" sortable="false" text="Type" />
                         <TableColumn fx:id="colCategorie" prefWidth="220" sortable="false" text="Catégorie" />
-                        <TableColumn fx:id="colMotif" prefWidth="320" sortable="false" text="Motif" />
+                        <TableColumn fx:id="colClient" prefWidth="320" sortable="false" text="Client" />
                         <TableColumn fx:id="colMontant" prefWidth="160" sortable="false" text="Montant" />
                         <TableColumn fx:id="colActions" prefWidth="160" resizable="false" sortable="false" text="Actions" />
                     </columns>

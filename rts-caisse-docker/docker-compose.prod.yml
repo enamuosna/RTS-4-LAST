@@ -85,7 +85,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp"
+      # Port UDP 443 (QUIC/HTTP3) volontairement retire : HTTP3 est
+      # desactive dans le Caddyfile car Edge coupe les downloads longs
+      # (export BDD pg_dump) avec ERR_QUIC_PROTOCOL_ERROR.
     environment:
       SERVER_NAME:       ${SERVER_NAME:?ERREUR - definir SERVER_NAME dans .env}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?ERREUR - definir LETSENCRYPT_EMAIL dans .env}

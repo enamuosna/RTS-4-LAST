@@ -28,9 +28,12 @@
 		level INFO
 	}
 
-	# Active HTTP/3 (transport QUIC) - bonus performance gratuite
+	# HTTP/3 (QUIC) DESACTIVE volontairement.
+	# Edge bascule en QUIC pour les downloads et coupe les reponses
+	# longues avec ERR_QUIC_PROTOCOL_ERROR (cas de l'export BDD via
+	# pg_dump). HTTP/2 suffit largement pour les performances.
 	servers {
-		protocols h1 h2 h3
+		protocols h1 h2
 	}
 
 	# Cache des sessions TLS pour reduire les handshakes

@@ -95,6 +95,20 @@
             <version>2.0.32</version>
         </dependency>
 
+        <!-- ===================== Icônes vectorielles ===================== -->
+        <!-- Ikonli : icônes SVG/font vectorielles, intégration FXML native.
+             Pack FontAwesome 5 = ~1500 icônes pro (Solid + Brands). -->
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-javafx</artifactId>
+            <version>12.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-fontawesome5-pack</artifactId>
+            <version>12.3.1</version>
+        </dependency>
+
         <!-- ===================== Sérialisation JSON ===================== -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

@@ -152,15 +152,15 @@
     -fx-fill: transparent;
 }
 
-.icon-primary    { -fx-fill: -rts-primary;    -fx-stroke: -rts-primary; }
-.icon-on-primary { -fx-fill: white;           -fx-stroke: white; }
-.icon-accent     { -fx-fill: -rts-accent;     -fx-stroke: -rts-accent; }
-.icon-teal       { -fx-fill: -rts-teal;       -fx-stroke: -rts-teal; }
-.icon-success    { -fx-fill: -rts-success;    -fx-stroke: -rts-success; }
-.icon-warning    { -fx-fill: -rts-warning;    -fx-stroke: -rts-warning; }
-.icon-danger     { -fx-fill: -rts-danger;     -fx-stroke: -rts-danger; }
-.icon-muted      { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; }
-.icon-on-dark    { -fx-fill: -rts-text;       -fx-stroke: -rts-text; }
+.icon-primary    { -fx-fill: -rts-primary;    -fx-stroke: -rts-primary;    -fx-icon-color: -rts-primary; }
+.icon-on-primary { -fx-fill: white;           -fx-stroke: white;           -fx-icon-color: white; }
+.icon-accent     { -fx-fill: -rts-accent;     -fx-stroke: -rts-accent;     -fx-icon-color: -rts-accent; }
+.icon-teal       { -fx-fill: -rts-teal;       -fx-stroke: -rts-teal;       -fx-icon-color: -rts-teal; }
+.icon-success    { -fx-fill: -rts-success;    -fx-stroke: -rts-success;    -fx-icon-color: -rts-success; }
+.icon-warning    { -fx-fill: -rts-warning;    -fx-stroke: -rts-warning;    -fx-icon-color: -rts-warning; }
+.icon-danger     { -fx-fill: -rts-danger;     -fx-stroke: -rts-danger;     -fx-icon-color: -rts-danger; }
+.icon-muted      { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; -fx-icon-color: -rts-text-muted; }
+.icon-on-dark    { -fx-fill: -rts-text;       -fx-stroke: -rts-text;       -fx-icon-color: -rts-text; }
 
 .icon-sm  { -fx-scale-x: 0.75; -fx-scale-y: 0.75; }
 .icon-md  { -fx-scale-x: 1.0;  -fx-scale-y: 1.0; }
@@ -905,28 +905,28 @@
     -fx-border-color: -rts-border-hl;
 }
 .status-idle .status-message { -fx-text-fill: -rts-text-2; }
-.status-idle .status-icon-svg { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; }
+.status-idle .status-icon-svg { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; -fx-icon-color: -rts-text-muted; }
 
 .status-pending {
     -fx-background-color: -rts-warning-light;
     -fx-border-color: rgba(245, 158, 11, 0.45);
 }
 .status-pending .status-message { -fx-text-fill: -rts-accent-light; }
-.status-pending .status-icon-svg { -fx-fill: -rts-warning; -fx-stroke: -rts-warning; }
+.status-pending .status-icon-svg { -fx-fill: -rts-warning; -fx-stroke: -rts-warning; -fx-icon-color: -rts-warning; }
 
 .status-ok {
     -fx-background-color: -rts-success-light;
     -fx-border-color: rgba(16, 185, 129, 0.45);
 }
 .status-ok .status-message { -fx-text-fill: #6EE7B7; }
-.status-ok .status-icon-svg { -fx-fill: -rts-success; -fx-stroke: -rts-success; }
+.status-ok .status-icon-svg { -fx-fill: -rts-success; -fx-stroke: -rts-success; -fx-icon-color: -rts-success; }
 
 .status-ko {
     -fx-background-color: -rts-danger-light;
     -fx-border-color: rgba(239, 68, 68, 0.45);
 }
 .status-ko .status-message { -fx-text-fill: #FCA5A5; }
-.status-ko .status-icon-svg { -fx-fill: -rts-danger; -fx-stroke: -rts-danger; }
+.status-ko .status-icon-svg { -fx-fill: -rts-danger; -fx-stroke: -rts-danger; -fx-icon-color: -rts-danger; }
 
 .loading-spinner {
     -fx-pref-width: 22;

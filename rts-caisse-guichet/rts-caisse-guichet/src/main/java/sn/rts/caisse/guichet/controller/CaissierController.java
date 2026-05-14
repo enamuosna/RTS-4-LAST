@@ -23,7 +23,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.SVGPath;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -41,10 +40,11 @@ import sn.rts.caisse.guichet.model.StatutCaisse;
 import sn.rts.caisse.guichet.model.TypeOperation;
 import sn.rts.caisse.guichet.print.PrintRecu;
 import sn.rts.caisse.guichet.print.RecuExporter;
+import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
+import org.kordamp.ikonli.javafx.FontIcon;
 import sn.rts.caisse.guichet.util.AsyncRunner;
 import sn.rts.caisse.guichet.util.Session;
 import sn.rts.caisse.guichet.util.Ui;
-import javafx.scene.shape.SVGPath;
 import sn.rts.caisse.guichet.util.ThemeManager;
 
 import java.math.BigDecimal;
@@ -124,7 +124,7 @@ public class CaissierController {
 
     //BONUS
     @FXML private Button   themeToggleButton;
-    @FXML private SVGPath  themeToggleIcon;
+    @FXML private FontIcon themeToggleIcon;
 
     // ================ État ================
 
@@ -186,20 +186,14 @@ public class CaissierController {
         boolean dark = ThemeManager.getInstance().isDark();
         if (dark) {
             // Mode sombre actif → afficher un soleil (clic = basculer en clair)
-            themeToggleIcon.setContent(
-                    "M12 1 v2 m0 18 v2 M4.22 4.22 l1.42 1.42 m12.72 12.72 l1.42 1.42 "
-                            + "M1 12 h2 m18 0 h2 M4.22 19.78 l1.42-1.42 m12.72-12.72 l1.42-1.42 "
-                            + "M12 7 a5 5 0 1 0 0 10 5 5 0 0 0 0-10 z"
-            );
+            themeToggleIcon.setIconLiteral(FontAwesomeSolid.SUN.getDescription());
             if (themeToggleButton != null) {
                 themeToggleButton.setTooltip(new javafx.scene.control.Tooltip(
                         "Passer en mode clair"));
             }
         } else {
             // Mode clair actif → afficher une lune (clic = basculer en sombre)
-            themeToggleIcon.setContent(
-                    "M21 12.79 A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79 z"
-            );
+            themeToggleIcon.setIconLiteral(FontAwesomeSolid.MOON.getDescription());
             if (themeToggleButton != null) {
                 themeToggleButton.setTooltip(new javafx.scene.control.Tooltip(
                         "Passer en mode sombre"));
@@ -277,12 +271,6 @@ public class CaissierController {
 
         // Colonne actions : Imprimer + WhatsApp + Annuler
         colActions.setCellFactory(column -> new TableCell<>() {
-            private static final String SVG_PRINT =
-                    "M6 9 V2 h12 v7 M6 18 H4 a2 2 0 0 1-2-2 v-5 a2 2 0 0 1 2-2 h16 a2 2 0 0 1 2 2 v5 a2 2 0 0 1-2 2 h-2 M6 14 h12 v8 H6 z";
-            private static final String SVG_CANCEL =
-                    "M18 6 L6 18 M6 6 l12 12";
-            private static final String SVG_WHATSAPP =
-                    "M21 11.5 a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9 L3 21 l1.9-5.7 a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9 h.5 a8.48 8.48 0 0 1 8 8 v.5 z";
 
             private final Button btnImprimer = new Button();
             private final Button btnWhatsApp = new Button();
@@ -290,11 +278,9 @@ public class CaissierController {
             private final HBox   box         = new HBox(4, btnImprimer, btnWhatsApp, btnAnnuler);
 
             {
-                SVGPath iconPrint = new SVGPath();
-                iconPrint.setContent(SVG_PRINT);
-                iconPrint.setScaleX(0.6); iconPrint.setScaleY(0.6);
-                iconPrint.setStyle("-fx-fill: transparent; -fx-stroke: #475569; "
-                        + "-fx-stroke-width: 2; -fx-stroke-line-cap: round; -fx-stroke-line-join: round;");
+                FontIcon iconPrint = new FontIcon(FontAwesomeSolid.PRINT);
+                iconPrint.setIconSize(14);
+                iconPrint.setIconColor(javafx.scene.paint.Color.web("#475569"));
                 btnImprimer.setGraphic(iconPrint);
                 btnImprimer.getStyleClass().addAll("button", "button-icon");
                 btnImprimer.setPrefSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
@@ -302,11 +288,10 @@ public class CaissierController {
                 btnImprimer.setMaxSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
                 btnImprimer.setTooltip(new javafx.scene.control.Tooltip("Réimprimer le reçu"));
 
-                SVGPath iconWa = new SVGPath();
-                iconWa.setContent(SVG_WHATSAPP);
-                iconWa.setScaleX(0.6); iconWa.setScaleY(0.6);
-                iconWa.setStyle("-fx-fill: transparent; -fx-stroke: #25D366; "
-                        + "-fx-stroke-width: 2; -fx-stroke-line-cap: round; -fx-stroke-line-join: round;");
+                FontIcon iconWa = new FontIcon(
+                        org.kordamp.ikonli.fontawesome5.FontAwesomeBrands.WHATSAPP);
+                iconWa.setIconSize(15);
+                iconWa.setIconColor(javafx.scene.paint.Color.web("#25D366"));
                 btnWhatsApp.setGraphic(iconWa);
                 btnWhatsApp.getStyleClass().addAll("button", "button-icon");
                 btnWhatsApp.setPrefSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
@@ -315,11 +300,9 @@ public class CaissierController {
                 btnWhatsApp.setTooltip(new javafx.scene.control.Tooltip(
                         "Envoyer le reçu par WhatsApp"));
 
-                SVGPath iconCancel = new SVGPath();
-                iconCancel.setContent(SVG_CANCEL);
-                iconCancel.setScaleX(0.65); iconCancel.setScaleY(0.65);
-                iconCancel.setStyle("-fx-fill: transparent; -fx-stroke: #dc2626; "
-                        + "-fx-stroke-width: 2.5; -fx-stroke-line-cap: round;");
+                FontIcon iconCancel = new FontIcon(FontAwesomeSolid.TIMES_CIRCLE);
+                iconCancel.setIconSize(14);
+                iconCancel.setIconColor(javafx.scene.paint.Color.web("#dc2626"));
                 btnAnnuler.setGraphic(iconCancel);
                 btnAnnuler.getStyleClass().addAll("button", "button-icon");
                 btnAnnuler.setPrefSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);

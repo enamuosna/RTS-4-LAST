@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.shape.SVGPath?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <!--
     RTS Caisse — Modal "Nouvelle opération" (v5.2)
@@ -39,10 +39,7 @@
     <HBox styleClass="modal-header" alignment="CENTER_LEFT" spacing="14">
         <padding><Insets top="20" right="22" bottom="20" left="26"/></padding>
 
-        <SVGPath content="M12 5 v14 M5 12 h14"
-                 styleClass="icon, icon-on-primary"
-                 scaleX="0.85" scaleY="0.85"
-                 style="-fx-stroke-width: 2.5;"/>
+        <FontIcon iconLiteral="fas-plus-circle" iconSize="22" iconColor="white" />
 
         <VBox spacing="2" HBox.hgrow="ALWAYS">
             <Label styleClass="modal-title" text="Nouvelle opération"/>
@@ -53,10 +50,7 @@
         <Button fx:id="fermerButton" styleClass="button-close"
                 onAction="#onAnnuler" prefWidth="36" prefHeight="36">
             <graphic>
-                <SVGPath content="M18 6 L6 18 M6 6 l12 12"
-                         styleClass="icon"
-                         scaleX="0.7" scaleY="0.7"
-                         style="-fx-fill: transparent; -fx-stroke: white; -fx-stroke-width: 2.5; -fx-stroke-line-cap: round;"/>
+                <FontIcon iconLiteral="fas-times" iconSize="16" iconColor="white" />
             </graphic>
         </Button>
     </HBox>
@@ -230,9 +224,7 @@
         <Button text="Effacer" styleClass="button, button-ghost"
                 onAction="#onReset">
             <graphic>
-                <SVGPath content="M3 6 h18 M8 6 V4 a2 2 0 0 1 2-2 h4 a2 2 0 0 1 2 2 v2 m3 0 v14 a2 2 0 0 1-2 2 H7 a2 2 0 0 1-2-2 V6"
-                         styleClass="icon, icon-muted"
-                         scaleX="0.65" scaleY="0.65"/>
+                <FontIcon iconLiteral="fas-trash-alt" iconSize="14" styleClass="icon-muted" />
             </graphic>
         </Button>
 
@@ -247,9 +239,7 @@
                 onAction="#onEnregistrer"
                 defaultButton="true">
             <graphic>
-                <SVGPath content="M19 21 H5 a2 2 0 0 1-2-2 V5 a2 2 0 0 1 2-2 h11 l5 5 v11 a2 2 0 0 1-2 2 z M17 21 v-8 H7 v8 M7 3 v5 h8"
-                         styleClass="icon, icon-on-primary"
-                         scaleX="0.6" scaleY="0.6"/>
+                <FontIcon iconLiteral="fas-save" iconSize="14" iconColor="white" />
             </graphic>
         </Button>
     </HBox>

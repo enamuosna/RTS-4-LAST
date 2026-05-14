@@ -8,7 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
-import javafx.scene.shape.SVGPath;
+import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sn.rts.caisse.guichet.api.ApiClient;
@@ -38,7 +38,7 @@ import java.util.prefs.Preferences;
  *   <li>{@code testerButtonLabel} : Label     - texte du bouton "Tester" (optionnel)</li>
  *   <li>{@code continuerButton}   : Button    - "Continuer vers la connexion"</li>
  *   <li>{@code statusBox}         : HBox      - panneau resultat (status-success/error/...)</li>
- *   <li>{@code statusIcon}        : SVGPath   - pastille coloree</li>
+ *   <li>{@code statusIcon}        : FontIcon  - pastille coloree</li>
  *   <li>{@code statusSpinner}     : ProgressIndicator - visible pendant le test</li>
  *   <li>{@code statusMessage}     : Label     - "Connecte" / "Connexion impossible" / ...</li>
  *   <li>{@code statusDetail}      : Label     - URL testee, message d'erreur</li>
@@ -73,7 +73,7 @@ public class ServeurController {
     @FXML private Label             testerButtonLabel;
     @FXML private Button            continuerButton;
     @FXML private HBox              statusBox;
-    @FXML private SVGPath           statusIcon;
+    @FXML private FontIcon          statusIcon;
     @FXML private ProgressIndicator statusSpinner;
     @FXML private Label             statusMessage;
     @FXML private Label             statusDetail;

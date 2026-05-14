@@ -146,15 +146,15 @@
     -fx-fill: transparent;
 }
 
-.icon-primary    { -fx-fill: -rts-primary;    -fx-stroke: -rts-primary; }
-.icon-on-primary { -fx-fill: white;           -fx-stroke: white; }
-.icon-accent     { -fx-fill: -rts-accent-dark; -fx-stroke: -rts-accent-dark; }
-.icon-teal       { -fx-fill: -rts-teal-dark;  -fx-stroke: -rts-teal-dark; }
-.icon-success    { -fx-fill: -rts-success;    -fx-stroke: -rts-success; }
-.icon-warning    { -fx-fill: -rts-warning;    -fx-stroke: -rts-warning; }
-.icon-danger     { -fx-fill: -rts-danger;     -fx-stroke: -rts-danger; }
-.icon-muted      { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; }
-.icon-on-dark    { -fx-fill: -rts-text;       -fx-stroke: -rts-text; }
+.icon-primary    { -fx-fill: -rts-primary;    -fx-stroke: -rts-primary;    -fx-icon-color: -rts-primary; }
+.icon-on-primary { -fx-fill: white;           -fx-stroke: white;           -fx-icon-color: white; }
+.icon-accent     { -fx-fill: -rts-accent-dark; -fx-stroke: -rts-accent-dark; -fx-icon-color: -rts-accent-dark; }
+.icon-teal       { -fx-fill: -rts-teal-dark;  -fx-stroke: -rts-teal-dark;  -fx-icon-color: -rts-teal-dark; }
+.icon-success    { -fx-fill: -rts-success;    -fx-stroke: -rts-success;    -fx-icon-color: -rts-success; }
+.icon-warning    { -fx-fill: -rts-warning;    -fx-stroke: -rts-warning;    -fx-icon-color: -rts-warning; }
+.icon-danger     { -fx-fill: -rts-danger;     -fx-stroke: -rts-danger;     -fx-icon-color: -rts-danger; }
+.icon-muted      { -fx-fill: -rts-text-muted; -fx-stroke: -rts-text-muted; -fx-icon-color: -rts-text-muted; }
+.icon-on-dark    { -fx-fill: -rts-text;       -fx-stroke: -rts-text;       -fx-icon-color: -rts-text; }
 
 .icon-sm  { -fx-scale-x: 0.75; -fx-scale-y: 0.75; }
 .icon-md  { -fx-scale-x: 1.0;  -fx-scale-y: 1.0; }
@@ -849,28 +849,28 @@
     -fx-border-color: -rts-gray-200;
 }
 .status-idle .status-message { -fx-text-fill: -rts-gray-800; }
-.status-idle .status-icon-svg { -fx-fill: -rts-gray-500; -fx-stroke: -rts-gray-500; }
+.status-idle .status-icon-svg { -fx-fill: -rts-gray-500; -fx-stroke: -rts-gray-500; -fx-icon-color: -rts-gray-500; }
 
 .status-pending {
     -fx-background-color: -rts-warning-light;
     -fx-border-color: derive(-rts-warning, 60%);
 }
 .status-pending .status-message { -fx-text-fill: #7C2D12; }
-.status-pending .status-icon-svg { -fx-fill: -rts-warning; -fx-stroke: -rts-warning; }
+.status-pending .status-icon-svg { -fx-fill: -rts-warning; -fx-stroke: -rts-warning; -fx-icon-color: -rts-warning; }
 
 .status-ok {
     -fx-background-color: -rts-success-light;
     -fx-border-color: derive(-rts-success, 50%);
 }
 .status-ok .status-message { -fx-text-fill: -rts-success-dark; }
-.status-ok .status-icon-svg { -fx-fill: -rts-success; -fx-stroke: -rts-success; }
+.status-ok .status-icon-svg { -fx-fill: -rts-success; -fx-stroke: -rts-success; -fx-icon-color: -rts-success; }
 
 .status-ko {
     -fx-background-color: -rts-danger-light;
     -fx-border-color: derive(-rts-danger, 50%);
 }
 .status-ko .status-message { -fx-text-fill: -rts-danger-dark; }
-.status-ko .status-icon-svg { -fx-fill: -rts-danger; -fx-stroke: -rts-danger; }
+.status-ko .status-icon-svg { -fx-fill: -rts-danger; -fx-stroke: -rts-danger; -fx-icon-color: -rts-danger; }
 
 .loading-spinner {
     -fx-pref-width: 22;

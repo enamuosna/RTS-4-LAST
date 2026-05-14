@@ -168,7 +168,6 @@ export class ReportingService {
 export class ParametresRecuService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/parametres/recu`;
-  private readonly recusBase = `${environment.apiUrl}/recus`;
 
   obtenir(): Observable<ParametresRecu> {
     return this.http.get<ParametresRecu>(this.base);
@@ -179,13 +178,14 @@ export class ParametresRecuService {
   }
 
   /**
-   * Renvoie l'aperçu PDF sous forme de Blob. Pas de cache navigateur
-   * (Cache-Control: no-store côté serveur) et pas de paramètre dans
-   * l'URL (les bloqueurs de pub bloquent souvent les params type
-   * `?_t=`, ce qui faisait planter l'iframe avec ERR_BLOCKED_BY_CLIENT).
+   * Renvoie le rendu PDF sous forme de Blob. L'endpoint est placé sous
+   * /api/parametres/recu/pdf (et pas sous /api/recus/apercu) pour éviter
+   * les blocages par extensions anti-tracking (mots "apercu", "recus"
+   * souvent filtrés par uBlock / Brave Shields → ERR_BLOCKED_BY_CLIENT).
+   * Cache désactivé côté serveur via Cache-Control: no-store.
    */
   obtenirApercu(): Observable<Blob> {
-    return this.http.get(`${this.recusBase}/apercu`, { responseType: 'blob' });
+    return this.http.get(`${this.base}/pdf`, { responseType: 'blob' });
   }
 
   /**

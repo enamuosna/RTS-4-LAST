@@ -58,26 +58,4 @@ public class RecuPdfController {
                 .headers(headers)
                 .body(new ByteArrayResource(pdf));
     }
-
-    @GetMapping("/apercu")
-    @Operation(summary = "Aperçu PDF d'un reçu fictif avec les paramètres courants",
-               description = "Utilisé par la page « Paramètres du reçu » pour visualiser "
-                       + "le rendu en temps réel sans avoir besoin d'une opération existante.")
-    public ResponseEntity<ByteArrayResource> apercu() {
-        byte[] pdf = recuPdfService.genererApercu();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentDisposition(ContentDisposition.inline()
-                .filename("apercu-recu.pdf").build());
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentLength(pdf.length);
-        // Pas de cache : chaque demande d'aperçu doit refléter les
-        // derniers paramètres sauvegardés.
-        headers.setCacheControl("no-store, no-cache, must-revalidate");
-        headers.setPragma("no-cache");
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(new ByteArrayResource(pdf));
-    }
 }

@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import sn.rts.caisse.dto.ParametresRecuDto;
 import sn.rts.caisse.exception.BusinessException;
 import sn.rts.caisse.service.ParametresRecuService;
+import sn.rts.caisse.service.RecuPdfService;
 
 import java.util.Set;
 
@@ -51,6 +54,7 @@ public class ParametresRecuController {
     private static final long TAILLE_MAX_OCTETS = 2L * 1024 * 1024;
 
     private final ParametresRecuService service;
+    private final RecuPdfService recuPdfService;
 
     // ==================================================================
     //  Paramètres scalaires (couleurs, textes, layout)
@@ -108,6 +112,36 @@ public class ParametresRecuController {
     public ResponseEntity<Void> supprimerLogo(Authentication authentication) {
         service.supprimerLogo(authentication.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================================================================
+    //  Rendu PDF de prévisualisation
+    //
+    //  Endpoint volontairement placé sous /api/parametres/recu/pdf
+    //  (et pas sous /api/recus/...) pour éviter les blocages des extensions
+    //  anti-tracking : certaines listes de filtres (uBlock, Brave Shields)
+    //  bloquent les URLs contenant "apercu", "preview", "recus", ce qui
+    //  cassait l'iframe d'aperçu avec ERR_BLOCKED_BY_CLIENT.
+    // ==================================================================
+
+    @GetMapping("/pdf")
+    @Operation(summary = "Rendu PDF de démonstration avec les paramètres courants",
+               description = "Utilisé par la page « Paramètres du reçu » pour visualiser "
+                       + "le rendu en temps réel. Aucune opération réelle n'est requise.")
+    public ResponseEntity<ByteArrayResource> rendrePdf() {
+        byte[] pdf = recuPdfService.genererApercu();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.inline()
+                .filename("recu-demo.pdf").build());
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentLength(pdf.length);
+        headers.setCacheControl("no-store, no-cache, must-revalidate");
+        headers.setPragma("no-cache");
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(new ByteArrayResource(pdf));
     }
 
     // ==================================================================

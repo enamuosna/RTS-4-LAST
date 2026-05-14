@@ -263,17 +263,27 @@
       </div>
 
       <!-- ================================================================ -->
-      <!-- COLONNE DROITE : aperçu PDF                                       -->
+      <!-- COLONNE DROITE : aperçu image                                     -->
       <!-- ================================================================ -->
       <div class="preview-column">
         <mat-card class="preview-card">
           <div class="section-title">
             <mat-icon>visibility</mat-icon>
             <h3>Aperçu</h3>
-            <span class="preview-note">Cliquez sur « Aperçu » après chaque enregistrement pour rafraîchir.</span>
+            <button mat-icon-button (click)="telechargerApercuPdf()"
+                    matTooltip="Télécharger l'aperçu en PDF">
+              <mat-icon>file_download</mat-icon>
+            </button>
+          </div>
+          <div class="preview-hint">
+            Aperçu rasterisé en PNG. Cliquez sur « Aperçu » après chaque
+            enregistrement pour rafraîchir, ou téléchargez le PDF original
+            avec le bouton ⬇.
           </div>
           @if (previewUrl(); as url) {
-            <iframe [src]="url" class="preview-frame"></iframe>
+            <div class="preview-image-wrapper">
+              <img [src]="url" alt="Aperçu du reçu" class="preview-image" />
+            </div>
           } @else {
             <div class="empty-preview">
               <mat-icon>description</mat-icon>

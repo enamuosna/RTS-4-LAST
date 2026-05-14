@@ -208,22 +208,45 @@ export class ParametresComponent implements OnInit {
   }
 
   /**
-   * Recharge l'aperçu PDF en faisant un GET authentifié (le navigateur ne peut
-   * pas attacher le JWT à un <iframe src="...">), puis on transforme le blob
-   * en URL locale qui s'affiche dans l'iframe.
-   *
-   * <p>L'URL ne porte plus de paramètre type {@code ?_t=...} : il était
-   * bloqué par les extensions anti-tracking (ERR_BLOCKED_BY_CLIENT). Le
-   * cache HTTP est désactivé côté serveur via {@code Cache-Control: no-store}.</p>
+   * Recharge l'aperçu sous forme d'image PNG (rasterisation côté backend
+   * via PDFBox). On utilise une image plutôt qu'une iframe PDF parce que
+   * certains navigateurs (Edge Tracking Prevention en mode strict,
+   * uBlock, Brave Shields) bloquent les XHR retournant {@code application/pdf}
+   * avec ERR_BLOCKED_BY_CLIENT — surtout sur les domaines tiers/dynamiques
+   * type duckdns. Les images PNG passent partout.
    */
   rafraichirApercu(): void {
-    this.api.obtenirApercu().subscribe({
+    this.api.obtenirApercuImage().subscribe({
       next: (blob) => {
         const objectUrl = URL.createObjectURL(blob);
         this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl));
       },
       error: () => {
-        this.snack.open('Impossible de générer l\'aperçu PDF.', 'OK',
+        this.snack.open('Impossible de générer l\'aperçu.', 'OK',
+          { duration: 3000, panelClass: 'snackbar-error' });
+      }
+    });
+  }
+
+  /**
+   * Télécharge l'aperçu en PDF (pour ceux qui veulent voir le rendu exact
+   * avant impression). Passe par un objectURL puis simule un click sur un
+   * lien {@code <a download>} — évite l'iframe.
+   */
+  telechargerApercuPdf(): void {
+    this.api.obtenirApercu().subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'recu-demo.pdf';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      },
+      error: () => {
+        this.snack.open('Impossible de télécharger l\'aperçu PDF.', 'OK',
           { duration: 3000, panelClass: 'snackbar-error' });
       }
     });

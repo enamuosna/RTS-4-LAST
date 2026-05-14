@@ -15,6 +15,10 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.rts.caisse.dto.ParametresRecuDto;
@@ -22,6 +26,9 @@ import sn.rts.caisse.exception.ResourceNotFoundException;
 import sn.rts.caisse.model.OperationCaisse;
 import sn.rts.caisse.model.ParametresRecu;
 import sn.rts.caisse.repository.OperationCaisseRepository;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
@@ -81,6 +88,30 @@ public class RecuPdfService {
      */
     public byte[] genererApercu() {
         return genererPdf(null, parametresService.obtenirEntite());
+    }
+
+    /**
+     * Rasterise la première page de l'aperçu PDF en image PNG. Utilisé par
+     * l'aperçu admin : afficher une image dans un {@code <img>} contourne
+     * les bloqueurs / Tracking Prevention qui peuvent filtrer les XHR
+     * retournant des PDF sur certains navigateurs (notamment Edge sur les
+     * domaines DuckDNS).
+     *
+     * @param dpi résolution de rendu (150 DPI = qualité écran correcte)
+     */
+    public byte[] genererApercuPng(int dpi) {
+        byte[] pdf = genererApercu();
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            PDFRenderer renderer = new PDFRenderer(document);
+            BufferedImage image = renderer.renderImageWithDPI(0, dpi, ImageType.RGB);
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            ImageIO.write(image, "png", out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            log.error("Échec de la rasterisation PDF → PNG", e);
+            throw new RuntimeException(
+                    "Impossible de rasteriser l'aperçu PDF : " + e.getMessage(), e);
+        }
     }
 
     private byte[] genererPdf(OperationCaisse op, ParametresRecu params) {

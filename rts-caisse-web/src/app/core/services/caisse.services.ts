@@ -178,12 +178,16 @@ export class ParametresRecuService {
   }
 
   /**
-   * Renvoie le rendu PDF sous forme de Blob. L'endpoint est placé sous
-   * /api/parametres/recu/pdf (et pas sous /api/recus/apercu) pour éviter
-   * les blocages par extensions anti-tracking (mots "apercu", "recus"
-   * souvent filtrés par uBlock / Brave Shields → ERR_BLOCKED_BY_CLIENT).
-   * Cache désactivé côté serveur via Cache-Control: no-store.
+   * Renvoie l'aperçu rasterisé en PNG. Privilégié à l'aperçu PDF dans
+   * l'UI parce que certains navigateurs (Edge Tracking Prevention strict,
+   * uBlock, Brave Shields) bloquent les XHR retournant {@code application/pdf}
+   * avec ERR_BLOCKED_BY_CLIENT. Une image PNG passe partout.
    */
+  obtenirApercuImage(): Observable<Blob> {
+    return this.http.get(`${this.base}/image`, { responseType: 'blob' });
+  }
+
+  /** Renvoie le rendu PDF — utilisé par le bouton « Télécharger l'aperçu ». */
   obtenirApercu(): Observable<Blob> {
     return this.http.get(`${this.base}/pdf`, { responseType: 'blob' });
   }

@@ -126,8 +126,7 @@ public class ParametresRecuController {
 
     @GetMapping("/pdf")
     @Operation(summary = "Rendu PDF de démonstration avec les paramètres courants",
-               description = "Utilisé par la page « Paramètres du reçu » pour visualiser "
-                       + "le rendu en temps réel. Aucune opération réelle n'est requise.")
+               description = "Utilisé pour le bouton « Télécharger l'aperçu » côté admin.")
     public ResponseEntity<ByteArrayResource> rendrePdf() {
         byte[] pdf = recuPdfService.genererApercu();
 
@@ -142,6 +141,22 @@ public class ParametresRecuController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(new ByteArrayResource(pdf));
+    }
+
+    @GetMapping("/image")
+    @Operation(summary = "Rendu PNG (rasterisation) du reçu pour l'aperçu admin",
+               description = "Retourne la première page du reçu en PNG. Utilisé à la place "
+                       + "du PDF pour éviter les blocages par Tracking Prevention / AdBlockers "
+                       + "qui filtrent les XHR de PDF sur certains navigateurs.")
+    public ResponseEntity<byte[]> rendreImage() {
+        byte[] png = recuPdfService.genererApercuPng(150);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_PNG);
+        headers.setContentLength(png.length);
+        headers.setCacheControl("no-store, no-cache, must-revalidate");
+
+        return ResponseEntity.ok().headers(headers).body(png);
     }
 
     // ==================================================================

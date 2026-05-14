@@ -309,19 +309,32 @@
   background: white;
 }
 
-.preview-note {
+.preview-hint {
   font-size: 11px;
   color: var(--rts-gray-500);
   font-style: italic;
-  margin-left: auto;
+  margin-bottom: 10px;
 }
 
-.preview-frame {
+.preview-image-wrapper {
   width: 100%;
-  height: 700px;
+  max-height: 700px;
+  overflow: auto;
   border: 1px solid var(--rts-gray-200);
   border-radius: 8px;
   background: #f4f5f7;
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+}
+
+.preview-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  background: white;
+  box-shadow: var(--rts-shadow-md);
+  border-radius: 4px;
 }
 
 .empty-preview {

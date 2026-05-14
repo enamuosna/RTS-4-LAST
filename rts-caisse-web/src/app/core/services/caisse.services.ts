@@ -215,3 +215,32 @@ export class ParametresRecuService {
     return this.http.delete<void>(`${this.base}/logo`);
   }
 }
+
+// ======================================================
+//  SAUVEGARDE (export / import BDD)
+// ======================================================
+
+export interface RapportImportBackup {
+  succes: boolean;
+  tailleOctets: number;
+  message: string;
+  dernieresLignesPsql: string[];
+}
+
+@Injectable({ providedIn: 'root' })
+export class BackupService {
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/backup`;
+
+  /** Télécharge un dump SQL complet de la BDD. */
+  exporter(): Observable<Blob> {
+    return this.http.get(`${this.base}/export`, { responseType: 'blob' });
+  }
+
+  /** Restaure la BDD depuis un dump SQL. ÉCRASE les données existantes. */
+  importer(file: File): Observable<RapportImportBackup> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<RapportImportBackup>(`${this.base}/import`, formData);
+  }
+}

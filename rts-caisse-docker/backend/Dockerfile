@@ -28,8 +28,10 @@ RUN mvn -B -e -ntp clean package -DskipTests \
 # ==============================
 FROM eclipse-temurin:21-jre-alpine
 
-# Outils minimaux pour le healthcheck (wget) + timezone Dakar
-RUN apk add --no-cache wget tzdata \
+# Outils minimaux : wget (healthcheck), tzdata (Africa/Dakar),
+# postgresql-client (pg_dump + psql pour la fonctionnalité Sauvegarde
+# dans le panneau d'administration : export/import de la BDD).
+RUN apk add --no-cache wget tzdata postgresql-client \
  && cp /usr/share/zoneinfo/Africa/Dakar /etc/localtime \
  && echo "Africa/Dakar" > /etc/timezone
 

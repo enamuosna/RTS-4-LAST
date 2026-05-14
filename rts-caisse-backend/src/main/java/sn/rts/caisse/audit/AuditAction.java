@@ -72,6 +72,12 @@ public enum AuditAction {
     /** Export Excel d'un journal de caisse. */
     EXPORTER_JOURNAL_EXCEL,
 
+    /** Sauvegarde complète de la BDD (pg_dump). */
+    EXPORTER_BDD,
+
+    /** Restauration de la BDD depuis un dump (psql -f). */
+    IMPORTER_BDD,
+
     // ==================================================================
     //  Référentiels
     // ==================================================================

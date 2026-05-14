@@ -72,7 +72,8 @@ export class MainLayoutComponent {
     { label: 'Utilisateurs',     icon: 'people',         route: '/utilisateurs', roles: ['ADMIN'] },
     { label: 'Banques',          icon: 'account_balance',route: '/banques',      roles: ['ADMIN'] },
     { label: 'Journal d\'audit', icon: 'fact_check',     route: '/audit',        roles: ['ADMIN'] },
-    { label: 'Paramètres',       icon: 'tune',           route: '/parametres',   roles: ['ADMIN'] }
+    { label: 'Paramètres',       icon: 'tune',           route: '/parametres',   roles: ['ADMIN'] },
+    { label: 'Sauvegarde',       icon: 'backup',         route: '/backup',       roles: ['ADMIN'] }
   ]);
 
   readonly visibleNavItems = computed(() =>

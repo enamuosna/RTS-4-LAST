@@ -1,0 +1,237 @@
+.page-subtitle {
+  color: var(--rts-gray-500);
+  font-size: 14px;
+}
+
+.inline-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.backup-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .backup-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===================== Cards ===================== */
+.section-card {
+  padding: 22px 24px;
+  border-radius: var(--rts-radius);
+  box-shadow: var(--rts-shadow);
+}
+
+.section-card.section-danger {
+  border-top: 4px solid var(--rts-danger);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.section-title mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.icon-export {
+  color: var(--rts-success);
+}
+
+.icon-import {
+  color: var(--rts-danger);
+}
+
+.section-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--rts-gray-900);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.explanation {
+  margin: 0;
+  font-size: 13px;
+  color: var(--rts-gray-700);
+  line-height: 1.55;
+}
+
+.explanation code {
+  background: var(--rts-gray-100);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.action-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+/* ===================== Bannière warning ===================== */
+.warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--rts-warning-soft);
+  border-left: 4px solid var(--rts-warning);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--rts-gray-900);
+  line-height: 1.55;
+}
+
+.warning-banner mat-icon {
+  color: var(--rts-warning);
+  flex-shrink: 0;
+}
+
+/* ===================== Upload zone ===================== */
+.upload-zone {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px;
+  background: var(--rts-gray-50);
+  border: 1px dashed var(--rts-gray-300);
+  border-radius: 10px;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.file-info mat-icon {
+  color: var(--rts-red);
+  flex-shrink: 0;
+}
+
+.file-name {
+  font-weight: 600;
+  color: var(--rts-gray-900);
+  word-break: break-all;
+}
+
+.file-size {
+  font-size: 12px;
+  color: var(--rts-gray-500);
+}
+
+.confirm-field {
+  width: 100%;
+}
+
+/* ===================== Rapport ===================== */
+.rapport {
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.rapport-ok {
+  background: var(--rts-success-soft);
+  border-left: 4px solid var(--rts-success);
+  color: var(--rts-gray-900);
+}
+
+.rapport-ko {
+  background: var(--rts-danger-soft);
+  border-left: 4px solid var(--rts-danger);
+  color: var(--rts-gray-900);
+}
+
+.rapport-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rapport-ok .rapport-header mat-icon { color: var(--rts-success); }
+.rapport-ko .rapport-header mat-icon { color: var(--rts-danger); }
+
+.rapport-size {
+  margin-left: auto;
+  color: var(--rts-gray-500);
+  font-size: 12px;
+}
+
+.rapport-message {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.rapport details summary {
+  cursor: pointer;
+  color: var(--rts-gray-700);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.psql-output {
+  margin: 8px 0 0 0;
+  padding: 10px;
+  background: #1a1a1a;
+  color: #e0e0e0;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.restart-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--rts-info-soft);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--rts-gray-700);
+  line-height: 1.5;
+}
+
+.restart-hint mat-icon {
+  color: var(--rts-info);
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.restart-hint code {
+  display: inline-block;
+  background: white;
+  border: 1px solid var(--rts-gray-200);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  word-break: break-all;
+}

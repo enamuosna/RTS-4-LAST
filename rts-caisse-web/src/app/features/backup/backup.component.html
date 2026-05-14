@@ -1,0 +1,151 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Sauvegarde de la base</h1>
+      <div class="page-subtitle">
+        Exporter ou restaurer l'intégralité de la base PostgreSQL.
+        Réservé aux administrateurs.
+      </div>
+    </div>
+  </div>
+
+  <div class="backup-layout">
+
+    <!-- ================================================================ -->
+    <!-- EXPORT                                                            -->
+    <!-- ================================================================ -->
+    <mat-card class="section-card">
+      <div class="section-title">
+        <mat-icon class="icon-export">file_download</mat-icon>
+        <h3>Exporter la base</h3>
+      </div>
+      <div class="card-body">
+        <p class="explanation">
+          Télécharge un fichier <code>.sql</code> contenant toutes les
+          tables, séquences et données (caisses, opérations, journaux,
+          utilisateurs, paramètres du reçu…). Conservez ce fichier en
+          lieu sûr — il permet de tout restaurer en cas de problème.
+        </p>
+        <div class="action-row">
+          <button mat-flat-button color="primary"
+                  (click)="telecharger()"
+                  [disabled]="exporting()">
+            @if (exporting()) {
+              <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+              Génération en cours…
+            } @else {
+              <mat-icon>cloud_download</mat-icon>
+              Télécharger la sauvegarde
+            }
+          </button>
+        </div>
+      </div>
+    </mat-card>
+
+    <!-- ================================================================ -->
+    <!-- IMPORT                                                            -->
+    <!-- ================================================================ -->
+    <mat-card class="section-card section-danger">
+      <div class="section-title">
+        <mat-icon class="icon-import">cloud_upload</mat-icon>
+        <h3>Restaurer une sauvegarde</h3>
+      </div>
+      <div class="card-body">
+        <div class="warning-banner">
+          <mat-icon>warning</mat-icon>
+          <div>
+            <strong>Opération destructive.</strong> Toutes les données
+            actuelles seront <strong>écrasées</strong> par le contenu du
+            fichier déposé. Il est fortement recommandé de
+            <strong>télécharger une sauvegarde de l'état actuel</strong>
+            avant d'importer un autre dump, au cas où.
+          </div>
+        </div>
+
+        <div class="upload-zone">
+          <input
+            type="file"
+            #sqlInput
+            accept=".sql"
+            style="display: none"
+            (change)="onFileSelected($event)"
+          />
+          <button mat-stroked-button color="primary"
+                  (click)="sqlInput.click()"
+                  [disabled]="importing()">
+            <mat-icon>folder_open</mat-icon>
+            Choisir un fichier .sql
+          </button>
+
+          @if (selectedFile) {
+            <div class="file-info">
+              <mat-icon>insert_drive_file</mat-icon>
+              <div>
+                <div class="file-name">{{ selectedFile.name }}</div>
+                <div class="file-size">{{ formaterTaille(selectedFile.size) }}</div>
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (selectedFile) {
+          <mat-form-field appearance="outline" class="confirm-field">
+            <mat-label>Pour confirmer, tapez RESTORE en majuscules</mat-label>
+            <input matInput
+                   [(ngModel)]="confirmText"
+                   placeholder="RESTORE"
+                   autocomplete="off" />
+          </mat-form-field>
+
+          <div class="action-row">
+            <button mat-stroked-button (click)="reinitialiserImport()"
+                    [disabled]="importing()">
+              <mat-icon>close</mat-icon>
+              Annuler
+            </button>
+            <button mat-flat-button color="warn"
+                    (click)="restaurer()"
+                    [disabled]="!peutImporter">
+              @if (importing()) {
+                <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+                Restauration en cours…
+              } @else {
+                <mat-icon>restore</mat-icon>
+                Restaurer maintenant
+              }
+            </button>
+          </div>
+        }
+
+        @if (rapport) {
+          <div class="rapport"
+               [class.rapport-ok]="rapport.succes"
+               [class.rapport-ko]="!rapport.succes">
+            <div class="rapport-header">
+              <mat-icon>{{ rapport.succes ? 'check_circle' : 'error' }}</mat-icon>
+              <strong>{{ rapport.succes ? 'Succès' : 'Échec' }}</strong>
+              <span class="rapport-size">
+                ({{ formaterTaille(rapport.tailleOctets) }})
+              </span>
+            </div>
+            <div class="rapport-message">{{ rapport.message }}</div>
+            @if (rapport.dernieresLignesPsql.length) {
+              <details>
+                <summary>Voir la sortie psql ({{ rapport.dernieresLignesPsql.length }} lignes)</summary>
+                <pre class="psql-output">{{ rapport.dernieresLignesPsql.join('\n') }}</pre>
+              </details>
+            }
+          </div>
+        }
+
+        <div class="restart-hint">
+          <mat-icon>info</mat-icon>
+          Après une restauration réussie, redémarrez le backend pour
+          réinitialiser le pool JPA :
+          <code>sudo docker compose -f docker-compose.prod.yml restart backend</code>
+        </div>
+      </div>
+    </mat-card>
+
+  </div>
+</div>

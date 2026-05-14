@@ -88,6 +88,8 @@ public record AuditLogResponse(
             case TELECHARGER_RECU_PDF       -> "Téléchargement de reçu PDF";
             case ENVOYER_WHATSAPP           -> "Envoi WhatsApp";
             case EXPORTER_JOURNAL_EXCEL     -> "Export Excel du journal";
+            case EXPORTER_BDD               -> "Sauvegarde de la BDD";
+            case IMPORTER_BDD               -> "Restauration de la BDD";
             case CREER_CATEGORIE            -> "Création de catégorie";
             case MODIFIER_CATEGORIE         -> "Modification de catégorie";
             case SUPPRIMER_CATEGORIE        -> "Suppression de catégorie";

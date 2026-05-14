@@ -1,10 +1,16 @@
 .caisse-card {
   background: white;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  border-left: 4px solid var(--rts-primary);
+  border-radius: var(--rts-radius);
+  box-shadow: var(--rts-shadow);
+  border-left: 4px solid var(--rts-red);
   position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.caisse-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rts-shadow-md);
 }
 
 .caisse-card.ouverte {
@@ -13,7 +19,7 @@
 
 .caisse-card.suspendue {
   border-left-color: var(--rts-warning);
-  opacity: 0.75;
+  opacity: 0.78;
 }
 
 /* ===== Card header ===== */
@@ -25,17 +31,19 @@
 }
 
 .caisse-code {
-  color: var(--rts-primary);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.5px;
+  color: var(--rts-red);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 
 .caisse-libelle {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--rts-gray-900);
   margin: 4px 0;
+  letter-spacing: -0.1px;
 }
 
 .caisse-emplacement {
@@ -63,8 +71,9 @@
 
 .solde {
   font-size: 20px;
-  font-weight: 600;
-  color: var(--rts-primary);
+  font-weight: 700;
+  color: var(--rts-gray-900);
+  letter-spacing: -0.3px;
 }
 
 .caissier {

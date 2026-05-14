@@ -1,6 +1,6 @@
 /* =====================================================================
    Styles — page d'audit RTS Caisse
-   Palette : RTS bleu (#0A4D8C) + doré (#E8A317)
+   Palette : Rouge RTS (#E30613) + noir/anthracite
 ===================================================================== */
 
 .page-container {
@@ -21,7 +21,7 @@
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #0A4D8C;
+  color: #E30613;
 }
 
 .subtitle {
@@ -93,7 +93,7 @@
 
 .audit-table th {
   background: #f8fafc;
-  color: #0A4D8C;
+  color: #E30613;
   font-weight: 600;
   font-size: 12px;
   letter-spacing: 0.4px;

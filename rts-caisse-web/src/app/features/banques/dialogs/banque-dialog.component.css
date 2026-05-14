@@ -6,7 +6,11 @@ h2[mat-dialog-title] {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #1565c0;
+    color: var(--rts-gray-900);
+}
+
+h2[mat-dialog-title] mat-icon {
+    color: var(--rts-red);
 }
 
 .banque-dialog-content {

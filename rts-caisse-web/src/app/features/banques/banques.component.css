@@ -11,9 +11,21 @@
 }
 .page-header h1 {
     margin: 0;
-    color: #1565c0;
+    color: var(--rts-gray-900);
     font-size: 24px;
     font-weight: 600;
+    position: relative;
+    padding-left: 14px;
+}
+.page-header h1::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 4px;
+    border-radius: 2px;
+    background: var(--rts-red);
 }
 .page-header .subtitle {
     margin: 4px 0 0;

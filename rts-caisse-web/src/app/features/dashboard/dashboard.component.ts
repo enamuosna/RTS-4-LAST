@@ -92,7 +92,7 @@ export class DashboardComponent implements OnInit {
       datasets: [
         {
           data: d.repartitionParCaisse.map((c) => c.entrees),
-          backgroundColor: ['#0a4d8c', '#e8a317', '#2e7d32', '#1565c0', '#6a1b9a', '#ad1457'],
+          backgroundColor: ['#E30613', '#1a1a1a', '#B30510', '#7A030B', '#F47A82', '#4a4a4a'],
           borderWidth: 2,
           borderColor: '#fff'
         }

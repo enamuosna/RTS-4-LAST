@@ -146,7 +146,7 @@ import { AuditLog } from '../../core/services/audit.service';
       gap: 10px;
       margin: 0;
       font-size: 18px;
-      color: #0A4D8C;
+      color: #E30613;
     }
     .title-icon { font-size: 24px; height: 24px; width: 24px; }
     .title-icon.ok { color: #16a34a; }

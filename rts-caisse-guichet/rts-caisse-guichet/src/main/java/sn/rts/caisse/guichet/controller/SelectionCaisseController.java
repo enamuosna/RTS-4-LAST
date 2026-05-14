@@ -114,7 +114,7 @@ public class SelectionCaisseController {
 
             // Code + affectation
             Label code = new Label(caisse.code);
-            code.setStyle("-fx-font-weight: bold; -fx-text-fill: #0a4d8c; -fx-font-size: 13px;");
+            code.setStyle("-fx-font-weight: bold; -fx-text-fill: #E30613; -fx-font-size: 13px;");
 
             Label libelle = new Label(caisse.libelle);
             libelle.setStyle("-fx-font-size: 14px;");

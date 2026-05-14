@@ -1,10 +1,10 @@
 /* ============================================================================
-   RTS Caisse Guichet — Thème "Broadcast Light" v4.0
-   Mêmes sélecteurs que style.css (dark), palette blanche RTS-blue + ambre
+   RTS Caisse Guichet — Thème "Broadcast Light" v4.1
+   Charte graphique officielle RTS : rouge (#E30613) sur fond clair
    ============================================================================
    - Fond clair multi-couches (#f5f7fb)
    - Cartes blanches avec ombres douces
-   - Bleu RTS profond (#0a4d8c) + ambre (#F59E0B)
+   - Rouge RTS (#E30613) + ambre (#F59E0B)
    - Accolades équilibrées, aucune propriété non supportée
    ============================================================================ */
 
@@ -18,7 +18,7 @@
                      "Helvetica Neue", system-ui, sans-serif;
     -fx-font-size: 13.5px;
     -fx-font-smoothing-type: lcd;
-    -rts-primary-darker: #1a5276;
+    -rts-primary-darker: #7A030B;
 
     /* ---------- Surfaces (du plus clair au plus marqué) ---------- */
     -rts-bg:             #F5F7FB;
@@ -41,13 +41,13 @@
     -rts-text-dim:       #94A3B8;
     -rts-text-disabled:  #CBD5E1;
 
-    /* ---------- Accent principal RTS — bleu institutionnel ---------- */
-    -rts-primary:        #0A4D8C;
-    -rts-primary-light:  #1565C0;
-    -rts-primary-dark:   #073A6B;
-    -rts-primary-50:     #E8F1FA;
-    -rts-primary-100:    #C5DCF0;
-    -rts-primary-glow:   rgba(10, 77, 140, 0.30);
+    /* ---------- Accent principal RTS — rouge officiel ---------- */
+    -rts-primary:        #E30613;
+    -rts-primary-light:  #FF3D4E;
+    -rts-primary-dark:   #B30510;
+    -rts-primary-50:     #FBE5E7;
+    -rts-primary-100:    #F4BFC4;
+    -rts-primary-glow:   rgba(227, 6, 19, 0.30);
 
     /* ---------- Accent doré RTS / Ambre ---------- */
     -rts-accent:         #F59E0B;
@@ -104,7 +104,7 @@
     -border-subtle    : #E5E7EB;
     -text-default     : #1F2937;
     -text-muted       : #6B7280;
-    -accent-primary   : #0A4D8C;
+    -accent-primary   : #E30613;
 }
 
 
@@ -188,7 +188,7 @@
 .login-logo {
     -fx-pref-width: 78;
     -fx-pref-height: 78;
-    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.18), 14, 0.0, 0, 4);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.18), 14, 0.0, 0, 4);
 }
 
 .login-title {
@@ -329,8 +329,8 @@
         -rts-primary 100%
     );
     -fx-text-fill: white;
-    -fx-border-color: rgba(10, 77, 140, 0.45);
-    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.28), 12, 0.0, 0, 4);
+    -fx-border-color: rgba(227, 6, 19, 0.45);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.28), 12, 0.0, 0, 4);
 }
 .button-primary:hover {
     -fx-background-color: linear-gradient(
@@ -338,11 +338,11 @@
         #1976D2 0%,
         -rts-primary-light 100%
     );
-    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.40), 16, 0.0, 0, 6);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.40), 16, 0.0, 0, 6);
 }
 .button-primary:pressed {
     -fx-background-color: -rts-primary-dark;
-    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.20), 4, 0.0, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.20), 4, 0.0, 0, 1);
     -fx-translate-y: 1;
 }
 
@@ -532,7 +532,7 @@
 .text-field:focused, .password-field:focused, .text-area:focused {
     -fx-background-color: white;
     -fx-border-color: -rts-primary;
-    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.20), 8, 0.0, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.20), 8, 0.0, 0, 0);
 }
 
 .text-area .content {
@@ -588,7 +588,7 @@
 }
 .combo-box-base:focused {
     -fx-border-color: -rts-primary;
-    -fx-effect: dropshadow(gaussian, rgba(10, 77, 140, 0.20), 8, 0.0, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.20), 8, 0.0, 0, 0);
 }
 .combo-box-base .arrow,
 .combo-box-base .arrow-button {

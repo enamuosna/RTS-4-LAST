@@ -55,7 +55,7 @@ public final class PrintRecu {
 
     private static final double LARGEUR_RECU = 380;
 
-    private static final Color RTS_BLUE  = Color.web("#0a4d8c");
+    private static final Color RTS_RED   = Color.web("#E30613");
     private static final Color GRAY_900  = Color.web("#0f172a");
     private static final Color GRAY_700  = Color.web("#334155");
     private static final Color GRAY_500  = Color.web("#64748b");
@@ -194,11 +194,11 @@ public final class PrintRecu {
 
         Label raisonSociale = new Label("SOCIÉTÉ NATIONALE DE RADIODIFFUSION");
         raisonSociale.setFont(Font.font("Arial", FontWeight.BOLD, 11));
-        raisonSociale.setTextFill(RTS_BLUE);
+        raisonSociale.setTextFill(RTS_RED);
 
         Label sousTitre = new Label("TÉLÉVISION DU SÉNÉGAL");
         sousTitre.setFont(Font.font("Arial", FontWeight.BOLD, 11));
-        sousTitre.setTextFill(RTS_BLUE);
+        sousTitre.setTextFill(RTS_RED);
 
         Label loi = new Label("Créée par la loi n° 92-02 du 06 janvier 1992");
         loi.setFont(Font.font("Arial", 8));
@@ -270,7 +270,7 @@ public final class PrintRecu {
 
         Label numero = new Label("N°  " + (op.numeroRecu == null ? "—" : op.numeroRecu));
         numero.setFont(Font.font("Consolas", FontWeight.BOLD, 18));
-        numero.setTextFill(RTS_BLUE);
+        numero.setTextFill(RTS_RED);
 
         box.getChildren().addAll(libelle, numero);
         return box;
@@ -398,7 +398,7 @@ public final class PrintRecu {
 
         Label valeur = new Label(Ui.formatMontant(op.montant));
         valeur.setFont(Font.font("Consolas", FontWeight.BOLD, 20));
-        valeur.setTextFill(RTS_BLUE);
+        valeur.setTextFill(RTS_RED);
 
         box.getChildren().addAll(libelle, valeur);
         return box;

@@ -86,7 +86,7 @@
 
                 <Button fx:id="ouvrirButton" onAction="#onOuvrirCaisse" styleClass="button, button-accent" text="Ouvrir la caisse">
                     <graphic>
-                        <SVGPath content="M9 12 l2 2 4-4 m-9 4 a9 9 0 1 1 18 0 a9 9 0 0 1-18 0 z" scaleX="0.7" scaleY="0.7" style="-fx-fill: transparent; -fx-stroke: #073a6b; -fx-stroke-width: 2;" styleClass="icon" />
+                        <SVGPath content="M9 12 l2 2 4-4 m-9 4 a9 9 0 1 1 18 0 a9 9 0 0 1-18 0 z" scaleX="0.7" scaleY="0.7" style="-fx-fill: transparent; -fx-stroke: #B30510; -fx-stroke-width: 2;" styleClass="icon" />
                     </graphic>
                 </Button>
 

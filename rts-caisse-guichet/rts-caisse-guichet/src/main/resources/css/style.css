@@ -1,9 +1,9 @@
 /* ============================================================================
-   RTS Caisse Guichet — Thème "Broadcast Dark" v4.0
-   Inspiré de RSI Archives v2 (FXML + EventBus + design system)
+   RTS Caisse Guichet — Thème "Broadcast Dark" v4.1
+   Charte graphique officielle RTS : rouge (#E30613) sur fond sombre
    ============================================================================
    - Fond multi-couches sombre (#0A0E18 → #06080F)
-   - Palette RTS-blue (#3B82F6) + Ambre (#FBBF24) + Teal monétaire (#5EEAD4)
+   - Palette Rouge RTS (#E30613) + Ambre (#FBBF24) + Teal monétaire (#5EEAD4)
    - Cartes "raised" avec ombres internes lumineuses
    - Boutons en gradients + glow d'élévation
    - JetBrains Mono pour les chiffres et timecodes
@@ -44,13 +44,13 @@
     -rts-text-dim:       #64748B;
     -rts-text-disabled:  #475569;
 
-    /* ---------- Accent principal RTS — bleu broadcast ---------- */
-    -rts-primary:        #3B82F6;
-    -rts-primary-light:  #60A5FA;
-    -rts-primary-dark:   #2563EB;
-    -rts-primary-50:     rgba(59, 130, 246, 0.12);
-    -rts-primary-100:    rgba(59, 130, 246, 0.20);
-    -rts-primary-glow:   rgba(59, 130, 246, 0.35);
+    /* ---------- Accent principal RTS — rouge officiel ---------- */
+    -rts-primary:        #E30613;
+    -rts-primary-light:  #FF3D4E;
+    -rts-primary-dark:   #B30510;
+    -rts-primary-50:     rgba(227, 6, 19, 0.12);
+    -rts-primary-100:    rgba(227, 6, 19, 0.22);
+    -rts-primary-glow:   rgba(227, 6, 19, 0.40);
 
     /* ---------- Accent doré RTS / Ambre ---------- */
     -rts-accent:         #FBBF24;
@@ -110,7 +110,7 @@
     -border-subtle    : #2F3744;
     -text-default     : #E5E7EB;
     -text-muted       : #9CA3AF;
-    -accent-primary   : #4FACFE;
+    -accent-primary   : #FF3D4E;
 }
 
 
@@ -176,7 +176,7 @@
     -fx-background-color:
         radial-gradient(
             center 50% 30%, radius 60%,
-            rgba(59, 130, 246, 0.18) 0%,
+            rgba(227, 6, 19, 0.18) 0%,
             transparent 70%
         ),
         radial-gradient(
@@ -211,14 +211,14 @@
     -fx-pref-height: 78;
     -fx-background-color: linear-gradient(
         to bottom,
-        rgba(59, 130, 246, 0.18) 0%,
-        rgba(59, 130, 246, 0.04) 100%
+        rgba(227, 6, 19, 0.18) 0%,
+        rgba(227, 6, 19, 0.04) 100%
     );
     -fx-background-radius: 22;
-    -fx-border-color: rgba(59, 130, 246, 0.30);
+    -fx-border-color: rgba(227, 6, 19, 0.30);
     -fx-border-radius: 22;
     -fx-border-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.40), 26, 0.2, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.40), 26, 0.2, 0, 0);
 }
 
 .login-title {
@@ -364,21 +364,21 @@
         -rts-primary-dark 100%
     );
     -fx-text-fill: white;
-    -fx-border-color: rgba(96, 165, 250, 0.45);
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.35), 14, 0.0, 0, 4);
+    -fx-border-color: rgba(255, 61, 78, 0.45);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.35), 14, 0.0, 0, 4);
 }
 .button-primary:hover {
     -fx-background-color: linear-gradient(
         to bottom,
-        #7BA9F8 0%,
+        #FF6675 0%,
         -rts-primary-light 100%
     );
     -fx-text-fill: white;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.55), 20, 0.0, 0, 6);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.55), 20, 0.0, 0, 6);
 }
 .button-primary:pressed {
     -fx-background-color: -rts-primary-dark;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.25), 6, 0.0, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.25), 6, 0.0, 0, 1);
     -fx-translate-y: 1;
 }
 
@@ -572,7 +572,7 @@
 .text-field:focused, .password-field:focused, .text-area:focused {
     -fx-background-color: -rts-raised;
     -fx-border-color: -rts-primary;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.30), 8, 0.0, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.30), 8, 0.0, 0, 0);
 }
 
 .text-area .content {
@@ -629,7 +629,7 @@
 }
 .combo-box-base:focused {
     -fx-border-color: -rts-primary;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.30), 8, 0.0, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.30), 8, 0.0, 0, 0);
 }
 .combo-box-base .arrow,
 .combo-box-base .arrow-button {
@@ -780,7 +780,7 @@
 .chip-primary {
     -fx-background-color: -rts-primary-50;
     -fx-text-fill: -rts-primary-light;
-    -fx-border-color: rgba(59, 130, 246, 0.30);
+    -fx-border-color: rgba(227, 6, 19, 0.30);
 }
 .chip-accent {
     -fx-background-color: -rts-accent-50;
@@ -1160,7 +1160,7 @@
         -rts-teal 100%
     );
     -fx-background-radius: 8;
-    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.40), 8, 0.0, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(227, 6, 19, 0.40), 8, 0.0, 0, 0);
 }
 
 

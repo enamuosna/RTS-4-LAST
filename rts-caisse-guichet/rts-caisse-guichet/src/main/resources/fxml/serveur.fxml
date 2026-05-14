@@ -11,7 +11,6 @@
     Logo RTS officiel remplace la pastille générique.
 -->
 
-<?import javax.swing.text.html.ImageView?>
 <StackPane styleClass="login-pane" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sn.rts.caisse.guichet.controller.ServeurController">
 
     <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="500" spacing="14" styleClass="login-card">

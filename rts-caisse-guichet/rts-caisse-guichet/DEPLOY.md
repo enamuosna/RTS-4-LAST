@@ -1,10 +1,10 @@
-# RTS Caisse Client — Notes de déploiement MSI
+# RTS Caisse Client — Notes de déploiement MSI / DMG
 
-## 🛠 Build
+## 🛠 Build Windows (.msi)
 
 ```powershell
 # Build standard (backend = localhost:8080)
-
+.\build-msi.ps1
 
 # Build pour environnement de prod
 .\build-msi.ps1 -Version "1.0.0" -BackendUrl "http://srv-caisse.rts.local:8080/api" -Clean
@@ -14,6 +14,50 @@
 ```
 
 Le MSI final apparaît dans `build\msi\RTS Caisse Client-1.0.0.msi`.
+
+## 🍎 Build macOS (.dmg / .pkg)
+
+⚠ À exécuter **depuis un Mac uniquement** (jpackage ne supporte pas le cross-compile).
+
+### Prérequis Mac
+```bash
+brew install maven
+brew install --cask temurin@21    # ou tout JDK 21
+
+# JavaFX JMods 21 — télécharger depuis gluonhq.com (Type = jmods),
+# dézipper et exporter le chemin :
+export JAVAFX_JMODS="/Users/$USER/javafx-jmods-21"
+```
+
+### Build
+```bash
+chmod +x build-dmg.sh   # une seule fois
+
+# Build standard (backend = localhost:8090)
+./build-dmg.sh
+
+# Build pour environnement de prod
+./build-dmg.sh --version 1.0.0 \
+               --backend-url "https://rts-caisse.duckdns.org/api" \
+               --clean
+
+# Format .pkg (plus adapté pour distribution centralisée via MDM)
+./build-dmg.sh --type pkg
+
+# Build signé pour distribution sans avertissement Gatekeeper
+./build-dmg.sh --sign "Developer ID Application: RTS Senegal (ABC123XYZ)"
+```
+
+Le DMG final apparaît dans `build/dmg/RTS Caisse Client-1.0.0.dmg`.
+
+### Installation sur un poste Mac
+1. Double-clic sur le `.dmg` → glisser l'app dans **Applications**
+2. **Première ouverture** : Clic-droit sur l'app dans Applications → **Ouvrir** →
+   confirmer l'avertissement Gatekeeper (sans signature Apple Developer ID).
+3. Les ouvertures suivantes se font normalement par double-clic.
+
+Pour éviter cet avertissement en distribution massive, signer + notariser
+avec un Developer ID Apple (option `--sign`).
 
 ## 📥 Installation sur un poste caissier
 

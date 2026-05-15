@@ -56,6 +56,8 @@ public class NouvelleOperationController {
     @FXML private ComboBox<CategorieDTO> categorieCombo;
     @FXML private ComboBox<ModePaiement> modePaiementCombo;
     @FXML private TextField montantField;
+    @FXML private TextField timbreField;
+    @FXML private TextField montantTtcField;
     @FXML private TextField referenceField;
 
     // ---------------- Banque (conditionnel) ----------------
@@ -83,6 +85,13 @@ public class NouvelleOperationController {
     private final CaisseApi api = CaisseApi.getInstance();
     private CaisseDTO caisse;
     private Consumer<OperationCaisseResponse> onSuccess;
+
+    /**
+     * Si non null, on est en mode <b>modification</b> : on PUT vers
+     * /operations/{id} au lieu de POST. Le formulaire est pré-rempli
+     * dans {@link #initialiserPourModification}.
+     */
+    private OperationCaisseResponse operationEnModification;
 
     private List<CategorieDTO> toutesCategories = List.of();
     private List<ClientDTO>    tousClients      = new ArrayList<>();
@@ -131,17 +140,121 @@ public class NouvelleOperationController {
 
         appliquerModeClient(false);
         appliquerModePaiement(ModePaiement.ESPECES);
+
+        // Recalcul live du montant TTC = montant + timbre
+        montantField.textProperty().addListener((o, a, b) -> recalculerTtc());
+        timbreField.textProperty().addListener((o, a, b) -> recalculerTtc());
+        recalculerTtc();
+    }
+
+    private void recalculerTtc() {
+        BigDecimal montant = parseOuZero(montantField.getText());
+        BigDecimal timbre  = parseOuZero(timbreField.getText());
+        BigDecimal ttc     = montant.add(timbre);
+        montantTtcField.setText(Ui.formatMontant(ttc));
+    }
+
+    private static BigDecimal parseOuZero(String texte) {
+        BigDecimal v = Ui.parseMontant(texte);
+        return v == null ? BigDecimal.ZERO : v;
     }
 
     public void initialiser(CaisseDTO caisse,
                             Consumer<OperationCaisseResponse> onSuccess) {
         this.caisse    = caisse;
         this.onSuccess = onSuccess;
+        this.operationEnModification = null;
         if (caisse != null) {
             caisseLabel.setText(caisse.code + " · " + caisse.libelle);
         }
         chargerReferences();
         Platform.runLater(() -> montantField.requestFocus());
+    }
+
+    /**
+     * Initialise le formulaire en mode <b>modification</b> : pré-remplit
+     * tous les champs avec les valeurs de l'opération existante. Lors du
+     * clic « Enregistrer », un PUT /operations/{id} est envoyé au lieu
+     * du POST classique. Le solde de la caisse est recalculé côté backend.
+     */
+    public void initialiserPourModification(CaisseDTO caisse,
+                                             OperationCaisseResponse op,
+                                             Consumer<OperationCaisseResponse> onSuccess) {
+        this.caisse    = caisse;
+        this.onSuccess = onSuccess;
+        this.operationEnModification = op;
+        if (caisse != null) {
+            caisseLabel.setText(caisse.code + " · " + caisse.libelle);
+        }
+        if (enregistrerButton != null) {
+            enregistrerButton.setText("Mettre à jour");
+        }
+        // On charge d'abord les référentiels, PUIS on pré-remplit (callback)
+        chargerReferencesEtPrefRemplir(op);
+        Platform.runLater(() -> montantField.requestFocus());
+    }
+
+    private void chargerReferencesEtPrefRemplir(OperationCaisseResponse op) {
+        // Type
+        if (op.typeOperation == TypeOperation.ENTREE) entreeToggle.setSelected(true);
+        else                                          sortieToggle.setSelected(true);
+
+        // Montant + Timbre + référence
+        montantField.setText(op.montant == null ? "" : op.montant.toPlainString());
+        timbreField.setText(op.timbre == null
+                || op.timbre.signum() == 0 ? "" : op.timbre.toPlainString());
+        referenceField.setText(op.reference == null ? "" : op.reference);
+
+        // Mode de paiement
+        if (op.modePaiement != null) {
+            modePaiementCombo.getSelectionModel().select(op.modePaiement);
+            appliquerModePaiement(op.modePaiement);
+        }
+
+        // Categories : on charge puis on sélectionne la bonne
+        AsyncRunner.run(
+                () -> api.listerCategories(null),
+                cats -> {
+                    toutesCategories = cats == null ? List.of() : cats;
+                    filtrerCategoriesPourType();
+                    if (op.categorieId != null) {
+                        toutesCategories.stream()
+                                .filter(c -> op.categorieId.equals(c.id))
+                                .findFirst()
+                                .ifPresent(c -> categorieCombo.getSelectionModel().select(c));
+                    }
+                },
+                e -> log.error("Catégories indisponibles", e));
+
+        // Clients : on charge puis on sélectionne
+        AsyncRunner.run(
+                () -> api.rechercherClients(null),
+                clients -> {
+                    tousClients = clients == null ? new ArrayList<>() : new ArrayList<>(clients);
+                    clientCombo.setItems(FXCollections.observableArrayList(tousClients));
+                    if (op.clientId != null) {
+                        tousClients.stream()
+                                .filter(c -> op.clientId.equals(c.id))
+                                .findFirst()
+                                .ifPresent(c -> clientCombo.getSelectionModel().select(c));
+                    }
+                },
+                e -> log.error("Clients indisponibles", e));
+
+        // Banques : idem
+        AsyncRunner.run(
+                () -> api.listerBanques(),
+                banques -> {
+                    toutesBanques = banques == null ? List.of() : banques;
+                    banqueCombo.setItems(FXCollections.observableArrayList(toutesBanques));
+                    if (op.banqueId != null) {
+                        toutesBanques.stream()
+                                .filter(b -> op.banqueId.equals(b.id))
+                                .findFirst()
+                                .ifPresent(b -> banqueCombo.getSelectionModel().select(b));
+                    }
+                },
+                e -> log.error("Banques indisponibles", e));
     }
 
     private void chargerReferences() {
@@ -254,6 +367,7 @@ public class NouvelleOperationController {
 
         enregistrerButton.setDisable(true);
         final ClientCreateRequest nouveauClientFinal = nouveauClientRequest;
+        final boolean modeModification = (operationEnModification != null);
         AsyncRunner.run(
                 () -> {
                     ClientDTO clientCree = null;
@@ -261,7 +375,9 @@ public class NouvelleOperationController {
                         clientCree = api.creerClient(nouveauClientFinal);
                         req.clientId = clientCree.id;
                     }
-                    OperationCaisseResponse op = api.enregistrerOperation(req);
+                    OperationCaisseResponse op = modeModification
+                            ? api.modifierOperation(operationEnModification.id, req)
+                            : api.enregistrerOperation(req);
                     return new ResultatEnregistrement(clientCree, op);
                 },
                 resultat -> {
@@ -272,8 +388,15 @@ public class NouvelleOperationController {
                     if (onSuccess != null) {
                         onSuccess.accept(resultat.operation());
                     }
-                    proposerActionsApresEnregistrement(resultat.operation());
-                    fermerModal();
+                    if (modeModification) {
+                        Ui.info("Opération mise à jour",
+                                "Les modifications ont été enregistrées et le solde "
+                                        + "de la caisse a été recalculé.");
+                        fermerModal();
+                    } else {
+                        proposerActionsApresEnregistrement(resultat.operation());
+                        fermerModal();
+                    }
                 },
                 e -> {
                     enregistrerButton.setDisable(false);
@@ -284,6 +407,8 @@ public class NouvelleOperationController {
     @FXML
     public void onReset() {
         montantField.clear();
+        timbreField.clear();
+        montantTtcField.clear();
         referenceField.clear();
 
         clientCombo.getSelectionModel().clearSelection();
@@ -424,11 +549,20 @@ public class NouvelleOperationController {
             return null;
         }
 
+        BigDecimal timbre = Ui.parseMontant(timbreField.getText());
+        if (timbre == null) timbre = BigDecimal.ZERO;
+        if (timbre.signum() < 0) {
+            Ui.erreur("Timbre invalide", "Le timbre doit être positif ou nul.");
+            timbreField.requestFocus();
+            return null;
+        }
+
         OperationCaisseRequest req = new OperationCaisseRequest();
         req.caisseId      = caisse.id;
         req.categorieId   = categorie.id;
         req.typeOperation = getTypeSelectionne();
         req.montant       = montant;
+        req.timbre        = timbre;
         req.modePaiement  = mode;
         req.motif         = null;
         req.reference     = (referenceField.getText() == null

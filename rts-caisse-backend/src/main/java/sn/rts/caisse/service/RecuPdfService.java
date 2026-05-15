@@ -301,6 +301,10 @@ public class RecuPdfService {
                                int tCorps, int tMontant) throws Exception {
         boolean entree = op == null || "ENTREE".equals(op.getTypeOperation().name());
         BigDecimal montant = op != null ? op.getMontant() : new BigDecimal("10000");
+        BigDecimal timbre  = op != null && op.getTimbre() != null
+                ? op.getTimbre() : BigDecimal.ZERO;
+        BigDecimal ttc     = op != null && op.getMontantTtc() != null
+                ? op.getMontantTtc() : montant.add(timbre);
 
         PdfPTable bloc = new PdfPTable(1);
         bloc.setWidthPercentage(100);
@@ -311,19 +315,67 @@ public class RecuPdfService {
         cell.setPadding(10);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        Paragraph label = new Paragraph("MONTANT TOTAL", font(tCorps - 1, Font.BOLD, cTexte));
-        label.setAlignment(Element.ALIGN_CENTER);
-        cell.addElement(label);
+        // Si un timbre est present, on detaille HT + Timbre + TTC.
+        // Sinon, comportement historique : un seul montant.
+        boolean afficheDetail = timbre.signum() > 0;
 
-        Paragraph m = new Paragraph(
-                formatMontant(montant) + " FCFA",
-                font(tMontant, Font.BOLD, entree ? cSuccess : cDanger));
-        m.setAlignment(Element.ALIGN_CENTER);
-        cell.addElement(m);
+        if (afficheDetail) {
+            // Petit tableau 2 colonnes pour aligner les libellés et les valeurs
+            PdfPTable lignes = new PdfPTable(new float[]{55, 45});
+            lignes.setWidthPercentage(100);
+
+            ajouterLigneMontant(lignes, "Montant HT",       formatMontant(montant) + " FCFA",
+                    cTexte, cTexte, tCorps);
+            ajouterLigneMontant(lignes, "Timbre fiscal",    formatMontant(timbre) + " FCFA",
+                    cTexte, cTexte, tCorps);
+            cell.addElement(lignes);
+
+            // Séparateur visuel
+            Paragraph sep = new Paragraph("─────────────────",
+                    font(tCorps - 2, Font.NORMAL, cTexte));
+            sep.setAlignment(Element.ALIGN_CENTER);
+            cell.addElement(sep);
+
+            Paragraph label = new Paragraph("MONTANT TTC", font(tCorps - 1, Font.BOLD, cTexte));
+            label.setAlignment(Element.ALIGN_CENTER);
+            cell.addElement(label);
+
+            Paragraph m = new Paragraph(
+                    formatMontant(ttc) + " FCFA",
+                    font(tMontant, Font.BOLD, entree ? cSuccess : cDanger));
+            m.setAlignment(Element.ALIGN_CENTER);
+            cell.addElement(m);
+        } else {
+            Paragraph label = new Paragraph("MONTANT TOTAL", font(tCorps - 1, Font.BOLD, cTexte));
+            label.setAlignment(Element.ALIGN_CENTER);
+            cell.addElement(label);
+
+            Paragraph m = new Paragraph(
+                    formatMontant(montant) + " FCFA",
+                    font(tMontant, Font.BOLD, entree ? cSuccess : cDanger));
+            m.setAlignment(Element.ALIGN_CENTER);
+            cell.addElement(m);
+        }
 
         bloc.addCell(cell);
         document.add(bloc);
         saut(document, 6);
+    }
+
+    private void ajouterLigneMontant(PdfPTable table, String label, String valeur,
+                                      Color cLabel, Color cValeur, int tCorps) {
+        PdfPCell cL = new PdfPCell(new Paragraph(label,
+                font(tCorps, Font.NORMAL, cLabel)));
+        cL.setBorder(PdfPCell.NO_BORDER);
+        cL.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        cL.setPaddingRight(8);
+        table.addCell(cL);
+
+        PdfPCell cV = new PdfPCell(new Paragraph(valeur,
+                font(tCorps, Font.BOLD, cValeur)));
+        cV.setBorder(PdfPCell.NO_BORDER);
+        cV.setHorizontalAlignment(Element.ALIGN_LEFT);
+        table.addCell(cV);
     }
 
     private void ecrireMotif(Document document, OperationCaisse op,

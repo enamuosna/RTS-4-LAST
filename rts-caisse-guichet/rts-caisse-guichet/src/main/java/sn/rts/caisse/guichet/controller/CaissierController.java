@@ -274,8 +274,9 @@ public class CaissierController {
 
             private final Button btnImprimer = new Button();
             private final Button btnWhatsApp = new Button();
+            private final Button btnModifier = new Button();
             private final Button btnAnnuler  = new Button();
-            private final HBox   box         = new HBox(4, btnImprimer, btnWhatsApp, btnAnnuler);
+            private final HBox   box         = new HBox(4, btnImprimer, btnWhatsApp, btnModifier, btnAnnuler);
 
             {
                 FontIcon iconPrint = new FontIcon(FontAwesomeSolid.PRINT);
@@ -300,6 +301,17 @@ public class CaissierController {
                 btnWhatsApp.setTooltip(new javafx.scene.control.Tooltip(
                         "Envoyer le reçu par WhatsApp"));
 
+                FontIcon iconModifier = new FontIcon(FontAwesomeSolid.PEN);
+                iconModifier.setIconSize(13);
+                iconModifier.setIconColor(javafx.scene.paint.Color.web("#1d4ed8"));
+                btnModifier.setGraphic(iconModifier);
+                btnModifier.getStyleClass().addAll("button", "button-icon");
+                btnModifier.setPrefSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
+                btnModifier.setMinSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
+                btnModifier.setMaxSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
+                btnModifier.setTooltip(new javafx.scene.control.Tooltip(
+                        "Corriger l'opération (saisie erronée)"));
+
                 FontIcon iconCancel = new FontIcon(FontAwesomeSolid.TIMES_CIRCLE);
                 iconCancel.setIconSize(14);
                 iconCancel.setIconColor(javafx.scene.paint.Color.web("#dc2626"));
@@ -322,10 +334,14 @@ public class CaissierController {
                 }
                 btnImprimer.setOnAction(e -> PrintRecu.imprimer(op));
                 btnWhatsApp.setOnAction(e -> RecuExporter.envoyerWhatsApp(op));
+                btnModifier.setOnAction(e -> modifierOperation(op));
                 btnAnnuler.setOnAction(e -> annulerOperation(op));
 
                 btnWhatsApp.setDisable(false);
                 btnWhatsApp.setOpacity(1.0);
+
+                btnModifier.setDisable(op.annulee);
+                btnModifier.setOpacity(op.annulee ? 0.3 : 1.0);
 
                 btnAnnuler.setDisable(op.annulee);
                 btnAnnuler.setOpacity(op.annulee ? 0.3 : 1.0);
@@ -712,6 +728,52 @@ public class CaissierController {
     @FXML
     public void onRefresh() {
         rafraichirCaisse();
+    }
+
+    /**
+     * Ouvre le modal « Nouvelle opération » en mode édition, pré-rempli avec
+     * les valeurs de l'opération existante. Au clic Enregistrer, un PUT
+     * /operations/{id} est envoyé. Le solde de la caisse est recalculé
+     * automatiquement côté backend.
+     */
+    private void modifierOperation(OperationCaisseResponse op) {
+        CaisseDTO caisse = Session.getInstance().getCaisseActive();
+        if (caisse == null || caisse.statut != StatutCaisse.OUVERTE) {
+            Ui.erreur("Caisse fermée",
+                    "La caisse doit être ouverte pour modifier une opération.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    GuichetApplication.class.getResource("/fxml/nouvelle-operation.fxml"));
+            Parent root = loader.load();
+            NouvelleOperationController controller = loader.getController();
+
+            Stage modal = new Stage();
+            modal.initOwner(getCurrentWindow());
+            modal.initModality(Modality.APPLICATION_MODAL);
+            modal.initStyle(StageStyle.UTILITY);
+            modal.setTitle("Modifier l'opération " + op.numeroRecu);
+            modal.setResizable(false);
+
+            Scene scene = new Scene(root);
+            ThemeManager.getInstance().register(scene);
+            modal.setOnHidden(e -> ThemeManager.getInstance().unregister(scene));
+            modal.setScene(scene);
+
+            controller.initialiserPourModification(caisse, op, mise_a_jour -> {
+                // Rafraîchir le tableau + le solde après modification
+                rafraichirCaisse();
+            });
+
+            modal.showAndWait();
+
+        } catch (Exception e) {
+            log.error("Échec ouverture du modal Modification : {}", e.getMessage(), e);
+            Ui.erreur("Erreur",
+                    "Impossible d'ouvrir le formulaire de modification : " + e.getMessage());
+        }
     }
 
     private void annulerOperation(OperationCaisseResponse op) {

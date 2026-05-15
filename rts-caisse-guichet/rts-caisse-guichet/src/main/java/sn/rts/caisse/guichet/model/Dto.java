@@ -277,6 +277,8 @@ public final class Dto {
         public Long          clientId;
         public TypeOperation typeOperation;
         public BigDecimal    montant;
+        /** Timbre fiscal (taxe optionnelle, FCFA). Peut être null = traité comme 0. */
+        public BigDecimal    timbre;
         public ModePaiement  modePaiement;
 
         /** Conservé pour compat ; envoyé null depuis le formulaire v5. */
@@ -313,6 +315,8 @@ public final class Dto {
         public String        numeroRecu;
         public TypeOperation typeOperation;
         public BigDecimal    montant;
+        public BigDecimal    timbre;
+        public BigDecimal    montantTtc;
         public String        motif;
         public ModePaiement  modePaiement;
         public String        reference;

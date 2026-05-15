@@ -84,6 +84,12 @@ export const routes: Routes = [
         canActivate: [roleGuard(['ADMIN'])]
       },
       {
+        path: 'supervision',
+        loadComponent: () =>
+          import('./features/supervision/supervision.component').then((m) => m.SupervisionComponent),
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR'])]
+      },
+      {
         path: 'backup',
         loadComponent: () =>
           import('./features/backup/backup.component').then((m) => m.BackupComponent),

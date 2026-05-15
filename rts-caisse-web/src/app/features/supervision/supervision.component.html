@@ -1,0 +1,190 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1>Supervision en temps réel</h1>
+      <div class="page-subtitle">
+        Vue d'ensemble pour le responsable des caisses RTS.
+        Rafraîchissement automatique toutes les 10 secondes.
+      </div>
+    </div>
+    @if (snapshot(); as s) {
+      <div class="refresh-indicator" matTooltip="Prochain refresh">
+        <mat-icon class="spin-on-tick">sync</mat-icon>
+        <span>{{ secondsUntilRefresh() }}s</span>
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading-wrapper">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else {
+    @if (errorMsg(); as err) {
+      <div class="error-banner">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ err }}</span>
+      </div>
+    } @else {
+      @if (snapshot(); as s) {
+
+    <!-- KPI globaux -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-caisses">
+        <div class="kpi-icon"><mat-icon>point_of_sale</mat-icon></div>
+        <div class="kpi-body">
+          <div class="kpi-value">{{ s.caissesOuvertes }} / {{ s.totalCaisses }}</div>
+          <div class="kpi-label">Caisses ouvertes</div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-entrees">
+        <div class="kpi-icon"><mat-icon>trending_up</mat-icon></div>
+        <div class="kpi-body">
+          <div class="kpi-value">
+            {{ s.totalEntreesJour | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+          </div>
+          <div class="kpi-label">Entrées du jour</div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-sorties">
+        <div class="kpi-icon"><mat-icon>trending_down</mat-icon></div>
+        <div class="kpi-body">
+          <div class="kpi-value">
+            {{ s.totalSortiesJour | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+          </div>
+          <div class="kpi-label">Sorties du jour</div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-net">
+        <div class="kpi-icon"><mat-icon>account_balance</mat-icon></div>
+        <div class="kpi-body">
+          <div class="kpi-value" [class.amount-positive]="s.soldeNetJour >= 0"
+               [class.amount-negative]="s.soldeNetJour < 0">
+            {{ s.soldeNetJour | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+          </div>
+          <div class="kpi-label">Solde net du jour</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layout 2 colonnes : caisses (à gauche) + activité (à droite) -->
+    <div class="supervision-layout">
+
+      <!-- Grille des caisses -->
+      <div class="caisses-section">
+        <h3 class="section-title">État des caisses</h3>
+        <div class="caisses-grid">
+          @for (c of s.caisses; track c.id) {
+            <mat-card class="caisse-card" [class.caisse-fermee]="c.statut === 'FERMEE'">
+              <div class="caisse-header">
+                <div>
+                  <div class="caisse-code">{{ c.code }}</div>
+                  <div class="caisse-libelle">{{ c.libelle }}</div>
+                </div>
+                <span class="statut-pill" [ngClass]="classForStatut(c.statut)">
+                  {{ c.statut }}
+                </span>
+              </div>
+
+              @if (c.statut === 'OUVERTE') {
+                <div class="caisse-solde">
+                  {{ c.soldeCourant | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+                </div>
+                <div class="caisse-caissier">
+                  <mat-icon>person</mat-icon>
+                  <span>{{ c.caissierNomComplet || '—' }}</span>
+                </div>
+                <div class="caisse-stats">
+                  <div class="stat">
+                    <span class="stat-label">Opérations</span>
+                    <span class="stat-value">{{ c.nombreOperationsJour | number:'1.0-0':'fr' }}</span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat-label">Entrées</span>
+                    <span class="stat-value amount-positive">
+                      {{ c.totalEntreesJour | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+                    </span>
+                  </div>
+                  <div class="stat">
+                    <span class="stat-label">Sorties</span>
+                    <span class="stat-value amount-negative">
+                      {{ c.totalSortiesJour | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="caisse-derniere">
+                  <mat-icon>schedule</mat-icon>
+                  <span>{{ formatRelatif(c.derniereOperationLe) }}</span>
+                </div>
+              } @else {
+                <div class="caisse-fermee-msg">
+                  <mat-icon>lock</mat-icon>
+                  Caisse {{ c.statut === 'SUSPENDUE' ? 'suspendue' : 'fermée' }}
+                </div>
+              }
+            </mat-card>
+          }
+        </div>
+      </div>
+
+      <!-- Flux d'activité récente -->
+      <div class="activite-section">
+        <h3 class="section-title">
+          Activité récente
+          <span class="count-pill">{{ s.activiteRecente.length }}</span>
+        </h3>
+        @if (s.activiteRecente.length === 0) {
+          <div class="empty-activite">
+            <mat-icon>inbox</mat-icon>
+            <div>Aucune opération aujourd'hui</div>
+          </div>
+        } @else {
+          <div class="activite-list">
+            @for (a of s.activiteRecente; track a.operationId) {
+              <div class="activite-row" [class.activite-annulee]="a.annulee">
+                <div class="activite-time">
+                  {{ a.dateOperation | date: 'HH:mm:ss' }}
+                </div>
+                <div class="activite-main">
+                  <div class="activite-line1">
+                    <span class="activite-numero">{{ a.numeroRecu }}</span>
+                    <span class="activite-caisse">{{ a.caisseCode }}</span>
+                    <span class="activite-type"
+                          [class.type-entree]="a.typeOperation === 'ENTREE'"
+                          [class.type-sortie]="a.typeOperation === 'SORTIE'">
+                      {{ a.typeOperation === 'ENTREE' ? '↑' : '↓' }}
+                    </span>
+                  </div>
+                  <div class="activite-line2">
+                    <span class="activite-categorie">{{ a.categorieLibelle }}</span>
+                    @if (a.clientRaisonSociale) {
+                      <span class="activite-client">— {{ a.clientRaisonSociale }}</span>
+                    }
+                  </div>
+                  <div class="activite-line3">
+                    <mat-icon class="mini-icon">person</mat-icon>
+                    <span>{{ a.caissierNom }}</span>
+                  </div>
+                </div>
+                <div class="activite-montant"
+                     [class.amount-positive]="a.typeOperation === 'ENTREE'"
+                     [class.amount-negative]="a.typeOperation === 'SORTIE'">
+                  {{ a.montantTtc | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+                  @if (a.annulee) {
+                    <mat-icon class="mini-icon" matTooltip="Opération annulée">cancel</mat-icon>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+    </div>
+      }
+    }
+  }
+</div>

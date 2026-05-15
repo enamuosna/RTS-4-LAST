@@ -102,14 +102,14 @@
                               promptText="Mode de règlement"/>
                 </VBox>
             </GridPane>
-            <!-- ========== Montant + Référence ========== -->
+            <!-- ========== Montant HT + Référence ========== -->
             <GridPane hgap="14" vgap="6">
                 <columnConstraints>
                     <ColumnConstraints percentWidth="50"/>
                     <ColumnConstraints percentWidth="50"/>
                 </columnConstraints>
                 <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Label styleClass="field-label" text="MONTANT (FCFA) *"/>
+                    <Label styleClass="field-label" text="MONTANT HT (FCFA) *"/>
                     <TextField fx:id="montantField" promptText="ex : 150 000"/>
                 </VBox>
 
@@ -117,6 +117,25 @@
                     <Label styleClass="field-label" text="RÉFÉRENCE"/>
                     <TextField fx:id="referenceField"
                                promptText="N° chèque, TX Wave/OM, bordereau..."/>
+                </VBox>
+            </GridPane>
+
+            <!-- ========== Timbre + Montant TTC (calculé) ========== -->
+            <GridPane hgap="14" vgap="6">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50"/>
+                    <ColumnConstraints percentWidth="50"/>
+                </columnConstraints>
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="TIMBRE FISCAL (FCFA)"/>
+                    <TextField fx:id="timbreField" promptText="0"/>
+                </VBox>
+
+                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="MONTANT TTC (calculé)"/>
+                    <TextField fx:id="montantTtcField" editable="false"
+                               promptText="0"
+                               style="-fx-font-weight: bold;"/>
                 </VBox>
             </GridPane>
 

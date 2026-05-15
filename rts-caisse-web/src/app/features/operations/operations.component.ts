@@ -59,6 +59,8 @@ export class OperationsComponent implements OnInit {
     'mode',
     'caissier',
     'montant',
+    'timbre',
+    'montantTtc',
     'actions'
   ];
 

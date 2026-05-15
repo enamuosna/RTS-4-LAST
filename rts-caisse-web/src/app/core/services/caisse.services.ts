@@ -11,7 +11,8 @@ import {
   OperationCaisseRequest,
   OuvertureCaisseRequest,
   Page,
-  ParametresRecu
+  ParametresRecu,
+  SupervisionSnapshot
 } from '../models/models';
 
 // ======================================================
@@ -24,6 +25,11 @@ export class OperationService {
 
   enregistrer(request: OperationCaisseRequest): Observable<OperationCaisse> {
     return this.http.post<OperationCaisse>(this.base, request);
+  }
+
+  /** Modifie une opération existante. Recalcule le solde côté serveur. */
+  modifier(id: number, request: OperationCaisseRequest): Observable<OperationCaisse> {
+    return this.http.put<OperationCaisse>(`${this.base}/${id}`, request);
   }
 
   annuler(id: number, motif: string): Observable<OperationCaisse> {
@@ -213,6 +219,20 @@ export class ParametresRecuService {
   /** Supprime le logo image. Le PDF retombera sur le texte du logo. */
   supprimerLogo(): Observable<void> {
     return this.http.delete<void>(`${this.base}/logo`);
+  }
+}
+
+// ======================================================
+//  SUPERVISION (vue temps réel pour le responsable des caisses)
+// ======================================================
+@Injectable({ providedIn: 'root' })
+export class SupervisionService {
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/supervision`;
+
+  /** Snapshot complet : caisses + agrégats du jour + flux d'activité. */
+  snapshot(): Observable<SupervisionSnapshot> {
+    return this.http.get<SupervisionSnapshot>(`${this.base}/snapshot`);
   }
 }
 

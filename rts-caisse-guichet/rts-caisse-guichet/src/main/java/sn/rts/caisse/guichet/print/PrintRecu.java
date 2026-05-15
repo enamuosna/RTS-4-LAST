@@ -397,22 +397,71 @@ public final class PrintRecu {
     private static Node sectionMontant(Ctx ctx) {
         VBox box = new VBox(2);
         box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(8, 0, 8, 0));
+        box.setPadding(new Insets(8, 12, 8, 12));
         box.setBackground(new Background(new BackgroundFill(
                 ctx.fondMontant, new CornerRadii(4), Insets.EMPTY)));
 
-        Label libelle = new Label("MONTANT TOTAL");
-        libelle.setFont(Font.font("Arial", FontWeight.BOLD, 9));
-        libelle.setTextFill(ctx.texte2);
+        java.math.BigDecimal montant = ctx.op != null && ctx.op.montant != null
+                ? ctx.op.montant : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal timbre  = ctx.op != null && ctx.op.timbre != null
+                ? ctx.op.timbre : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal ttc     = ctx.op != null && ctx.op.montantTtc != null
+                ? ctx.op.montantTtc : montant.add(timbre);
 
-        String montantTxt = ctx.op != null
-                ? Ui.formatMontant(ctx.op.montant) : "0";
-        Label valeur = new Label(montantTxt);
-        valeur.setFont(Font.font("Consolas", FontWeight.BOLD, ctx.tailleMontant));
-        valeur.setTextFill(ctx.primaire);
+        boolean afficheDetail = timbre.signum() > 0;
 
-        box.getChildren().addAll(libelle, valeur);
+        if (afficheDetail) {
+            // Lignes Montant HT + Timbre alignées
+            box.getChildren().add(ligneMontantInline(ctx, "Montant HT",
+                    Ui.formatMontant(montant) + " FCFA"));
+            box.getChildren().add(ligneMontantInline(ctx, "Timbre fiscal",
+                    Ui.formatMontant(timbre) + " FCFA"));
+
+            // Séparateur
+            Region sep = new Region();
+            sep.setPrefHeight(1);
+            sep.setMaxHeight(1);
+            sep.setPrefWidth(180);
+            sep.setBackground(new Background(new BackgroundFill(
+                    ctx.muted, CornerRadii.EMPTY, Insets.EMPTY)));
+            VBox.setMargin(sep, new Insets(4, 0, 4, 0));
+            box.getChildren().add(sep);
+
+            Label libelleTtc = new Label("MONTANT TTC");
+            libelleTtc.setFont(Font.font("Arial", FontWeight.BOLD, 9));
+            libelleTtc.setTextFill(ctx.texte2);
+            box.getChildren().add(libelleTtc);
+
+            Label valeurTtc = new Label(Ui.formatMontant(ttc) + " FCFA");
+            valeurTtc.setFont(Font.font("Consolas", FontWeight.BOLD, ctx.tailleMontant));
+            valeurTtc.setTextFill(ctx.primaire);
+            box.getChildren().add(valeurTtc);
+        } else {
+            Label libelle = new Label("MONTANT TOTAL");
+            libelle.setFont(Font.font("Arial", FontWeight.BOLD, 9));
+            libelle.setTextFill(ctx.texte2);
+            box.getChildren().add(libelle);
+
+            Label valeur = new Label(Ui.formatMontant(montant) + " FCFA");
+            valeur.setFont(Font.font("Consolas", FontWeight.BOLD, ctx.tailleMontant));
+            valeur.setTextFill(ctx.primaire);
+            box.getChildren().add(valeur);
+        }
         return box;
+    }
+
+    /** Ligne « Libellé : Valeur » centrée, utilisée dans le bloc Montant TTC. */
+    private static Node ligneMontantInline(Ctx ctx, String libelle, String valeur) {
+        HBox h = new HBox(8);
+        h.setAlignment(Pos.CENTER);
+        Label l = new Label(libelle);
+        l.setFont(Font.font("Arial", 9));
+        l.setTextFill(ctx.texte2);
+        Label v = new Label(valeur);
+        v.setFont(Font.font("Consolas", FontWeight.BOLD, 11));
+        v.setTextFill(ctx.texte);
+        h.getChildren().addAll(l, v);
+        return h;
     }
 
     private static Node sectionMotif(Ctx ctx) {

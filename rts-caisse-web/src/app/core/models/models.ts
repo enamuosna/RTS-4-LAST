@@ -97,9 +97,12 @@ export interface OperationCaisseRequest {
   clientId?: number;
   typeOperation: TypeOperation;
   montant: number;
+  /** Timbre fiscal optionnel. Si null/0, montantTtc = montant. */
+  timbre?: number;
   modePaiement: ModePaiement;
   motif: string;
   reference?: string;
+  banqueId?: number;
 }
 
 // ──────────────────────────────
@@ -118,6 +121,10 @@ export interface OperationCaisse {
   numeroRecu: string;
   typeOperation: TypeOperation;
   montant: number;
+  /** Timbre fiscal (0 si non applicable). */
+  timbre: number;
+  /** Montant TTC = montant + timbre. Calculé serveur. */
+  montantTtc: number;
   motif: string;
   modePaiement: ModePaiement;
   reference?: string;
@@ -130,6 +137,9 @@ export interface OperationCaisse {
   categorieLibelle: string;
   clientId?: number;
   clientRaisonSociale?: string;
+  banqueId?: number;
+  banqueCode?: string;
+  banqueLibelle?: string;
   annulee: boolean;
   motifAnnulation?: string;
 }
@@ -240,6 +250,44 @@ export interface ParametresRecu {
 
   /** True si un logo image a été uploadé côté backend. */
   logoPresent: boolean;
+}
+
+// ---------- Supervision (vue temps réel responsable des caisses) ----------
+export interface EtatCaisseSupervision {
+  id: number;
+  code: string;
+  libelle: string;
+  statut: StatutCaisse;
+  caissierNomComplet: string | null;
+  soldeCourant: number;
+  nombreOperationsJour: number;
+  totalEntreesJour: number;
+  totalSortiesJour: number;
+  derniereOperationLe: string | null;
+}
+
+export interface ActiviteRecente {
+  operationId: number;
+  numeroRecu: string;
+  dateOperation: string;
+  caisseCode: string;
+  caissierNom: string;
+  typeOperation: TypeOperation;
+  montantTtc: number;
+  categorieLibelle: string;
+  clientRaisonSociale: string | null;
+  annulee: boolean;
+}
+
+export interface SupervisionSnapshot {
+  horodatage: string;
+  totalCaisses: number;
+  caissesOuvertes: number;
+  totalEntreesJour: number;
+  totalSortiesJour: number;
+  soldeNetJour: number;
+  caisses: EtatCaisseSupervision[];
+  activiteRecente: ActiviteRecente[];
 }
 
 // ---------- Pagination Spring ----------

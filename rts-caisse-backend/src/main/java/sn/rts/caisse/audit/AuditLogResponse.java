@@ -83,6 +83,7 @@ public record AuditLogResponse(
             case SUSPENDRE_CAISSE           -> "Suspension de caisse";
             case REACTIVER_CAISSE           -> "Réactivation de caisse";
             case CREER_OPERATION            -> "Saisie d'opération";
+            case MODIFIER_OPERATION         -> "Modification d'opération";
             case ANNULER_OPERATION          -> "Annulation d'opération";
             case IMPRIMER_RECU              -> "Impression de reçu";
             case TELECHARGER_RECU_PDF       -> "Téléchargement de reçu PDF";

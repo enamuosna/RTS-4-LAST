@@ -1,6 +1,7 @@
 package sn.rts.caisse.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import sn.rts.caisse.model.ModePaiement;
@@ -35,9 +36,18 @@ public record OperationCaisseRequest(
         @NotNull
         TypeOperation typeOperation,
 
+        /** Montant HT saisi par le caissier. */
         @NotNull
         @Positive
         BigDecimal montant,
+
+        /**
+         * Timbre fiscal sénégalais (taxe optionnelle). Si null ou non envoyé,
+         * traité comme 0 par le service. Le montant TTC est calculé côté
+         * serveur (montant + timbre).
+         */
+        @PositiveOrZero
+        BigDecimal timbre,
 
         @NotNull
         ModePaiement modePaiement,

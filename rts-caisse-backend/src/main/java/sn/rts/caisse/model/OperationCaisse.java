@@ -45,10 +45,22 @@ public class OperationCaisse extends Auditable {
     @JoinColumn(name = "banque_id")
     private Banque banque;
 
+    /** Montant HT (hors taxes) saisi par le caissier. */
     @NotNull
     @Positive
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal montant;
+
+    /** Timbre fiscal (taxe optionnelle, en FCFA). 0 par défaut. */
+    @NotNull
+    @Column(nullable = false, precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal timbre = BigDecimal.ZERO;
+
+    /** Montant TTC = montant + timbre. Calculé à l'enregistrement. */
+    @NotNull
+    @Column(name = "montant_ttc", nullable = false, precision = 15, scale = 2)
+    private BigDecimal montantTtc;
 
     @Column(length = 500)
     private String motif;

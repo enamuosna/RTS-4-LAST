@@ -95,12 +95,16 @@ public class OperationCaisseService {
                         "Catégorie désactivée : " + categorie.getLibelle());
             }
 
-            // ---------- 3. Solde suffisant pour les sorties ----------
+            // ---------- 3. Calcul du montant TTC (montant + timbre) ----------
+            BigDecimal timbre = request.timbre() != null ? request.timbre() : BigDecimal.ZERO;
+            BigDecimal montantTtc = request.montant().add(timbre);
+
+            // Solde suffisant pour les sorties (sur le TTC)
             if (request.typeOperation() == TypeOperation.SORTIE
-                    && caisse.getSoldeCourant().compareTo(request.montant()) < 0) {
+                    && caisse.getSoldeCourant().compareTo(montantTtc) < 0) {
                 throw new BusinessException(
                         "Solde insuffisant : solde courant = " + caisse.getSoldeCourant()
-                                + " FCFA, montant demandé = " + request.montant() + " FCFA.");
+                                + " FCFA, montant TTC demandé = " + montantTtc + " FCFA.");
             }
 
             // ---------- 4. Banque (CHEQUE / VIREMENT) ----------
@@ -139,6 +143,8 @@ public class OperationCaisseService {
                     .numeroRecu(numeroRecuGenerator.generer(caisse.getCode()))
                     .typeOperation(request.typeOperation())
                     .montant(request.montant())
+                    .timbre(timbre)
+                    .montantTtc(montantTtc)
                     .motif(request.motif())
                     .modePaiement(mode)
                     .reference(request.reference())
@@ -151,11 +157,11 @@ public class OperationCaisseService {
                     .annulee(false)
                     .build();
 
-            // ---------- 8. Mise à jour du solde ----------
+            // ---------- 8. Mise à jour du solde (sur le TTC) ----------
             caisse.setSoldeCourant(applyMontant(
                     caisse.getSoldeCourant(),
                     request.typeOperation(),
-                    request.montant()));
+                    montantTtc));
 
             OperationCaisse saved = operationRepository.save(operation);
             log.info("Opération enregistrée : {} ({} FCFA) - caisse {}",
@@ -225,8 +231,11 @@ public class OperationCaisseService {
                     ? TypeOperation.SORTIE
                     : TypeOperation.ENTREE;
 
+            // Contre-passation sur le TTC (qui est la valeur réellement appliquée au solde)
+            BigDecimal ttc = operation.getMontantTtc() != null
+                    ? operation.getMontantTtc() : operation.getMontant();
             if (inverse == TypeOperation.SORTIE
-                    && caisse.getSoldeCourant().compareTo(operation.getMontant()) < 0) {
+                    && caisse.getSoldeCourant().compareTo(ttc) < 0) {
                 throw new BusinessException(
                         "Impossible d'annuler : solde courant insuffisant pour contre-passer.");
             }
@@ -234,7 +243,7 @@ public class OperationCaisseService {
             caisse.setSoldeCourant(applyMontant(
                     caisse.getSoldeCourant(),
                     inverse,
-                    operation.getMontant()));
+                    ttc));
 
             operation.setAnnulee(true);
             operation.setMotifAnnulation(motif + " (par " + loginAnnulateur + ")");
@@ -267,6 +276,159 @@ public class OperationCaisseService {
                     e.getMessage());
             throw e;
         }
+    }
+
+    // ==================================================================
+    //  MODIFICATION (correction d'erreur de saisie)
+    // ==================================================================
+
+    /**
+     * Modifie une opération existante. Permet à un caissier ou un agent de
+     * recettes de corriger une erreur de saisie sans avoir à annuler puis
+     * recréer l'opération.
+     *
+     * <p>Le solde de la caisse est recalculé : on défait l'effet de l'ancien
+     * TTC sur le solde, puis on applique le nouveau TTC. L'opération
+     * d'origine reste avec le même {@code numeroRecu} et la même
+     * {@code dateOperation} ; seuls les champs métier changent.</p>
+     *
+     * <p>Restrictions :
+     * <ul>
+     *   <li>Impossible de modifier une opération annulée.</li>
+     *   <li>Impossible de modifier une opération déjà rattachée à un journal
+     *       clôturé (intégrité comptable).</li>
+     *   <li>Le type d'opération ne peut pas être inversé (ENTREE ↔ SORTIE) :
+     *       pour ce cas, il faut annuler et resaisir.</li>
+     * </ul>
+     */
+    public OperationCaisseResponse modifier(Long operationId,
+                                             OperationCaisseRequest request,
+                                             String loginModificateur) {
+        OperationCaisse operation;
+        try {
+            operation = trouver(operationId);
+
+            if (operation.isAnnulee()) {
+                throw new BusinessException(
+                        "Impossible de modifier : l'opération est déjà annulée.");
+            }
+            if (operation.getJournal() != null && operation.getJournal().isCloture()) {
+                throw new BusinessException(
+                        "Impossible de modifier : la journée de caisse est déjà clôturée.");
+            }
+            if (operation.getTypeOperation() != request.typeOperation()) {
+                throw new BusinessException(
+                        "Le type d'opération ne peut pas être modifié. "
+                                + "Annulez et resaisissez l'opération si nécessaire.");
+            }
+
+            // ---------- Charger les nouvelles relations ----------
+            CategorieOperation categorie = categorieService.trouver(request.categorieId());
+            if (categorie.getTypeOperation() != request.typeOperation()) {
+                throw new BusinessException(
+                        "La catégorie '" + categorie.getLibelle()
+                                + "' ne correspond pas au type d'opération.");
+            }
+            if (!categorie.isActif()) {
+                throw new BusinessException(
+                        "Catégorie désactivée : " + categorie.getLibelle());
+            }
+
+            ModePaiement mode = request.modePaiement();
+            boolean banqueObligatoire = (mode == ModePaiement.CHEQUE
+                    || mode == ModePaiement.VIREMENT);
+            if (banqueObligatoire && request.banqueId() == null) {
+                throw new BusinessException(
+                        "Une banque doit être renseignée pour les règlements par "
+                                + mode.getLibelle().toLowerCase() + ".");
+            }
+            Banque banque = null;
+            if (request.banqueId() != null) {
+                banque = banqueRepository.findById(request.banqueId())
+                        .orElseThrow(() -> ResourceNotFoundException.of(
+                                "Banque", request.banqueId()));
+            }
+            Client client = request.clientId() != null
+                    ? clientService.trouver(request.clientId())
+                    : null;
+
+            // ---------- Recalcul TTC ----------
+            BigDecimal nouveauTimbre = request.timbre() != null
+                    ? request.timbre() : BigDecimal.ZERO;
+            BigDecimal nouveauTtc = request.montant().add(nouveauTimbre);
+
+            // ---------- Recalcul du solde caisse ----------
+            // 1) Défait l'ancien effet : si ENTREE on retire l'ancien TTC, sinon on l'ajoute.
+            // 2) Applique le nouveau TTC dans le sens du type d'opération.
+            Caisse caisse = operation.getCaisse();
+            BigDecimal soldeAvant = caisse.getSoldeCourant();
+            BigDecimal ancienTtc = operation.getMontantTtc() != null
+                    ? operation.getMontantTtc() : operation.getMontant();
+
+            BigDecimal soldeApresAnnulation = applyMontant(
+                    soldeAvant,
+                    inverseType(operation.getTypeOperation()),
+                    ancienTtc);
+
+            if (request.typeOperation() == TypeOperation.SORTIE
+                    && soldeApresAnnulation.compareTo(nouveauTtc) < 0) {
+                throw new BusinessException(
+                        "Solde insuffisant après recalcul : disponible "
+                                + soldeApresAnnulation + " FCFA, requis " + nouveauTtc + " FCFA.");
+            }
+
+            BigDecimal nouveauSolde = applyMontant(
+                    soldeApresAnnulation,
+                    request.typeOperation(),
+                    nouveauTtc);
+            caisse.setSoldeCourant(nouveauSolde);
+
+            // ---------- Mise à jour des champs ----------
+            operation.setMontant(request.montant());
+            operation.setTimbre(nouveauTimbre);
+            operation.setMontantTtc(nouveauTtc);
+            operation.setMotif(request.motif());
+            operation.setModePaiement(mode);
+            operation.setReference(request.reference());
+            operation.setCategorie(categorie);
+            operation.setClient(client);
+            operation.setBanque(banque);
+
+            log.info("Opération {} modifiée par {} : montant={} timbre={} TTC={} solde {}->{}",
+                    operation.getNumeroRecu(), loginModificateur,
+                    operation.getMontant(), operation.getTimbre(), operation.getMontantTtc(),
+                    soldeAvant, nouveauSolde);
+
+            auditService.logSuccess(
+                    AuditAction.MODIFIER_OPERATION,
+                    "OperationCaisse",
+                    operation.getId(),
+                    operation.getNumeroRecu(),
+                    "Type=" + operation.getTypeOperation()
+                            + " Montant=" + operation.getMontant() + " FCFA"
+                            + " Timbre=" + operation.getTimbre() + " FCFA"
+                            + " TTC=" + operation.getMontantTtc() + " FCFA"
+                            + " Mode=" + operation.getModePaiement()
+                            + " Caisse=" + caisse.getCode()
+                            + " SoldeAvant=" + soldeAvant + " FCFA"
+                            + " SoldeApres=" + nouveauSolde + " FCFA"
+                            + " ModifieePar=" + loginModificateur);
+
+            return OperationCaisseResponse.from(operation);
+
+        } catch (BusinessException | ResourceNotFoundException e) {
+            auditService.logFailure(
+                    AuditAction.MODIFIER_OPERATION,
+                    "OperationCaisse",
+                    operationId,
+                    "par=" + loginModificateur,
+                    e.getMessage());
+            throw e;
+        }
+    }
+
+    private static TypeOperation inverseType(TypeOperation t) {
+        return t == TypeOperation.ENTREE ? TypeOperation.SORTIE : TypeOperation.ENTREE;
     }
 
     // ==================================================================

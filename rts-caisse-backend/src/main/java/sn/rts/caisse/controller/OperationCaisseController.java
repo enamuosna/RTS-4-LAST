@@ -44,6 +44,18 @@ public class OperationCaisseController {
         return ResponseEntity.ok(service.annuler(id, motif, authentication.getName()));
     }
 
+    @org.springframework.web.bind.annotation.PutMapping("/{id}")
+    @Operation(summary = "Modifier une opération (correction d'erreur de saisie)",
+               description = "Recalcule automatiquement le solde de la caisse. "
+                       + "Refusé si l'opération est annulée ou si la journée est clôturée.")
+    public ResponseEntity<OperationCaisseResponse> modifier(
+            @PathVariable Long id,
+            @Valid @RequestBody OperationCaisseRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                service.modifier(id, request, authentication.getName()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<OperationCaisseResponse> obtenir(@PathVariable Long id) {
         return ResponseEntity.ok(service.obtenir(id));

@@ -164,6 +164,14 @@ public class CaisseApi {
         return client.post("/operations", req, OperationCaisseResponse.class);
     }
 
+    /**
+     * Modifie une opération existante (correction de saisie).
+     * Le solde de la caisse est recalculé automatiquement côté backend.
+     */
+    public OperationCaisseResponse modifierOperation(Long id, OperationCaisseRequest req) {
+        return client.put("/operations/" + id, req, OperationCaisseResponse.class);
+    }
+
     public List<OperationCaisseResponse> operationsDuJour(Long caisseId) {
         return client.get("/operations/caisse/" + caisseId + "/jour",
                 new TypeReference<List<OperationCaisseResponse>>() {});

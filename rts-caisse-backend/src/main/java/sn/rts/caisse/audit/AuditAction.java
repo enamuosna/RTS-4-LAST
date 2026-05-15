@@ -52,6 +52,7 @@ public enum AuditAction {
 
     /** Enregistrement d'une opération (encaissement ou décaissement). */
     CREER_OPERATION,
+    MODIFIER_OPERATION,
 
     /** Annulation d'une opération existante (contre-passation du solde). */
     ANNULER_OPERATION,

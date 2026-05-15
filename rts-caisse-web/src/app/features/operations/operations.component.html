@@ -65,7 +65,7 @@
       </ng-container>
 
       <ng-container matColumnDef="montant">
-        <th mat-header-cell *matHeaderCellDef class="text-right">Montant</th>
+        <th mat-header-cell *matHeaderCellDef class="text-right">Montant HT</th>
         <td
           mat-cell
           *matCellDef="let o"
@@ -73,6 +73,29 @@
           [class]="o.typeOperation === 'ENTREE' ? 'amount-positive' : 'amount-negative'"
         >
           {{ o.montant | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="timbre">
+        <th mat-header-cell *matHeaderCellDef class="text-right">Timbre</th>
+        <td mat-cell *matCellDef="let o" class="text-right amount-cell">
+          @if (o.timbre && o.timbre > 0) {
+            {{ o.timbre | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+          } @else {
+            <span class="muted">—</span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="montantTtc">
+        <th mat-header-cell *matHeaderCellDef class="text-right">Montant TTC</th>
+        <td
+          mat-cell
+          *matCellDef="let o"
+          class="text-right amount-cell"
+          [class]="o.typeOperation === 'ENTREE' ? 'amount-positive' : 'amount-negative'"
+        >
+          <strong>{{ o.montantTtc | currency: 'XOF':'symbol':'1.0-0':'fr' }}</strong>
         </td>
       </ng-container>
 

@@ -124,10 +124,22 @@ export class UtilisateursComponent implements OnInit {
   }
 
   roleBadge(role: Role): string {
-    return role === 'ADMIN'
-        ? 'badge-info'
-        : role === 'SUPERVISEUR'
-            ? 'badge-warning'
-            : 'badge-neutral';
+    switch (role) {
+      case 'ADMIN':         return 'badge-info';
+      case 'SUPERVISEUR':   return 'badge-warning';
+      case 'AGENT_RECETTE': return 'badge-rts';
+      default:              return 'badge-neutral';
+    }
+  }
+
+  /** Libellé fr pour l'affichage du rôle dans le tableau. */
+  roleLibelle(role: Role): string {
+    switch (role) {
+      case 'ADMIN':         return 'Administrateur';
+      case 'SUPERVISEUR':   return 'Superviseur';
+      case 'CAISSIER':      return 'Caissier';
+      case 'AGENT_RECETTE': return 'Agent de recette';
+      default:              return role;
+    }
   }
 }

@@ -33,7 +33,7 @@
         <ng-container matColumnDef="role">
             <th mat-header-cell *matHeaderCellDef>Rôle</th>
             <td mat-cell *matCellDef="let u">
-                <span class="badge" [class]="roleBadge(u.role)">{{ u.role }}</span>
+                <span class="badge" [class]="roleBadge(u.role)">{{ roleLibelle(u.role) }}</span>
             </td>
         </ng-container>
 

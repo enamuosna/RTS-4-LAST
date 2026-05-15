@@ -52,22 +52,23 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleIntegrity(DataIntegrityViolationException ex) {
         String cause = ex.getMostSpecificCause().getMessage();
-        log.warn("Violation d'intégrité : {}", cause);
+        // log INFO (et pas WARN) pour qu'on voie systématiquement le message
+        // PSQL complet en clair dans les logs du conteneur backend.
+        log.info("Violation d'intégrité (PSQL brut) : {}", cause);
         return build(HttpStatus.CONFLICT, messageDoublonExplicite(cause));
     }
 
     /**
      * Parse le message PostgreSQL pour indiquer précisément quel champ
-     * est en doublon. Le message brut ressemble à :
+     * est en doublon. Plusieurs formats possibles :
      *   ERROR: duplicate key value violates unique constraint "uk_xxx"
      *   Detail: Key (login)=(moussa) already exists.
-     * On extrait le nom du champ et la valeur pour un retour utilisateur clair.
      */
     private static String messageDoublonExplicite(String causePsql) {
         if (causePsql == null) {
             return "Violation d'intégrité de données (doublon ou contrainte).";
         }
-        // Pattern PostgreSQL : Key (champ)=(valeur) already exists.
+        // 1) Pattern le plus précis : "Key (champ)=(valeur)"
         java.util.regex.Matcher m = java.util.regex.Pattern
                 .compile("Key \\(([^)]+)\\)=\\(([^)]*)\\)")
                 .matcher(causePsql);
@@ -77,21 +78,34 @@ public class GlobalExceptionHandler {
             return "Cette valeur existe déjà : " + champ + " = « " + valeur + " ». "
                     + "Choisissez une autre valeur.";
         }
-        // Fallback : on devine quand même selon des mots-clés de la contrainte
+        // 2) Pattern par nom de contrainte : "unique constraint \"uk_xxx\""
+        m = java.util.regex.Pattern
+                .compile("unique constraint \"([^\"]+)\"")
+                .matcher(causePsql);
+        if (m.find()) {
+            String champ = libelleContrainte(m.group(1));
+            return "Cette valeur existe déjà pour le champ « " + champ
+                    + " ». Choisissez-en une autre.";
+        }
+        // 3) Fallback par mots-clés
         String low = causePsql.toLowerCase();
-        if (low.contains("login")) {
-            return "Cet identifiant est déjà utilisé. Choisissez-en un autre.";
-        }
-        if (low.contains("matricule")) {
-            return "Ce matricule est déjà utilisé. Choisissez-en un autre.";
-        }
-        if (low.contains("email")) {
-            return "Cet e-mail est déjà utilisé.";
-        }
-        if (low.contains("telephone")) {
-            return "Ce numéro de téléphone est déjà utilisé.";
-        }
-        return "Doublon détecté : une donnée saisie est déjà utilisée.";
+        if (low.contains("login"))     return "Cet identifiant est déjà utilisé. Choisissez-en un autre.";
+        if (low.contains("matricule")) return "Ce matricule est déjà utilisé. Choisissez-en un autre.";
+        if (low.contains("email"))     return "Cet e-mail est déjà utilisé.";
+        if (low.contains("telephone")) return "Ce numéro de téléphone est déjà utilisé.";
+        return "Doublon détecté : une donnée saisie est déjà utilisée. "
+                + "Détail technique : " + causePsql;
+    }
+
+    private static String libelleContrainte(String nomContrainte) {
+        String n = nomContrainte == null ? "" : nomContrainte.toLowerCase();
+        if (n.contains("login"))     return "identifiant";
+        if (n.contains("matricule")) return "matricule";
+        if (n.contains("email"))     return "e-mail";
+        if (n.contains("telephone")) return "téléphone";
+        if (n.contains("code"))      return "code";
+        if (n.contains("ninea"))     return "NINEA";
+        return nomContrainte;
     }
 
     private static String libelleChamp(String technique) {

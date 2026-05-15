@@ -80,6 +80,22 @@ public class UtilisateurService {
                         "Ce matricule est déjà utilisé : « " + matriculeNorm
                                 + " ». Choisissez-en un autre.");
             }
+            // Pré-checks email/téléphone : pas de contrainte UNIQUE déclarée
+            // dans le code, mais une peut exister en BDD (créée par Hibernate
+            // auto-DDL update à un moment de l'historique). Le check préalable
+            // évite un 409 avec message générique côté front.
+            if (emailNorm != null
+                    && utilisateurRepository.existsByEmailIgnoreCase(emailNorm)) {
+                throw new BusinessException(
+                        "Cet e-mail est déjà utilisé : « " + emailNorm
+                                + " ». Saisissez un autre e-mail ou laissez vide.");
+            }
+            if (telNorm != null
+                    && utilisateurRepository.existsByTelephone(telNorm)) {
+                throw new BusinessException(
+                        "Ce numéro de téléphone est déjà utilisé : « " + telNorm
+                                + " ». Saisissez un autre numéro ou laissez vide.");
+            }
 
             Utilisateur u = Utilisateur.builder()
                     .matricule(matriculeNorm)

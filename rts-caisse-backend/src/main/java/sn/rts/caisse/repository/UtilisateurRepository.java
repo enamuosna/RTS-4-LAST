@@ -28,6 +28,12 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     boolean existsByMatriculeIgnoreCase(String matricule);
 
+    /** Pré-check email : utile si une contrainte unique existe en BDD. */
+    boolean existsByEmailIgnoreCase(String email);
+
+    /** Pré-check téléphone : utile si une contrainte unique existe en BDD. */
+    boolean existsByTelephone(String telephone);
+
     List<Utilisateur> findByRole(Role role);
 
     List<Utilisateur> findByActifTrue();

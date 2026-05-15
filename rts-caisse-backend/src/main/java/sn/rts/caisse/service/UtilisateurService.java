@@ -59,21 +59,36 @@ public class UtilisateurService {
 
     public UtilisateurDTO creer(RegisterRequest request) {
         try {
-            if (utilisateurRepository.existsByLogin(request.login())) {
-                throw new BusinessException("Login déjà utilisé : " + request.login());
+            // Normalisation : trim + lowercase pour le login (cohérent avec
+            // l'authentification qui est case-insensitive en pratique).
+            String loginNorm     = request.login() == null
+                    ? null : request.login().trim().toLowerCase();
+            String matriculeNorm = request.matricule() == null
+                    ? null : request.matricule().trim();
+            String emailNorm     = (request.email() == null || request.email().isBlank())
+                    ? null : request.email().trim().toLowerCase();
+            String telNorm       = (request.telephone() == null || request.telephone().isBlank())
+                    ? null : request.telephone().trim();
+
+            if (utilisateurRepository.existsByLoginIgnoreCase(loginNorm)) {
+                throw new BusinessException(
+                        "Cet identifiant est déjà utilisé : « " + loginNorm
+                                + " ». Choisissez-en un autre.");
             }
-            if (utilisateurRepository.existsByMatricule(request.matricule())) {
-                throw new BusinessException("Matricule déjà utilisé : " + request.matricule());
+            if (utilisateurRepository.existsByMatriculeIgnoreCase(matriculeNorm)) {
+                throw new BusinessException(
+                        "Ce matricule est déjà utilisé : « " + matriculeNorm
+                                + " ». Choisissez-en un autre.");
             }
 
             Utilisateur u = Utilisateur.builder()
-                    .matricule(request.matricule())
-                    .login(request.login())
+                    .matricule(matriculeNorm)
+                    .login(loginNorm)
                     .motDePasse(passwordEncoder.encode(request.motDePasse()))
-                    .prenom(request.prenom())
-                    .nom(request.nom())
-                    .email(request.email())
-                    .telephone(request.telephone())
+                    .prenom(request.prenom() == null ? null : request.prenom().trim())
+                    .nom(request.nom() == null ? null : request.nom().trim())
+                    .email(emailNorm)
+                    .telephone(telNorm)
                     .role(request.role())
                     .actif(true)
                     .build();

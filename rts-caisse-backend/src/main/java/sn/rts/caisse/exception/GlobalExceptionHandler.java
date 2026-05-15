@@ -51,9 +51,59 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleIntegrity(DataIntegrityViolationException ex) {
-        log.warn("Violation d'intégrité : {}", ex.getMostSpecificCause().getMessage());
-        return build(HttpStatus.CONFLICT,
-                "Violation d'intégrité de données (doublon ou contrainte).");
+        String cause = ex.getMostSpecificCause().getMessage();
+        log.warn("Violation d'intégrité : {}", cause);
+        return build(HttpStatus.CONFLICT, messageDoublonExplicite(cause));
+    }
+
+    /**
+     * Parse le message PostgreSQL pour indiquer précisément quel champ
+     * est en doublon. Le message brut ressemble à :
+     *   ERROR: duplicate key value violates unique constraint "uk_xxx"
+     *   Detail: Key (login)=(moussa) already exists.
+     * On extrait le nom du champ et la valeur pour un retour utilisateur clair.
+     */
+    private static String messageDoublonExplicite(String causePsql) {
+        if (causePsql == null) {
+            return "Violation d'intégrité de données (doublon ou contrainte).";
+        }
+        // Pattern PostgreSQL : Key (champ)=(valeur) already exists.
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("Key \\(([^)]+)\\)=\\(([^)]*)\\)")
+                .matcher(causePsql);
+        if (m.find()) {
+            String champ = libelleChamp(m.group(1));
+            String valeur = m.group(2);
+            return "Cette valeur existe déjà : " + champ + " = « " + valeur + " ». "
+                    + "Choisissez une autre valeur.";
+        }
+        // Fallback : on devine quand même selon des mots-clés de la contrainte
+        String low = causePsql.toLowerCase();
+        if (low.contains("login")) {
+            return "Cet identifiant est déjà utilisé. Choisissez-en un autre.";
+        }
+        if (low.contains("matricule")) {
+            return "Ce matricule est déjà utilisé. Choisissez-en un autre.";
+        }
+        if (low.contains("email")) {
+            return "Cet e-mail est déjà utilisé.";
+        }
+        if (low.contains("telephone")) {
+            return "Ce numéro de téléphone est déjà utilisé.";
+        }
+        return "Doublon détecté : une donnée saisie est déjà utilisée.";
+    }
+
+    private static String libelleChamp(String technique) {
+        return switch (technique.toLowerCase().trim()) {
+            case "login"     -> "identifiant";
+            case "matricule" -> "matricule";
+            case "email"     -> "e-mail";
+            case "telephone" -> "téléphone";
+            case "code"      -> "code";
+            case "ninea"     -> "NINEA";
+            default          -> technique;
+        };
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

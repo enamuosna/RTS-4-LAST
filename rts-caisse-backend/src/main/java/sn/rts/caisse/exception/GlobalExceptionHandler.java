@@ -78,7 +78,7 @@ public class GlobalExceptionHandler {
             return "Cette valeur existe déjà : " + champ + " = « " + valeur + " ». "
                     + "Choisissez une autre valeur.";
         }
-        // 2) Pattern par nom de contrainte : "unique constraint \"uk_xxx\""
+        // 2) Pattern par nom de contrainte UNIQUE : "unique constraint \"uk_xxx\""
         m = java.util.regex.Pattern
                 .compile("unique constraint \"([^\"]+)\"")
                 .matcher(causePsql);
@@ -86,6 +86,16 @@ public class GlobalExceptionHandler {
             String champ = libelleContrainte(m.group(1));
             return "Cette valeur existe déjà pour le champ « " + champ
                     + " ». Choisissez-en une autre.";
+        }
+        // 3) CHECK constraint (ex : valeur d'enum non autorisée en BDD)
+        m = java.util.regex.Pattern
+                .compile("check constraint \"([^\"]+)\"")
+                .matcher(causePsql);
+        if (m.find()) {
+            return "Valeur refusée par la base : la contrainte « " + m.group(1)
+                    + " » n'autorise pas cette valeur. Si vous avez ajouté un nouveau "
+                    + "rôle ou statut, une migration est nécessaire pour mettre à "
+                    + "jour la contrainte CHECK côté base de données.";
         }
         // 3) Fallback par mots-clés
         String low = causePsql.toLowerCase();

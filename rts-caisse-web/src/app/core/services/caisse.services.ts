@@ -38,6 +38,11 @@ export class OperationService {
     });
   }
 
+  /** Réactive une opération annulée par erreur (annule la contre-passation). */
+  reactiver(id: number): Observable<OperationCaisse> {
+    return this.http.patch<OperationCaisse>(`${this.base}/${id}/reactiver`, null);
+  }
+
   obtenir(id: number): Observable<OperationCaisse> {
     return this.http.get<OperationCaisse>(`${this.base}/${id}`);
   }

@@ -191,6 +191,12 @@ public class CaisseApi {
                 + ApiClient.encode(motif), null, OperationCaisseResponse.class);
     }
 
+    /** Réactive une opération annulée par erreur (annule la contre-passation). */
+    public OperationCaisseResponse reactiverOperation(Long operationId) {
+        return client.patch("/operations/" + operationId + "/reactiver",
+                null, OperationCaisseResponse.class);
+    }
+
     // ====================================================================
     //  WHATSAPP
     // ====================================================================

@@ -53,6 +53,27 @@ public class CaisseService {
         return CaisseDTO.from(caisseRepository.save(caisse));
     }
 
+    /**
+     * Affecte un agent de recette à la caisse. {@code agentId == null}
+     * détache l'agent. L'utilisateur doit avoir le rôle {@code AGENT_RECETTE}.
+     */
+    public CaisseDTO affecterAgentRecette(Long caisseId, Long agentId) {
+        Caisse caisse = trouver(caisseId);
+        if (agentId == null) {
+            caisse.setAgentRecette(null);
+        } else {
+            Utilisateur agent = utilisateurRepository.findById(agentId)
+                    .orElseThrow(() -> ResourceNotFoundException.of("Utilisateur", agentId));
+            if (agent.getRole() != sn.rts.caisse.model.Role.AGENT_RECETTE) {
+                throw new sn.rts.caisse.exception.BusinessException(
+                        "L'utilisateur doit avoir le rôle AGENT_RECETTE (rôle actuel : "
+                                + agent.getRole() + ").");
+            }
+            caisse.setAgentRecette(agent);
+        }
+        return CaisseDTO.from(caisseRepository.save(caisse));
+    }
+
     public CaisseDTO suspendre(Long id, boolean suspendre) {
         Caisse caisse = trouver(id);
         caisse.setStatut(suspendre ? StatutCaisse.SUSPENDUE : StatutCaisse.FERMEE);

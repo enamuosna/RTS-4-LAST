@@ -307,6 +307,7 @@ public class OperationCaisseService {
         OperationCaisse operation;
         try {
             operation = trouver(operationId);
+            verifierDroitModifierOuReactiver(operation, loginModificateur);
 
             if (operation.isAnnulee()) {
                 throw new BusinessException(
@@ -429,6 +430,124 @@ public class OperationCaisseService {
 
     private static TypeOperation inverseType(TypeOperation t) {
         return t == TypeOperation.ENTREE ? TypeOperation.SORTIE : TypeOperation.ENTREE;
+    }
+
+    /**
+     * Vérifie que l'utilisateur a le droit de <b>modifier</b> ou
+     * <b>réactiver</b> une opération. Autorisé pour :
+     * <ul>
+     *   <li>{@link sn.rts.caisse.model.Role#ADMIN} et
+     *       {@link sn.rts.caisse.model.Role#SUPERVISEUR} : sur toutes
+     *       les opérations</li>
+     *   <li>{@link sn.rts.caisse.model.Role#AGENT_RECETTE} : uniquement
+     *       sur les opérations de la caisse à laquelle il est affecté</li>
+     * </ul>
+     * Les CAISSIERS ne peuvent pas modifier ni réactiver — ils ne peuvent
+     * qu'annuler.
+     */
+    private void verifierDroitModifierOuReactiver(OperationCaisse operation, String login) {
+        Utilisateur user = utilisateurRepository.findByLogin(login)
+                .orElseThrow(() -> new BusinessException(
+                        "Utilisateur introuvable : " + login));
+
+        sn.rts.caisse.model.Role role = user.getRole();
+        if (role == sn.rts.caisse.model.Role.ADMIN
+                || role == sn.rts.caisse.model.Role.SUPERVISEUR) {
+            return; // OK, accès global
+        }
+        if (role == sn.rts.caisse.model.Role.AGENT_RECETTE) {
+            Caisse caisse = operation.getCaisse();
+            Utilisateur agent = caisse.getAgentRecette();
+            if (agent != null && user.getId().equals(agent.getId())) {
+                return; // OK, agent affecté à cette caisse
+            }
+            throw new BusinessException(
+                    "Vous n'êtes pas l'agent de recette affecté à cette caisse.");
+        }
+        throw new BusinessException(
+                "Action réservée aux agents de recette, superviseurs et administrateurs.");
+    }
+
+    // ==================================================================
+    //  RÉACTIVATION (annule la contre-passation)
+    // ==================================================================
+
+    /**
+     * Défait une annulation : l'opération repasse à {@code annulee=false}
+     * et son TTC est ré-appliqué au solde de la caisse comme si elle n'avait
+     * jamais été annulée. Utile quand un caissier annule une opération par
+     * erreur — l'agent de recette peut alors la réactiver sans perdre les
+     * données ni le numéro de reçu.
+     *
+     * <p>Réservé aux ADMIN, SUPERVISEUR et à l'AGENT_RECETTE de la caisse.
+     * Refusé si la journée est clôturée.</p>
+     */
+    public OperationCaisseResponse reactiver(Long operationId, String loginReactivateur) {
+        OperationCaisse operation;
+        try {
+            operation = trouver(operationId);
+            verifierDroitModifierOuReactiver(operation, loginReactivateur);
+
+            if (!operation.isAnnulee()) {
+                throw new BusinessException(
+                        "L'opération n'est pas annulée, rien à réactiver.");
+            }
+            if (operation.getJournal() != null && operation.getJournal().isCloture()) {
+                throw new BusinessException(
+                        "Impossible de réactiver : la journée de caisse est déjà clôturée.");
+            }
+
+            Caisse caisse = operation.getCaisse();
+            BigDecimal soldeAvant = caisse.getSoldeCourant();
+            BigDecimal ttc = operation.getMontantTtc() != null
+                    ? operation.getMontantTtc() : operation.getMontant();
+
+            // Si l'op était une SORTIE annulée, son annulation a re-crédité
+            // la caisse (contre-passation). On la re-débite en réactivant.
+            // Inversement pour une ENTREE annulée.
+            if (operation.getTypeOperation() == TypeOperation.SORTIE
+                    && caisse.getSoldeCourant().compareTo(ttc) < 0) {
+                throw new BusinessException(
+                        "Solde insuffisant pour réactiver cette sortie : disponible "
+                                + caisse.getSoldeCourant() + " FCFA, requis " + ttc + " FCFA.");
+            }
+
+            caisse.setSoldeCourant(applyMontant(
+                    caisse.getSoldeCourant(),
+                    operation.getTypeOperation(),
+                    ttc));
+
+            operation.setAnnulee(false);
+            operation.setMotifAnnulation(null);
+
+            log.info("Opération {} réactivée par {} : solde {}->{}",
+                    operation.getNumeroRecu(), loginReactivateur,
+                    soldeAvant, caisse.getSoldeCourant());
+
+            auditService.logSuccess(
+                    AuditAction.REACTIVER_OPERATION,
+                    "OperationCaisse",
+                    operation.getId(),
+                    operation.getNumeroRecu(),
+                    "Type=" + operation.getTypeOperation()
+                            + " Montant=" + operation.getMontant() + " FCFA"
+                            + " TTC=" + ttc + " FCFA"
+                            + " Caisse=" + caisse.getCode()
+                            + " SoldeAvant=" + soldeAvant + " FCFA"
+                            + " SoldeApres=" + caisse.getSoldeCourant() + " FCFA"
+                            + " ReactiveePar=" + loginReactivateur);
+
+            return OperationCaisseResponse.from(operation);
+
+        } catch (BusinessException | ResourceNotFoundException e) {
+            auditService.logFailure(
+                    AuditAction.REACTIVER_OPERATION,
+                    "OperationCaisse",
+                    operationId,
+                    "par=" + loginReactivateur,
+                    e.getMessage());
+            throw e;
+        }
     }
 
     // ==================================================================

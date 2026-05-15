@@ -44,6 +44,16 @@ public class OperationCaisseController {
         return ResponseEntity.ok(service.annuler(id, motif, authentication.getName()));
     }
 
+    @PatchMapping("/{id}/reactiver")
+    @Operation(summary = "Réactiver une opération annulée par erreur",
+               description = "Défait la contre-passation : l'opération repasse à "
+                       + "annulee=false et le solde est ré-ajusté. Réservé aux ADMIN, "
+                       + "SUPERVISEUR et AGENT_RECETTE de la caisse concernée.")
+    public ResponseEntity<OperationCaisseResponse> reactiver(@PathVariable Long id,
+                                                              Authentication authentication) {
+        return ResponseEntity.ok(service.reactiver(id, authentication.getName()));
+    }
+
     @org.springframework.web.bind.annotation.PutMapping("/{id}")
     @Operation(summary = "Modifier une opération (correction d'erreur de saisie)",
                description = "Recalcule automatiquement le solde de la caisse. "

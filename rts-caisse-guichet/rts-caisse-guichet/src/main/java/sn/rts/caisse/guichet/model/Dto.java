@@ -52,6 +52,9 @@ public final class Dto {
         public BigDecimal soldeCourant;
         public Long caissierId;
         public String caissierNomComplet;
+        /** Agent de recette rattaché à cette caisse (peut modifier les opérations). */
+        public Long agentRecetteId;
+        public String agentRecetteNomComplet;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

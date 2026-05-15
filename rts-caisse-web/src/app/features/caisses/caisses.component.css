@@ -79,4 +79,19 @@
 .caissier {
   font-size: 12px;
   color: var(--rts-gray-700);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.caissier.agent-recette {
+  color: var(--rts-info);
+  font-style: italic;
+}
+
+.caissier .meta-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
 }

@@ -32,11 +32,18 @@
             </div>
             <div class="caissier">
               @if (c.caissierNomComplet) {
+                <mat-icon class="meta-icon">person</mat-icon>
                 {{ c.caissierNomComplet }}
               } @else {
                 Aucun caissier affecté
               }
             </div>
+            @if (c.agentRecetteNomComplet) {
+              <div class="caissier agent-recette">
+                <mat-icon class="meta-icon">verified_user</mat-icon>
+                Agent de recette : {{ c.agentRecetteNomComplet }}
+              </div>
+            }
           </div>
 
           <button mat-icon-button [matMenuTriggerFor]="menu">
@@ -48,6 +55,10 @@
             </button>
             <button mat-menu-item (click)="affecter(c)">
               <mat-icon>person</mat-icon><span>Affecter un caissier</span>
+            </button>
+            <button mat-menu-item (click)="affecterAgentRecette(c)">
+              <mat-icon>verified_user</mat-icon>
+              <span>{{ c.agentRecetteNomComplet ? 'Changer l\'agent de recette' : 'Affecter un agent de recette' }}</span>
             </button>
             <button mat-menu-item (click)="suspendre(c)">
               <mat-icon>{{ c.statut === 'SUSPENDUE' ? 'play_arrow' : 'pause' }}</mat-icon>

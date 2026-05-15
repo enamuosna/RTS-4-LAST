@@ -15,7 +15,10 @@ public record CaisseDTO(
         StatutCaisse statut,
         BigDecimal soldeCourant,
         Long caissierId,
-        String caissierNomComplet
+        String caissierNomComplet,
+        /** Agent de recette rattaché à cette caisse (peut modifier les opérations). */
+        Long agentRecetteId,
+        String agentRecetteNomComplet
 ) {
     public static CaisseDTO from(Caisse c) {
         return new CaisseDTO(
@@ -26,7 +29,9 @@ public record CaisseDTO(
                 c.getStatut(),
                 c.getSoldeCourant(),
                 c.getCaissier() != null ? c.getCaissier().getId() : null,
-                c.getCaissier() != null ? c.getCaissier().getNomComplet() : null
+                c.getCaissier() != null ? c.getCaissier().getNomComplet() : null,
+                c.getAgentRecette() != null ? c.getAgentRecette().getId() : null,
+                c.getAgentRecette() != null ? c.getAgentRecette().getNomComplet() : null
         );
     }
 }

@@ -101,8 +101,19 @@
 
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
-        <td mat-cell *matCellDef="let o">
+        <td mat-cell *matCellDef="let o" class="actions-cell">
           @if (!o.annulee) {
+            <!-- Modifier : agent recette / superviseur / admin -->
+            @if (peutCorriger()) {
+              <button
+                mat-icon-button
+                color="primary"
+                matTooltip="Modifier l'opération (correction de saisie)"
+                (click)="modifier(o)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
             <button
               mat-icon-button
               color="warn"
@@ -112,6 +123,17 @@
               <mat-icon>undo</mat-icon>
             </button>
           } @else {
+            <!-- Réactiver : agent recette / superviseur / admin -->
+            @if (peutCorriger()) {
+              <button
+                mat-icon-button
+                color="primary"
+                matTooltip="Réactiver l'opération (annulée par erreur)"
+                (click)="reactiver(o)"
+              >
+                <mat-icon>restore</mat-icon>
+              </button>
+            }
             <mat-icon
               class="cancelled-icon"
               matTooltip="{{ o.motifAnnulation }}"

@@ -84,6 +84,8 @@ public record AuditLogResponse(
             case REACTIVER_CAISSE           -> "Réactivation de caisse";
             case CREER_OPERATION            -> "Saisie d'opération";
             case MODIFIER_OPERATION         -> "Modification d'opération";
+            case REACTIVER_OPERATION        -> "Réactivation d'opération";
+            case AFFECTER_AGENT_RECETTE     -> "Affectation d'agent de recette";
             case ANNULER_OPERATION          -> "Annulation d'opération";
             case IMPRIMER_RECU              -> "Impression de reçu";
             case TELECHARGER_RECU_PDF       -> "Téléchargement de reçu PDF";

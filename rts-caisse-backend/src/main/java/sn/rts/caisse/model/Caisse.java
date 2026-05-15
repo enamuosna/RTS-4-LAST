@@ -54,4 +54,13 @@ public class Caisse extends Auditable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "caissier_id")
     private Utilisateur caissier;
+
+    /**
+     * Agent de recette rattaché à cette caisse. Peut modifier et réactiver
+     * les opérations du caissier en cas d'erreur. Nullable : si non
+     * affecté, seuls les ADMIN/SUPERVISEUR peuvent corriger.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agent_recette_id")
+    private Utilisateur agentRecette;
 }

@@ -9,6 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Caisse, StatutCaisse } from '../../core/models/models';
 import { CaisseService } from '../../core/services/admin.services';
 import { AffecterCaissierDialogComponent } from './dialogs/affecter-caissier-dialog.component';
+import { AffecterAgentRecetteDialogComponent } from './dialogs/affecter-agent-recette-dialog.component';
 import { CaisseDialogComponent } from './dialogs/caisse-dialog.component';
 
 @Component({
@@ -71,6 +72,33 @@ export class CaissesComponent implements OnInit {
             panelClass: ['snackbar-success']
           });
           this.charger();
+        });
+      });
+  }
+
+  /** Affecte ou détache un agent de recette à la caisse. */
+  affecterAgentRecette(caisse: Caisse): void {
+    this.dialog
+      .open(AffecterAgentRecetteDialogComponent, {
+        width: '480px',
+        data: { agentDejaAffecte: !!caisse.agentRecetteId }
+      })
+      .afterClosed()
+      .subscribe((res: { agentId?: number; detacher?: boolean } | undefined) => {
+        if (!res) return;
+        const newAgentId = res.detacher ? null : (res.agentId ?? null);
+        this.service.affecterAgentRecette(caisse.id, newAgentId).subscribe({
+          next: () => {
+            this.snackBar.open(
+              res.detacher ? 'Agent de recette détaché' : 'Agent de recette affecté',
+              'OK',
+              { duration: 2500, panelClass: ['snackbar-success'] });
+            this.charger();
+          },
+          error: (err) => {
+            this.snackBar.open(err?.error?.message ?? "Échec de l'affectation", 'OK',
+              { duration: 4000, panelClass: ['snackbar-error'] });
+          }
         });
       });
   }

@@ -130,6 +130,13 @@ export class CaisseService {
     });
   }
 
+  /** Affecte (ou détache si null) un agent de recette à la caisse. */
+  affecterAgentRecette(id: number, agentId: number | null): Observable<Caisse> {
+    let params = new HttpParams();
+    if (agentId != null) params = params.set('agentId', agentId);
+    return this.http.patch<Caisse>(`${this.base}/${id}/agent-recette`, null, { params });
+  }
+
   suspendre(id: number, suspendre: boolean): Observable<Caisse> {
     return this.http.patch<Caisse>(`${this.base}/${id}/suspendre`, null, {
       params: new HttpParams().set('suspendre', suspendre)

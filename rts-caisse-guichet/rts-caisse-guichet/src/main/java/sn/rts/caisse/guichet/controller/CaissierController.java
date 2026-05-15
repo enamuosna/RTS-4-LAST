@@ -77,8 +77,8 @@ public class CaissierController {
 
     private static final Logger log = LoggerFactory.getLogger(CaissierController.class);
 
-    /** Largeur minimale garantie pour la colonne Actions (3 boutons). */
-    private static final double LARGEUR_MIN_COLONNE_ACTIONS = 150.0;
+    /** Largeur minimale garantie pour la colonne Actions (jusqu'à 5 boutons). */
+    private static final double LARGEUR_MIN_COLONNE_ACTIONS = 200.0;
 
     /** Taille des boutons d'action (icônes carrées). */
     private static final double TAILLE_BOUTON_ACTION = 30.0;
@@ -272,11 +272,13 @@ public class CaissierController {
         // Colonne actions : Imprimer + WhatsApp + Annuler
         colActions.setCellFactory(column -> new TableCell<>() {
 
-            private final Button btnImprimer = new Button();
-            private final Button btnWhatsApp = new Button();
-            private final Button btnModifier = new Button();
-            private final Button btnAnnuler  = new Button();
-            private final HBox   box         = new HBox(4, btnImprimer, btnWhatsApp, btnModifier, btnAnnuler);
+            private final Button btnImprimer  = new Button();
+            private final Button btnWhatsApp  = new Button();
+            private final Button btnModifier  = new Button();
+            private final Button btnReactiver = new Button();
+            private final Button btnAnnuler   = new Button();
+            private final HBox   box          = new HBox(4,
+                    btnImprimer, btnWhatsApp, btnModifier, btnReactiver, btnAnnuler);
 
             {
                 FontIcon iconPrint = new FontIcon(FontAwesomeSolid.PRINT);
@@ -310,7 +312,18 @@ public class CaissierController {
                 btnModifier.setMinSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
                 btnModifier.setMaxSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
                 btnModifier.setTooltip(new javafx.scene.control.Tooltip(
-                        "Corriger l'opération (saisie erronée)"));
+                        "Corriger l'opération (agent de recette uniquement)"));
+
+                FontIcon iconReactiver = new FontIcon(FontAwesomeSolid.UNDO);
+                iconReactiver.setIconSize(13);
+                iconReactiver.setIconColor(javafx.scene.paint.Color.web("#16a34a"));
+                btnReactiver.setGraphic(iconReactiver);
+                btnReactiver.getStyleClass().addAll("button", "button-icon");
+                btnReactiver.setPrefSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
+                btnReactiver.setMinSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
+                btnReactiver.setMaxSize(TAILLE_BOUTON_ACTION, TAILLE_BOUTON_ACTION);
+                btnReactiver.setTooltip(new javafx.scene.control.Tooltip(
+                        "Réactiver l'opération annulée par erreur"));
 
                 FontIcon iconCancel = new FontIcon(FontAwesomeSolid.TIMES_CIRCLE);
                 iconCancel.setIconSize(14);
@@ -335,13 +348,20 @@ public class CaissierController {
                 btnImprimer.setOnAction(e -> PrintRecu.imprimer(op));
                 btnWhatsApp.setOnAction(e -> RecuExporter.envoyerWhatsApp(op));
                 btnModifier.setOnAction(e -> modifierOperation(op));
+                btnReactiver.setOnAction(e -> reactiverOperation(op));
                 btnAnnuler.setOnAction(e -> annulerOperation(op));
 
                 btnWhatsApp.setDisable(false);
                 btnWhatsApp.setOpacity(1.0);
 
-                btnModifier.setDisable(op.annulee);
-                btnModifier.setOpacity(op.annulee ? 0.3 : 1.0);
+                // Modifier et Réactiver : visibles uniquement pour AGENT_RECETTE
+                // de cette caisse, SUPERVISEUR ou ADMIN. Cachés pour CAISSIER.
+                boolean peutCorriger = peutCorriger();
+                btnModifier.setVisible(peutCorriger && !op.annulee);
+                btnModifier.setManaged(peutCorriger && !op.annulee);
+
+                btnReactiver.setVisible(peutCorriger && op.annulee);
+                btnReactiver.setManaged(peutCorriger && op.annulee);
 
                 btnAnnuler.setDisable(op.annulee);
                 btnAnnuler.setOpacity(op.annulee ? 0.3 : 1.0);
@@ -728,6 +748,47 @@ public class CaissierController {
     @FXML
     public void onRefresh() {
         rafraichirCaisse();
+    }
+
+    /**
+     * Renvoie true si l'utilisateur courant a le droit de modifier ou
+     * réactiver les opérations de la caisse active :
+     * <ul>
+     *   <li>ADMIN, SUPERVISEUR : toujours</li>
+     *   <li>AGENT_RECETTE : uniquement s'il est l'agent affecté à cette caisse</li>
+     *   <li>CAISSIER : jamais</li>
+     * </ul>
+     */
+    private boolean peutCorriger() {
+        sn.rts.caisse.guichet.model.Dto.AuthResponse auth = Session.getInstance().getAuth();
+        if (auth == null || auth.role == null) return false;
+        sn.rts.caisse.guichet.model.Role role = auth.role;
+        if (role == sn.rts.caisse.guichet.model.Role.ADMIN
+                || role == sn.rts.caisse.guichet.model.Role.SUPERVISEUR) return true;
+        if (role == sn.rts.caisse.guichet.model.Role.AGENT_RECETTE) {
+            CaisseDTO caisse = Session.getInstance().getCaisseActive();
+            return caisse != null && caisse.agentRecetteId != null
+                    && caisse.agentRecetteId.equals(auth.utilisateurId);
+        }
+        return false;
+    }
+
+    private void reactiverOperation(OperationCaisseResponse op) {
+        boolean ok = Ui.confirmer("Réactiver l'opération",
+                "Réactiver l'opération " + op.numeroRecu + " ?\n\n"
+                        + "Le montant sera ré-appliqué au solde de la caisse "
+                        + "comme si l'annulation n'avait jamais eu lieu.");
+        if (!ok) return;
+
+        AsyncRunner.run(
+                () -> api.reactiverOperation(op.id),
+                reactivee -> {
+                    Ui.info("Opération réactivée",
+                            "Le reçu n° " + reactivee.numeroRecu
+                                    + " est de nouveau actif. Le solde a été recalculé.");
+                    rafraichirCaisse();
+                },
+                this::afficherErreur);
     }
 
     /**

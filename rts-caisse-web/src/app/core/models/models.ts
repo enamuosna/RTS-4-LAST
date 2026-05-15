@@ -2,7 +2,7 @@
 //  Types miroirs des DTOs Spring Boot (sn.rts.caisse.dto)
 // ============================================================
 
-export type Role = 'ADMIN' | 'SUPERVISEUR' | 'CAISSIER';
+export type Role = 'ADMIN' | 'SUPERVISEUR' | 'CAISSIER' | 'AGENT_RECETTE';
 
 export type TypeOperation = 'ENTREE' | 'SORTIE';
 
@@ -68,6 +68,9 @@ export interface Caisse {
   soldeCourant: number;
   caissierId?: number;
   caissierNomComplet?: string;
+  /** Agent de recette rattaché : peut modifier/réactiver les opérations. */
+  agentRecetteId?: number;
+  agentRecetteNomComplet?: string;
 }
 
 // ---------- Catégorie ----------

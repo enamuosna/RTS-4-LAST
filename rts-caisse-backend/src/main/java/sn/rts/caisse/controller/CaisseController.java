@@ -72,6 +72,17 @@ public class CaisseController {
         return ResponseEntity.ok(service.affecterCaissier(id, caissierId));
     }
 
+    @PatchMapping("/{id}/agent-recette")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Affecter (ou détacher) un agent de recette à une caisse",
+               description = "agentId null pour détacher l'agent. L'utilisateur "
+                       + "doit avoir le rôle AGENT_RECETTE. ADMIN uniquement.")
+    public ResponseEntity<CaisseDTO> affecterAgentRecette(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long agentId) {
+        return ResponseEntity.ok(service.affecterAgentRecette(id, agentId));
+    }
+
     @PatchMapping("/{id}/suspendre")
     public ResponseEntity<CaisseDTO> suspendre(@PathVariable Long id,
                                                @RequestParam boolean suspendre) {

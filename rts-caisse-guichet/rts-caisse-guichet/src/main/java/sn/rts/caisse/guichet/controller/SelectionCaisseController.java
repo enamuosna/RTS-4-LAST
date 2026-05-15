@@ -62,10 +62,15 @@ public class SelectionCaisseController {
         AsyncRunner.run(
                 api::listerCaisses,
                 caisses -> {
+                    // Tri : "ma caisse" en premier (caissier OU agent de recette
+                    // affecte), puis ordre alphabetique sur le code.
                     List<CaisseDTO> triees = caisses.stream()
                             .sorted(Comparator
                                     .<CaisseDTO, Integer>comparing(c ->
-                                            (monId != null && monId.equals(c.caissierId)) ? 0 : 1)
+                                            (monId != null
+                                                    && (monId.equals(c.caissierId)
+                                                        || monId.equals(c.agentRecetteId)))
+                                                    ? 0 : 1)
                                     .thenComparing(c -> c.code))
                             .toList();
                     caissesList.setItems(FXCollections.observableArrayList(triees));
@@ -110,7 +115,9 @@ public class SelectionCaisseController {
 
             Long monId = Session.getInstance().getAuth() != null
                     ? Session.getInstance().getAuth().utilisateurId : null;
-            boolean estMaCaisse = monId != null && monId.equals(caisse.caissierId);
+            boolean estMaCaisse = monId != null
+                    && (monId.equals(caisse.caissierId)
+                        || monId.equals(caisse.agentRecetteId));
 
             // Code + affectation
             Label code = new Label(caisse.code);

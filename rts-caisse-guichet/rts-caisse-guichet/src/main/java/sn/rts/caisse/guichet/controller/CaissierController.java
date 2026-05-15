@@ -537,12 +537,19 @@ public class CaissierController {
         soldeBox.setManaged(ouverte);
         soldeLabel.setText(Ui.formatMontant(caisse.soldeCourant));
 
-        ouvrirButton.setVisible(!ouverte && !suspendue);
-        ouvrirButton.setManaged(!ouverte && !suspendue);
-        cloturerButton.setVisible(ouverte);
-        cloturerButton.setManaged(ouverte);
+        // Ouverture/cloture de caisse : reservé au CAISSIER affecté
+        // (l'agent de recette ne gere pas les ouvertures/clotures).
+        boolean estCaissierAffecte = estCaissierDeCetteCaisse(caisse);
+        ouvrirButton.setVisible(!ouverte && !suspendue && estCaissierAffecte);
+        ouvrirButton.setManaged(!ouverte && !suspendue && estCaissierAffecte);
+        cloturerButton.setVisible(ouverte && estCaissierAffecte);
+        cloturerButton.setManaged(ouverte && estCaissierAffecte);
 
-        // Le bouton "Nouvelle opération" n'est actif que si la caisse est ouverte
+        // Bouton "Nouvelle opération" : visible uniquement pour le CAISSIER
+        // affecté (l'agent de recette ne saisit pas, il corrige).
+        // Désactivé tant que la caisse est fermée.
+        nouvelleOperationButton.setVisible(estCaissierAffecte);
+        nouvelleOperationButton.setManaged(estCaissierAffecte);
         nouvelleOperationButton.setDisable(!ouverte);
 
         if (ouverte) {
@@ -748,6 +755,17 @@ public class CaissierController {
     @FXML
     public void onRefresh() {
         rafraichirCaisse();
+    }
+
+    /**
+     * Renvoie true si l'utilisateur courant est le caissier affecté à
+     * cette caisse (responsable de la saisie + ouverture + cloture).
+     */
+    private boolean estCaissierDeCetteCaisse(CaisseDTO caisse) {
+        sn.rts.caisse.guichet.model.Dto.AuthResponse auth = Session.getInstance().getAuth();
+        if (auth == null || caisse == null) return false;
+        if (auth.role != sn.rts.caisse.guichet.model.Role.CAISSIER) return false;
+        return caisse.caissierId != null && caisse.caissierId.equals(auth.utilisateurId);
     }
 
     /**

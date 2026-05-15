@@ -90,13 +90,16 @@ public class LoginController {
     private void onLoginSuccess(AuthResponse response) {
         Session.getInstance().setAuth(response);
 
-        // Le guichet JavaFX est réservé aux CAISSIERS.
-        if (response.role != Role.CAISSIER) {
+        // Le guichet JavaFX est ouvert aux CAISSIERS (saisie) et aux
+        // AGENTS DE RECETTE (controle + correction des operations de leur
+        // caisse). Les ADMIN/SUPERVISEUR utilisent uniquement l'app web.
+        if (response.role != Role.CAISSIER && response.role != Role.AGENT_RECETTE) {
             Session.getInstance().clear();
             setEnabled(true);
             Ui.erreur("Accès au guichet refusé",
-                    "Le client guichet est réservé au personnel ayant le rôle CAISSIER.\n\n"
-                            + "Les administrateurs et superviseurs utilisent l'application web.");
+                    "Le client guichet est réservé aux caissiers et agents de recette.\n\n"
+                            + "Les administrateurs et superviseurs utilisent uniquement "
+                            + "l'application web.");
             return;
         }
 

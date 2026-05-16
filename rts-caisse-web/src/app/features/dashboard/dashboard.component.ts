@@ -20,6 +20,8 @@ import { MatTableModule } from '@angular/material/table';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { DashboardResponse } from '../../core/models/models';
+import { AuthService } from '../../core/services/auth.service';
+import { CaisseService } from '../../core/services/admin.services';
 import { ReportingService } from '../../core/services/caisse.services';
 
 @Component({
@@ -49,6 +51,12 @@ import { ReportingService } from '../../core/services/caisse.services';
 })
 export class DashboardComponent implements OnInit {
   private readonly reporting = inject(ReportingService);
+  private readonly auth      = inject(AuthService);
+  private readonly caisseApi = inject(CaisseService);
+
+  /** Pour l'AGENT_RECETTE : id de sa caisse affectee, passe en filtre
+   *  caisseId au backend ReportingService. null sinon = pas de filtre. */
+  private maCaisseId: number | null = null;
 
   readonly loading = signal(false);
   readonly data = signal<DashboardResponse | null>(null);
@@ -124,7 +132,21 @@ export class DashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.charger();
+    // AGENT_RECETTE : on identifie d'abord la caisse affectee pour limiter
+    // toutes les statistiques (KPI, donut, bar chart) a cette caisse.
+    if (this.auth.currentRole() === 'AGENT_RECETTE') {
+      const userId = this.auth.currentUser()?.utilisateurId;
+      this.caisseApi.lister().subscribe({
+        next: (toutes) => {
+          const ma = toutes.find(c => c.agentRecetteId === userId);
+          this.maCaisseId = ma ? ma.id : null;
+          this.charger();
+        },
+        error: () => this.charger()
+      });
+    } else {
+      this.charger();
+    }
   }
 
   charger(): void {
@@ -137,7 +159,8 @@ export class DashboardComponent implements OnInit {
     }
     const isoDebut = debut ? this.toIso(debut) : undefined;
     const isoFin   = fin   ? this.toIso(fin)   : undefined;
-    this.reporting.dashboard(isoDebut, isoFin).subscribe({
+    const caisseId = this.maCaisseId ?? undefined;
+    this.reporting.dashboard(isoDebut, isoFin, caisseId).subscribe({
       next: (resp) => {
         this.data.set(resp);
         this.loading.set(false);

@@ -92,8 +92,11 @@ export class JournalService {
     return this.http.get<JournalCaisse>(`${this.base}/${id}`);
   }
 
-  parCaisse(caisseId: number): Observable<JournalCaisse[]> {
-    return this.http.get<JournalCaisse[]>(`${this.base}/caisse/${caisseId}`);
+  parCaisse(caisseId: number, dateDebut?: string, dateFin?: string): Observable<JournalCaisse[]> {
+    let params = new HttpParams();
+    if (dateDebut) params = params.set('dateDebut', dateDebut);
+    if (dateFin)   params = params.set('dateFin',   dateFin);
+    return this.http.get<JournalCaisse[]>(`${this.base}/caisse/${caisseId}`, { params });
   }
 
   duJour(date?: string): Observable<JournalCaisse[]> {

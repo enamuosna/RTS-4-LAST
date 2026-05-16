@@ -20,4 +20,8 @@ public interface JournalCaisseRepository extends JpaRepository<JournalCaisse, Lo
     List<JournalCaisse> findByDateJournal(LocalDate date);
 
     List<JournalCaisse> findByCaisseIdOrderByDateJournalDesc(Long caisseId);
+
+    /** Journaux d'une caisse sur une plage [dateDebut, dateFin] inclusives, ordre desc. */
+    List<JournalCaisse> findByCaisseIdAndDateJournalBetweenOrderByDateJournalDesc(
+            Long caisseId, LocalDate dateDebut, LocalDate dateFin);
 }

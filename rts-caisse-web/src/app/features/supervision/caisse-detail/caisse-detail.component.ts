@@ -245,7 +245,9 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
 
   chargerJournaux(): void {
     this.loadingJournaux.set(true);
-    this.journalApi.parCaisse(this.caisseId()).subscribe({
+    let debut = this.dateDebut, fin = this.dateFin;
+    if (debut && fin && fin < debut) [debut, fin] = [fin, debut];
+    this.journalApi.parCaisse(this.caisseId(), this.toIso(debut), this.toIso(fin)).subscribe({
       next: (list) => {
         this.journaux.set(list);
         this.loadingJournaux.set(false);
@@ -262,6 +264,7 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
     this.pageIndex = 0;
     this.chargerStats();
     this.chargerOperations();
+    this.chargerJournaux();
   }
 
   changerPage(event: PageEvent): void {

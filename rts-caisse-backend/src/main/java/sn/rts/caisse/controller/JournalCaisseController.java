@@ -53,8 +53,13 @@ public class JournalCaisseController {
     }
 
     @GetMapping("/caisse/{caisseId}")
-    public ResponseEntity<List<JournalCaisseResponse>> parCaisse(@PathVariable Long caisseId) {
-        return ResponseEntity.ok(service.journauxParCaisse(caisseId));
+    public ResponseEntity<List<JournalCaisseResponse>> parCaisse(
+            @PathVariable Long caisseId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin) {
+        return ResponseEntity.ok(service.journauxParCaisse(caisseId, dateDebut, dateFin));
     }
 
     @GetMapping("/jour")

@@ -283,6 +283,27 @@ public class JournalCaisseService {
                 .toList();
     }
 
+    /**
+     * Variante avec filtre sur une plage de dates [dateDebut, dateFin] inclusives.
+     * Si les deux dates sont nulles, retombe sur la version sans filtre.
+     */
+    @Transactional(readOnly = true)
+    public List<JournalCaisseResponse> journauxParCaisse(Long caisseId,
+                                                          LocalDate dateDebut,
+                                                          LocalDate dateFin) {
+        if (dateDebut == null && dateFin == null) {
+            return journauxParCaisse(caisseId);
+        }
+        LocalDate d1 = dateDebut != null ? dateDebut : LocalDate.now().minusYears(10);
+        LocalDate d2 = dateFin   != null ? dateFin   : LocalDate.now();
+        if (d2.isBefore(d1)) { LocalDate tmp = d1; d1 = d2; d2 = tmp; }
+        return journalRepository
+                .findByCaisseIdAndDateJournalBetweenOrderByDateJournalDesc(caisseId, d1, d2)
+                .stream()
+                .map(JournalCaisseResponse::from)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<JournalCaisseResponse> journauxDuJour(LocalDate date) {
         LocalDate target = date != null ? date : LocalDate.now();

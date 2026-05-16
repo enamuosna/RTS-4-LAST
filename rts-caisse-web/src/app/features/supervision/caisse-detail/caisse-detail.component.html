@@ -1,0 +1,320 @@
+<div class="page-container">
+
+  <!-- Bandeau retour -->
+  <div class="back-bar">
+    <a routerLink="/supervision" class="back-link">
+      <mat-icon>arrow_back</mat-icon>
+      Retour à la supervision
+    </a>
+  </div>
+
+  <!-- ====================== Identité caisse ====================== -->
+  @if (loadingCaisse()) {
+    <div class="loading-wrapper"><mat-spinner diameter="40"></mat-spinner></div>
+  } @else {
+    @if (caisse(); as c) {
+      <mat-card class="identity-card">
+        <div class="identity-header">
+          <div>
+            <div class="caisse-code">{{ c.code }}</div>
+            <h1 class="caisse-libelle">{{ c.libelle }}</h1>
+            @if (c.emplacement) {
+              <div class="caisse-emplacement">
+                <mat-icon class="meta-icon">place</mat-icon>{{ c.emplacement }}
+              </div>
+            }
+          </div>
+          <span class="statut-pill" [ngClass]="classForStatut(c.statut)">
+            {{ c.statut }}
+          </span>
+        </div>
+
+        <div class="identity-grid">
+          <div class="identity-item">
+            <div class="identity-label">Solde courant</div>
+            <div class="identity-value solde">
+              {{ c.soldeCourant | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+            </div>
+          </div>
+          <div class="identity-item">
+            <div class="identity-label">Caissier</div>
+            <div class="identity-value">
+              <mat-icon class="meta-icon">person</mat-icon>
+              {{ c.caissierNomComplet || '— non affecté' }}
+            </div>
+          </div>
+          <div class="identity-item">
+            <div class="identity-label">Agent de recette</div>
+            <div class="identity-value">
+              <mat-icon class="meta-icon">verified_user</mat-icon>
+              {{ c.agentRecetteNomComplet || '— non affecté' }}
+            </div>
+          </div>
+        </div>
+      </mat-card>
+    }
+
+    <!-- ====================== Filtre période + KPI ====================== -->
+    <mat-card class="section-card">
+      <div class="section-header">
+        <mat-icon>insights</mat-icon>
+        <h3>Statistiques sur la période</h3>
+      </div>
+
+      <div class="filter-bar">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Date de début</mat-label>
+          <input matInput [matDatepicker]="pickerDebut"
+                 [(ngModel)]="dateDebut" (dateChange)="appliquerFiltre()" />
+          <mat-datepicker-toggle matSuffix [for]="pickerDebut"></mat-datepicker-toggle>
+          <mat-datepicker #pickerDebut></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Date de fin</mat-label>
+          <input matInput [matDatepicker]="pickerFin"
+                 [(ngModel)]="dateFin" (dateChange)="appliquerFiltre()" />
+          <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFin></mat-datepicker>
+        </mat-form-field>
+
+        <button mat-stroked-button color="primary" (click)="appliquerFiltre()">
+          <mat-icon>refresh</mat-icon>
+          Actualiser
+        </button>
+      </div>
+
+      @if (loadingStats()) {
+        <div class="loading-wrapper"><mat-spinner diameter="32"></mat-spinner></div>
+      } @else {
+        @if (stats(); as s) {
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-entrees">
+            <mat-icon>trending_up</mat-icon>
+            <div>
+              <div class="kpi-value">
+                {{ s.totalEntreesJour | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+              </div>
+              <div class="kpi-label">Total entrées</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-sorties">
+            <mat-icon>trending_down</mat-icon>
+            <div>
+              <div class="kpi-value">
+                {{ s.totalSortiesJour | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+              </div>
+              <div class="kpi-label">Total sorties</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-net">
+            <mat-icon>account_balance</mat-icon>
+            <div>
+              <div class="kpi-value"
+                   [class.amount-positive]="s.soldeNetJour >= 0"
+                   [class.amount-negative]="s.soldeNetJour < 0">
+                {{ s.soldeNetJour | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+              </div>
+              <div class="kpi-label">Solde net période</div>
+            </div>
+          </div>
+          <div class="kpi-card kpi-ops">
+            <mat-icon>receipt_long</mat-icon>
+            <div>
+              <div class="kpi-value">{{ s.nombreOperations | number:'1.0-0':'fr' }}</div>
+              <div class="kpi-label">Opérations</div>
+            </div>
+          </div>
+        </div>
+        }
+      }
+    </mat-card>
+
+    <!-- ====================== Opérations ====================== -->
+    <mat-card class="section-card">
+      <div class="section-header">
+        <mat-icon>list_alt</mat-icon>
+        <h3>Opérations de la caisse</h3>
+        <span class="header-meta">{{ totalOps() | number:'1.0-0':'fr' }} au total</span>
+      </div>
+
+      @if (loadingOps()) {
+        <div class="loading-wrapper"><mat-spinner diameter="32"></mat-spinner></div>
+      } @else if (operations().length === 0) {
+        <div class="empty">Aucune opération sur cette caisse.</div>
+      }
+      @if (!loadingOps() && operations().length > 0) {
+        <table mat-table [dataSource]="operations()" class="ops-table">
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let o">
+              {{ o.dateOperation | date: 'dd/MM/yyyy HH:mm' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="numero">
+            <th mat-header-cell *matHeaderCellDef>N° Reçu</th>
+            <td mat-cell *matCellDef="let o" class="numero-cell">{{ o.numeroRecu }}</td>
+          </ng-container>
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let o">
+              <span class="type-badge"
+                    [class.type-entree]="o.typeOperation === 'ENTREE'"
+                    [class.type-sortie]="o.typeOperation === 'SORTIE'">
+                {{ o.typeOperation }}
+              </span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="categorie">
+            <th mat-header-cell *matHeaderCellDef>Catégorie</th>
+            <td mat-cell *matCellDef="let o">{{ o.categorieLibelle }}</td>
+          </ng-container>
+          <ng-container matColumnDef="client">
+            <th mat-header-cell *matHeaderCellDef>Client</th>
+            <td mat-cell *matCellDef="let o">{{ o.clientRaisonSociale || '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="mode">
+            <th mat-header-cell *matHeaderCellDef>Mode</th>
+            <td mat-cell *matCellDef="let o">{{ o.modePaiement }}</td>
+          </ng-container>
+          <ng-container matColumnDef="montant">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Montant HT</th>
+            <td mat-cell *matCellDef="let o" class="text-right amount-cell"
+                [class.amount-positive]="o.typeOperation === 'ENTREE'"
+                [class.amount-negative]="o.typeOperation === 'SORTIE'">
+              {{ o.montant | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="timbre">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Timbre</th>
+            <td mat-cell *matCellDef="let o" class="text-right">
+              @if (o.timbre && o.timbre > 0) {
+                {{ o.timbre | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+              } @else { <span class="muted">—</span> }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="montantTtc">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Montant TTC</th>
+            <td mat-cell *matCellDef="let o" class="text-right amount-cell"
+                [class.amount-positive]="o.typeOperation === 'ENTREE'"
+                [class.amount-negative]="o.typeOperation === 'SORTIE'">
+              <strong>{{ o.montantTtc | currency: 'XOF':'symbol':'1.0-0':'fr' }}</strong>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="caissier">
+            <th mat-header-cell *matHeaderCellDef>Caissier</th>
+            <td mat-cell *matCellDef="let o">{{ o.caissierNomComplet }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let o">
+              <button mat-icon-button color="primary"
+                      matTooltip="Imprimer le reçu PDF"
+                      (click)="imprimerRecu(o)">
+                <mat-icon>print</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="colonnesOp"></tr>
+          <tr mat-row *matRowDef="let r; columns: colonnesOp"
+              [class.row-annulee]="r.annulee"></tr>
+        </table>
+
+        <mat-paginator
+          [length]="totalOps()"
+          [pageSize]="pageSize"
+          [pageIndex]="pageIndex"
+          [pageSizeOptions]="[10, 20, 50, 100]"
+          (page)="changerPage($event)">
+        </mat-paginator>
+      }
+    </mat-card>
+
+    <!-- ====================== Journaux de caisse ====================== -->
+    <mat-card class="section-card">
+      <div class="section-header">
+        <mat-icon>event_note</mat-icon>
+        <h3>Journaux de caisse</h3>
+      </div>
+
+      @if (loadingJournaux()) {
+        <div class="loading-wrapper"><mat-spinner diameter="32"></mat-spinner></div>
+      } @else if (journaux().length === 0) {
+        <div class="empty">Aucun journal sur cette caisse.</div>
+      }
+      @if (!loadingJournaux() && journaux().length > 0) {
+        <table mat-table [dataSource]="journaux()" class="journaux-table">
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let j">{{ j.dateJournal | date: 'dd/MM/yyyy' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="caissier">
+            <th mat-header-cell *matHeaderCellDef>Caissier</th>
+            <td mat-cell *matCellDef="let j">{{ j.caissierNomComplet }}</td>
+          </ng-container>
+          <ng-container matColumnDef="fond">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Fond</th>
+            <td mat-cell *matCellDef="let j" class="text-right">
+              {{ j.fondOuverture | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="entrees">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Entrées</th>
+            <td mat-cell *matCellDef="let j" class="text-right amount-positive">
+              {{ j.totalEntrees | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="sorties">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Sorties</th>
+            <td mat-cell *matCellDef="let j" class="text-right amount-negative">
+              {{ j.totalSorties | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="soldeTheorique">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Solde théorique</th>
+            <td mat-cell *matCellDef="let j" class="text-right">
+              {{ j.soldeTheorique | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="soldeReel">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Solde réel</th>
+            <td mat-cell *matCellDef="let j" class="text-right">
+              @if (j.soldeReel != null) {
+                {{ j.soldeReel | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+              } @else { <span class="muted">—</span> }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="ecart">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Écart</th>
+            <td mat-cell *matCellDef="let j" class="text-right"
+                [class.amount-positive]="j.ecart > 0"
+                [class.amount-negative]="j.ecart < 0">
+              @if (j.ecart != null) {
+                {{ j.ecart | currency: 'XOF':'symbol':'1.0-0':'fr' }}
+              } @else { <span class="muted">—</span> }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="statut">
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <td mat-cell *matCellDef="let j">
+              @if (j.cloture) {
+                <span class="badge badge-info">Clôturé</span>
+              } @else {
+                <span class="badge badge-success">Ouvert</span>
+              }
+              @if (j.valideeParId) {
+                <span class="badge badge-rts" matTooltip="Validé par {{ j.valideeParNom }}">
+                  ✓ validé
+                </span>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="colonnesJournal"></tr>
+          <tr mat-row *matRowDef="let r; columns: colonnesJournal"></tr>
+        </table>
+      }
+    </mat-card>
+  }
+</div>

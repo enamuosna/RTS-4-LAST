@@ -1,0 +1,281 @@
+.page-container {
+  padding: 24px 28px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.back-bar {
+  margin-bottom: 14px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--rts-gray-700);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.back-link:hover {
+  background: var(--rts-gray-100);
+  color: var(--rts-red);
+}
+
+.back-link mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.loading-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+/* ===================== Bandeau identité ===================== */
+.identity-card {
+  padding: 22px 26px;
+  border-radius: var(--rts-radius);
+  box-shadow: var(--rts-shadow);
+  border-left: 5px solid var(--rts-red);
+  margin-bottom: 16px;
+}
+
+.identity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.caisse-code {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--rts-red);
+  letter-spacing: 0.5px;
+}
+
+.caisse-libelle {
+  margin: 4px 0 4px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--rts-gray-900);
+}
+
+.caisse-emplacement {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--rts-gray-500);
+  font-size: 13px;
+}
+
+.statut-pill {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.statut-ouverte   { background: var(--rts-success-soft); color: var(--rts-success); }
+.statut-fermee    { background: var(--rts-gray-200);     color: var(--rts-gray-700); }
+.statut-suspendue { background: var(--rts-warning-soft); color: var(--rts-warning); }
+
+.identity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .identity-grid { grid-template-columns: 1fr; }
+}
+
+.identity-item {
+  padding: 12px 14px;
+  background: var(--rts-gray-50);
+  border-radius: 8px;
+}
+
+.identity-label {
+  font-size: 11px;
+  color: var(--rts-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+}
+
+.identity-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--rts-gray-900);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.identity-value.solde {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.meta-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--rts-gray-500);
+}
+
+/* ===================== Sections ===================== */
+.section-card {
+  padding: 18px 22px 22px;
+  border-radius: var(--rts-radius);
+  box-shadow: var(--rts-shadow);
+  margin-bottom: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.section-header mat-icon {
+  color: var(--rts-red);
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--rts-gray-900);
+  flex: 1;
+}
+
+.header-meta {
+  font-size: 12px;
+  color: var(--rts-gray-500);
+}
+
+.empty {
+  padding: 30px;
+  text-align: center;
+  color: var(--rts-gray-500);
+  font-style: italic;
+}
+
+/* ===================== Filter bar ===================== */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+/* ===================== KPI grid ===================== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: white;
+  border-radius: 10px;
+  border-left: 3px solid var(--rts-gray-300);
+  box-shadow: var(--rts-shadow-sm);
+}
+
+.kpi-entrees { border-left-color: var(--rts-success); }
+.kpi-sorties { border-left-color: var(--rts-danger); }
+.kpi-net     { border-left-color: var(--rts-red); }
+.kpi-ops     { border-left-color: var(--rts-info); }
+
+.kpi-card mat-icon {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--rts-gray-100);
+  color: var(--rts-gray-700);
+}
+
+.kpi-entrees mat-icon { background: var(--rts-success-soft); color: var(--rts-success); }
+.kpi-sorties mat-icon { background: var(--rts-danger-soft);  color: var(--rts-danger); }
+.kpi-net     mat-icon { background: var(--rts-red-soft);     color: var(--rts-red); }
+.kpi-ops     mat-icon { background: var(--rts-info-soft);    color: var(--rts-info); }
+
+.kpi-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--rts-gray-900);
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 11px;
+  color: var(--rts-gray-500);
+  margin-top: 2px;
+}
+
+/* ===================== Tables ===================== */
+.ops-table, .journaux-table {
+  width: 100%;
+  background: white;
+}
+
+.text-right { text-align: right; }
+.amount-cell { font-variant-numeric: tabular-nums; }
+.numero-cell {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--rts-red);
+  font-weight: 600;
+}
+.muted { color: var(--rts-gray-400); }
+
+.type-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.type-badge.type-entree { background: var(--rts-success-soft); color: var(--rts-success); }
+.type-badge.type-sortie { background: var(--rts-danger-soft);  color: var(--rts-danger); }
+
+.row-annulee {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+.badge-info    { background: var(--rts-info-soft);    color: var(--rts-info); }
+.badge-success { background: var(--rts-success-soft); color: var(--rts-success); }
+.badge-rts     { background: var(--rts-red-soft);     color: var(--rts-red-dark); }

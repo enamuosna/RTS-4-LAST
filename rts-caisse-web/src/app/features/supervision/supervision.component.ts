@@ -12,6 +12,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription, interval, startWith, switchMap } from 'rxjs';
 import { SupervisionSnapshot } from '../../core/models/models';
 import { SupervisionService } from '../../core/services/caisse.services';
@@ -39,7 +40,8 @@ import { SupervisionService } from '../../core/services/caisse.services';
     MatChipsModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    RouterLink
   ],
   templateUrl: './supervision.component.html',
   styleUrls: ['./supervision.component.css']

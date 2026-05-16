@@ -51,6 +51,16 @@ public class ReportingService {
      *                  {@link Role#CAISSIER}.
      */
     public DashboardResponse dashboard(LocalDate dateDebut, LocalDate dateFin, String login) {
+        return dashboard(dateDebut, dateFin, login, null);
+    }
+
+    /**
+     * Variante avec filtre optionnel sur une caisse (utilisé par la page
+     * Supervision détaillée par caisse). Si {@code caisseId == null},
+     * comportement identique à la signature précédente.
+     */
+    public DashboardResponse dashboard(LocalDate dateDebut, LocalDate dateFin,
+                                       String login, Long caisseId) {
         LocalDate aujourdhui = LocalDate.now();
         LocalDate debutEffectif = dateDebut != null ? dateDebut
                 : (dateFin != null ? dateFin : aujourdhui);
@@ -80,6 +90,9 @@ public class ReportingService {
                 .filter(o -> !restreintAuCaissier
                         || (o.getCaissier() != null
                             && caissierId.equals(o.getCaissier().getId())))
+                .filter(o -> caisseId == null
+                        || (o.getCaisse() != null
+                            && caisseId.equals(o.getCaisse().getId())))
                 .toList();
 
         BigDecimal totalEntrees = sommerParType(operations, TypeOperation.ENTREE);
@@ -88,8 +101,12 @@ public class ReportingService {
 
         // Nombre de caisses ouvertes : pour un caissier, on ne compte que
         // celles dont il est l'agent affecté (cohérent avec la restriction).
+        // Pour le mode détaillé d'une caisse, c'est 0 ou 1.
         long caissesOuvertes;
-        if (restreintAuCaissier) {
+        if (caisseId != null) {
+            caissesOuvertes = caisseRepository.findById(caisseId)
+                    .filter(c -> c.getStatut() == StatutCaisse.OUVERTE).isPresent() ? 1 : 0;
+        } else if (restreintAuCaissier) {
             caissesOuvertes = caisseRepository.findByStatut(StatutCaisse.OUVERTE).stream()
                     .filter(c -> c.getCaissier() != null
                             && caissierId.equals(c.getCaissier().getId()))

@@ -38,14 +38,17 @@ public class ReportingController {
     private final ReportingService reportingService;
 
     @GetMapping("/dashboard")
-    @Operation(summary = "Tableau de bord sur une plage de dates (jour courant par défaut)")
+    @Operation(summary = "Tableau de bord sur une plage de dates (jour courant par défaut)",
+               description = "Filtre optionnel par caisseId pour la page Supervision détaillée.")
     public ResponseEntity<DashboardResponse> dashboard(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
+            @RequestParam(required = false) Long caisseId,
             Authentication authentication) {
         return ResponseEntity.ok(
-                reportingService.dashboard(dateDebut, dateFin, authentication.getName()));
+                reportingService.dashboard(dateDebut, dateFin,
+                        authentication.getName(), caisseId));
     }
 }

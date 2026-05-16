@@ -164,10 +164,12 @@ export class ReportingService {
    * @param dateDebut format ISO yyyy-MM-dd, facultatif (par défaut aujourd'hui)
    * @param dateFin   format ISO yyyy-MM-dd, facultatif (par défaut = dateDebut)
    */
-  dashboard(dateDebut?: string, dateFin?: string): Observable<DashboardResponse> {
+  dashboard(dateDebut?: string, dateFin?: string,
+            caisseId?: number): Observable<DashboardResponse> {
     let params = new HttpParams();
     if (dateDebut) params = params.set('dateDebut', dateDebut);
     if (dateFin)   params = params.set('dateFin', dateFin);
+    if (caisseId)  params = params.set('caisseId', caisseId);
     return this.http.get<DashboardResponse>(`${this.base}/dashboard`, { params });
   }
 }

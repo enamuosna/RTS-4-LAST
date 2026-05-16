@@ -90,6 +90,13 @@ export const routes: Routes = [
         canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'])]
       },
       {
+        path: 'supervision/caisse/:id',
+        loadComponent: () =>
+          import('./features/supervision/caisse-detail/caisse-detail.component')
+            .then((m) => m.CaisseDetailComponent),
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'])]
+      },
+      {
         path: 'backup',
         loadComponent: () =>
           import('./features/backup/backup.component').then((m) => m.BackupComponent),

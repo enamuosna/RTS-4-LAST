@@ -106,6 +106,18 @@ export class JournalService {
   }
 
   /**
+   * Recherche unifiee : plage de dates + caisse optionnelle.
+   * Sans caisseId -> toutes les caisses. Sans dates -> aujourd'hui.
+   */
+  lister(dateDebut?: string, dateFin?: string, caisseId?: number): Observable<JournalCaisse[]> {
+    let params = new HttpParams();
+    if (dateDebut) params = params.set('dateDebut', dateDebut);
+    if (dateFin)   params = params.set('dateFin',   dateFin);
+    if (caisseId)  params = params.set('caisseId',  caisseId);
+    return this.http.get<JournalCaisse[]>(this.base, { params });
+  }
+
+  /**
    * Exporte un journal au format Excel.
    *
    * Problème Angular : quand `responseType: 'blob'` est actif, les réponses

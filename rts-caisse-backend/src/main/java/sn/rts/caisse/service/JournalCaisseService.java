@@ -304,6 +304,27 @@ public class JournalCaisseService {
                 .toList();
     }
 
+    /**
+     * Recherche unifiee : si caisseId fourni -> filtre sur cette caisse,
+     * sinon toutes les caisses. Plage [dateDebut, dateFin] inclusives ;
+     * si une borne manque on retombe sur les valeurs par defaut.
+     */
+    @Transactional(readOnly = true)
+    public List<JournalCaisseResponse> journaux(LocalDate dateDebut,
+                                                 LocalDate dateFin,
+                                                 Long caisseId) {
+        LocalDate aujourdhui = LocalDate.now();
+        LocalDate d1 = dateDebut != null ? dateDebut
+                : (dateFin != null ? dateFin : aujourdhui);
+        LocalDate d2 = dateFin   != null ? dateFin
+                : (dateDebut != null ? dateDebut : aujourdhui);
+        if (d2.isBefore(d1)) { LocalDate tmp = d1; d1 = d2; d2 = tmp; }
+        List<JournalCaisse> list = caisseId != null
+                ? journalRepository.findByCaisseIdAndDateJournalBetweenOrderByDateJournalDesc(caisseId, d1, d2)
+                : journalRepository.findByDateJournalBetweenOrderByDateJournalDesc(d1, d2);
+        return list.stream().map(JournalCaisseResponse::from).toList();
+    }
+
     @Transactional(readOnly = true)
     public List<JournalCaisseResponse> journauxDuJour(LocalDate date) {
         LocalDate target = date != null ? date : LocalDate.now();

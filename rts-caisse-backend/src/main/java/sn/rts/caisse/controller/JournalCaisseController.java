@@ -68,4 +68,19 @@ public class JournalCaisseController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(service.journauxDuJour(date));
     }
+
+    /**
+     * Recherche unifiee des journaux : plage de dates + filtre optionnel
+     * sur une caisse. Utilise par la page Journaux pour offrir un filtre
+     * complet (selecteur de caisse + 2 dates).
+     */
+    @GetMapping
+    public ResponseEntity<List<JournalCaisseResponse>> lister(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
+            @RequestParam(required = false) Long caisseId) {
+        return ResponseEntity.ok(service.journaux(dateDebut, dateFin, caisseId));
+    }
 }

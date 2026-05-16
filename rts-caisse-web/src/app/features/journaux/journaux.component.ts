@@ -15,11 +15,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { JournalCaisse } from '../../core/models/models';
+import { Caisse, JournalCaisse } from '../../core/models/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CaisseService } from '../../core/services/admin.services';
 import { JournalService } from '../../core/services/caisse.services';
@@ -40,7 +41,8 @@ import { JournalService } from '../../core/services/caisse.services';
     MatDatepickerModule,
     MatNativeDateModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatSelectModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './journaux.component.html',
@@ -55,9 +57,20 @@ export class JournauxComponent implements OnInit {
   readonly journaux = signal<JournalCaisse[]>([]);
   readonly exportEnCours = signal<number | null>(null);
 
+  /** Liste des caisses pour le selecteur. Filtree pour AGENT_RECETTE. */
+  readonly caisses = signal<Caisse[]>([]);
+  /** Caisse selectionnee dans le filtre. null = toutes les caisses. */
+  caisseSelectionneeId: number | null = null;
+  /** L'utilisateur peut-il choisir une caisse ? (Non pour AGENT_RECETTE.) */
+  readonly peutChoisirCaisse = signal<boolean>(true);
+
   /** Pour l'AGENT_RECETTE : ids des caisses qui lui sont affectees.
    *  Vide pour les autres roles = pas de filtre. */
   private mesCaisseIds: Set<number> = new Set<number>();
+
+  /** Plage de dates (incluses) pour le filtrage. Par defaut : 30 derniers jours. */
+  dateDebut: Date = (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d; })();
+  dateFin:   Date = new Date();
 
   readonly colonnes = [
     'date',
@@ -73,36 +86,54 @@ export class JournauxComponent implements OnInit {
     'actions'
   ];
 
-  selectedDate: Date = new Date();
-
   ngOnInit(): void {
-    // Pour l'AGENT_RECETTE, on charge d'abord la liste des caisses qui lui sont
-    // affectees pour pouvoir filtrer les journaux. Pour les autres roles, on
-    // charge directement.
-    if (this.auth.currentRole() === 'AGENT_RECETTE') {
-      const userId = this.auth.currentUser()?.utilisateurId;
-      this.caisseApi.lister().subscribe({
-        next: (toutes) => {
-          this.mesCaisseIds = new Set(
-              toutes.filter(c => c.agentRecetteId === userId).map(c => c.id));
-          this.charger();
-        },
-        error: () => this.charger()
-      });
-    } else {
-      this.charger();
-    }
+    // On charge les caisses pour alimenter le selecteur. Pour AGENT_RECETTE,
+    // on lock sur sa caisse affectee.
+    this.caisseApi.lister().subscribe({
+      next: (toutes) => {
+        const role = this.auth.currentRole();
+        if (role === 'AGENT_RECETTE') {
+          const userId = this.auth.currentUser()?.utilisateurId;
+          const mesCaisses = toutes.filter(c => c.agentRecetteId === userId);
+          this.mesCaisseIds = new Set(mesCaisses.map(c => c.id));
+          this.caisses.set(mesCaisses);
+          this.peutChoisirCaisse.set(false);
+          if (mesCaisses.length === 1) {
+            this.caisseSelectionneeId = mesCaisses[0].id;
+          }
+        } else {
+          this.caisses.set(toutes);
+        }
+        this.charger();
+      },
+      error: () => this.charger()
+    });
   }
 
   charger(): void {
-    const iso = this.selectedDate.toISOString().slice(0, 10);
-    this.service.duJour(iso).subscribe((list) => {
-      // AGENT_RECETTE : restreint aux journaux de ses caisses affectees.
-      if (this.mesCaisseIds.size > 0) {
-        list = list.filter(j => this.mesCaisseIds.has(j.caisseId));
-      }
-      this.journaux.set(list);
-    });
+    let debut = this.dateDebut, fin = this.dateFin;
+    if (debut && fin && fin < debut) [debut, fin] = [fin, debut];
+    this.service.lister(this.toIso(debut), this.toIso(fin),
+                        this.caisseSelectionneeId ?? undefined)
+      .subscribe((list) => {
+        // Defense en profondeur : restreint aussi cote front pour AGENT_RECETTE.
+        if (this.mesCaisseIds.size > 0) {
+          list = list.filter(j => this.mesCaisseIds.has(j.caisseId));
+        }
+        this.journaux.set(list);
+      });
+  }
+
+  appliquerFiltre(): void {
+    this.charger();
+  }
+
+  private toIso(d: Date | null | undefined): string | undefined {
+    if (!d) return undefined;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const j = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${j}`;
   }
 
   peutValider(): boolean {

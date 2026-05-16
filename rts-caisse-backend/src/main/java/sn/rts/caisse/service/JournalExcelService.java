@@ -188,14 +188,31 @@ public class JournalExcelService {
 
         row++;
 
-        // ----- Section : totaux financiers -----
+        // ----- Section : totaux financiers (HT / Timbre / TTC) -----
+        // Les champs j.getTotalEntrees() / j.getTotalSorties() sont stockés
+        // en HT (montant hors timbre). On recalcule timbre et TTC à la volée
+        // depuis la liste des opérations non annulées, pour faire apparaitre
+        // les 3 niveaux dans l'export.
+        BigDecimal timbreEntrees = sommerTimbre(operations, TypeOperation.ENTREE);
+        BigDecimal timbreSorties = sommerTimbre(operations, TypeOperation.SORTIE);
+        BigDecimal ttcEntrees    = sommerTtc(operations,    TypeOperation.ENTREE);
+        BigDecimal ttcSorties    = sommerTtc(operations,    TypeOperation.SORTIE);
+
         row = ecrireSection(sheet, row, "TOTAUX FINANCIERS", s);
         row = ecrireLigneMontant(sheet, row, "Fond d'ouverture",
                 j.getFondOuverture(), s.montantRecap);
-        row = ecrireLigneMontant(sheet, row, "Total des entrées",
+        row = ecrireLigneMontant(sheet, row, "Total entrées HT",
                 j.getTotalEntrees(), s.montantVert);
-        row = ecrireLigneMontant(sheet, row, "Total des sorties",
+        row = ecrireLigneMontant(sheet, row, "  • Timbre fiscal entrées",
+                timbreEntrees, s.montantRecap);
+        row = ecrireLigneMontant(sheet, row, "Total entrées TTC",
+                ttcEntrees, s.montantVertImportant);
+        row = ecrireLigneMontant(sheet, row, "Total sorties HT",
                 j.getTotalSorties(), s.montantRouge);
+        row = ecrireLigneMontant(sheet, row, "  • Timbre fiscal sorties",
+                timbreSorties, s.montantRecap);
+        row = ecrireLigneMontant(sheet, row, "Total sorties TTC",
+                ttcSorties, s.montantRougeImportant);
         row = ecrireLigneMontant(sheet, row, "Solde théorique",
                 j.getSoldeTheorique(), s.montantImportant);
         row = ecrireLigneMontant(sheet, row, "Solde réel compté",
@@ -328,10 +345,11 @@ public class JournalExcelService {
         XSSFSheet sheet = workbook.createSheet("Opérations");
 
         // Largeurs : Date(20) | N°(20) | Type(10) | Cat(24) | Mode(14)
-        //         | Client(22) | Motif(40) | Réf(18) | Montant(14)
-        //         | Annulée(10) | Motif annulation(28)
+        //         | Client(22) | Motif(40) | Réf(18) | Montant HT(14)
+        //         | Timbre(12) | Montant TTC(14) | Annulée(10) | Motif annul(28)
         int[] widths = {4800, 5400, 2800, 6400, 4000,
                         6400, 10000, 4800, 4000,
+                        3200, 4000,
                         2800, 7200};
         for (int i = 0; i < widths.length; i++) {
             sheet.setColumnWidth(i, widths[i]);
@@ -343,7 +361,8 @@ public class JournalExcelService {
         String[] entetes = {
                 "Date & heure", "N° Reçu", "Type", "Catégorie",
                 "Mode paiement", "Client", "Motif", "Référence",
-                "Montant (FCFA)", "Annulée", "Motif annulation"
+                "Montant HT (FCFA)", "Timbre (FCFA)", "Montant TTC (FCFA)",
+                "Annulée", "Motif annulation"
         };
         for (int i = 0; i < entetes.length; i++) {
             Cell c = header.createCell(i);
@@ -412,7 +431,7 @@ public class JournalExcelService {
             c7.setCellValue(op.getReference() != null ? op.getReference() : "");
             c7.setCellStyle(base);
 
-            // Montant (numérique, formaté FCFA, barré si annulé)
+            // Montant HT (numérique, formaté FCFA, barré si annulé)
             Cell c8 = row.createCell(8);
             if (op.getMontant() != null) {
                 c8.setCellValue(op.getMontant().doubleValue());
@@ -425,22 +444,37 @@ public class JournalExcelService {
             }
             c8.setCellStyle(styleMontant);
 
-            // Annulée (OUI / NON)
+            // Timbre fiscal (0 si vide)
             Cell c9 = row.createCell(9);
-            c9.setCellValue(annulee ? "OUI" : "NON");
-            c9.setCellStyle(annulee ? s.cellAnnulee : s.cellNonAnnulee);
+            BigDecimal timbre = op.getTimbre() != null ? op.getTimbre() : BigDecimal.ZERO;
+            c9.setCellValue(timbre.doubleValue());
+            c9.setCellStyle(annulee ? s.montantAnnule : s.montantRecap);
+
+            // Montant TTC (HT + timbre, ou fallback sur HT si pas de TTC)
+            Cell c10 = row.createCell(10);
+            BigDecimal ttc = op.getMontantTtc() != null
+                    ? op.getMontantTtc()
+                    : (op.getMontant() != null ? op.getMontant() : BigDecimal.ZERO);
+            c10.setCellValue(ttc.doubleValue());
+            c10.setCellStyle(styleMontant);
+
+            // Annulée (OUI / NON)
+            Cell c11 = row.createCell(11);
+            c11.setCellValue(annulee ? "OUI" : "NON");
+            c11.setCellStyle(annulee ? s.cellAnnulee : s.cellNonAnnulee);
 
             // Motif annulation
-            Cell c10 = row.createCell(10);
-            c10.setCellValue(annulee && op.getMotifAnnulation() != null
+            Cell c12 = row.createCell(12);
+            c12.setCellValue(annulee && op.getMotifAnnulation() != null
                     ? op.getMotifAnnulation()
                     : "");
-            c10.setCellStyle(base);
+            c12.setCellStyle(base);
 
             rowIdx++;
         }
 
         // ----- Ligne de totaux (somme des opérations non annulées) -----
+        // Cols : I=Montant HT(8), J=Timbre(9), K=Montant TTC(10), L=Annulée(11)
         if (!operations.isEmpty()) {
             rowIdx++;
             Row totalRow = sheet.createRow(rowIdx);
@@ -451,11 +485,24 @@ public class JournalExcelService {
             totalLabel.setCellStyle(s.totalLabel);
 
             int derniereDonnee = operations.size() + 1;  // ligne Excel = index+1
-            Cell totalValue = totalRow.createCell(8);
-            // SUMIF sur la colonne "Annulée" (J) = "NON"
-            totalValue.setCellFormula(
-                    "SUMIF(J2:J" + derniereDonnee + ",\"NON\",I2:I" + derniereDonnee + ")");
-            totalValue.setCellStyle(s.totalValeur);
+
+            // Total HT
+            Cell totalHT = totalRow.createCell(8);
+            totalHT.setCellFormula(
+                    "SUMIF(L2:L" + derniereDonnee + ",\"NON\",I2:I" + derniereDonnee + ")");
+            totalHT.setCellStyle(s.totalValeur);
+
+            // Total Timbre
+            Cell totalTimbre = totalRow.createCell(9);
+            totalTimbre.setCellFormula(
+                    "SUMIF(L2:L" + derniereDonnee + ",\"NON\",J2:J" + derniereDonnee + ")");
+            totalTimbre.setCellStyle(s.totalValeur);
+
+            // Total TTC
+            Cell totalTTC = totalRow.createCell(10);
+            totalTTC.setCellFormula(
+                    "SUMIF(L2:L" + derniereDonnee + ",\"NON\",K2:K" + derniereDonnee + ")");
+            totalTTC.setCellStyle(s.totalValeur);
         }
 
         // ----- Fonctionnalités Excel : gel + autofilter -----
@@ -561,6 +608,26 @@ public class JournalExcelService {
         cp.setCellValue(pourcentage);
         cp.setCellStyle(s.pourcentageRecap);
         return row + 1;
+    }
+
+    /** Somme des timbres pour les operations non annulees d'un type donne. */
+    private static BigDecimal sommerTimbre(List<OperationCaisse> operations,
+                                           TypeOperation type) {
+        return operations.stream()
+                .filter(o -> !o.isAnnulee() && o.getTypeOperation() == type)
+                .map(o -> o.getTimbre() != null ? o.getTimbre() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /** Somme des montants TTC (fallback sur HT si TTC null) pour un type donne. */
+    private static BigDecimal sommerTtc(List<OperationCaisse> operations,
+                                        TypeOperation type) {
+        return operations.stream()
+                .filter(o -> !o.isAnnulee() && o.getTypeOperation() == type)
+                .map(o -> o.getMontantTtc() != null
+                        ? o.getMontantTtc()
+                        : (o.getMontant() != null ? o.getMontant() : BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private static String pourcentage(BigDecimal partie, BigDecimal total) {

@@ -98,7 +98,20 @@ export class OperationsComponent implements OnInit {
   pageSize = 20;
 
   ngOnInit(): void {
-    this.caisseService.lister().subscribe((list) => this.caisses.set(list));
+    this.caisseService.lister().subscribe((list) => {
+      // AGENT_RECETTE ne voit QUE la (les) caisse(s) qui lui sont affectees.
+      const role = this.auth.currentRole();
+      if (role === 'AGENT_RECETTE') {
+        const userId = this.auth.currentUser()?.utilisateurId;
+        list = list.filter(c => c.agentRecetteId === userId);
+      }
+      this.caisses.set(list);
+      // Si une seule caisse, on la pre-selectionne et on charge directement.
+      if (list.length === 1) {
+        this.caisseSelectionneeId = list[0].id;
+        this.charger();
+      }
+    });
   }
 
   charger(): void {

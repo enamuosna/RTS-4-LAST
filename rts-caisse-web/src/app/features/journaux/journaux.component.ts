@@ -21,6 +21,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { JournalCaisse } from '../../core/models/models';
 import { AuthService } from '../../core/services/auth.service';
+import { CaisseService } from '../../core/services/admin.services';
 import { JournalService } from '../../core/services/caisse.services';
 
 @Component({
@@ -46,12 +47,17 @@ import { JournalService } from '../../core/services/caisse.services';
   styleUrls: ['./journaux.component.css']
 })
 export class JournauxComponent implements OnInit {
-  private readonly service = inject(JournalService);
-  private readonly auth = inject(AuthService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly service      = inject(JournalService);
+  private readonly auth         = inject(AuthService);
+  private readonly caisseApi    = inject(CaisseService);
+  private readonly snackBar     = inject(MatSnackBar);
 
   readonly journaux = signal<JournalCaisse[]>([]);
   readonly exportEnCours = signal<number | null>(null);
+
+  /** Pour l'AGENT_RECETTE : ids des caisses qui lui sont affectees.
+   *  Vide pour les autres roles = pas de filtre. */
+  private mesCaisseIds: Set<number> = new Set<number>();
 
   readonly colonnes = [
     'date',
@@ -70,12 +76,33 @@ export class JournauxComponent implements OnInit {
   selectedDate: Date = new Date();
 
   ngOnInit(): void {
-    this.charger();
+    // Pour l'AGENT_RECETTE, on charge d'abord la liste des caisses qui lui sont
+    // affectees pour pouvoir filtrer les journaux. Pour les autres roles, on
+    // charge directement.
+    if (this.auth.currentRole() === 'AGENT_RECETTE') {
+      const userId = this.auth.currentUser()?.utilisateurId;
+      this.caisseApi.lister().subscribe({
+        next: (toutes) => {
+          this.mesCaisseIds = new Set(
+              toutes.filter(c => c.agentRecetteId === userId).map(c => c.id));
+          this.charger();
+        },
+        error: () => this.charger()
+      });
+    } else {
+      this.charger();
+    }
   }
 
   charger(): void {
     const iso = this.selectedDate.toISOString().slice(0, 10);
-    this.service.duJour(iso).subscribe((list) => this.journaux.set(list));
+    this.service.duJour(iso).subscribe((list) => {
+      // AGENT_RECETTE : restreint aux journaux de ses caisses affectees.
+      if (this.mesCaisseIds.size > 0) {
+        list = list.filter(j => this.mesCaisseIds.has(j.caisseId));
+      }
+      this.journaux.set(list);
+    });
   }
 
   peutValider(): boolean {

@@ -15,6 +15,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
 import { Subscription, interval, startWith, switchMap } from 'rxjs';
 import { SupervisionSnapshot } from '../../core/models/models';
+import { AuthService } from '../../core/services/auth.service';
+import { CaisseService } from '../../core/services/admin.services';
 import { SupervisionService } from '../../core/services/caisse.services';
 
 /**
@@ -47,7 +49,9 @@ import { SupervisionService } from '../../core/services/caisse.services';
   styleUrls: ['./supervision.component.css']
 })
 export class SupervisionComponent implements OnInit, OnDestroy {
-  private readonly api = inject(SupervisionService);
+  private readonly api       = inject(SupervisionService);
+  private readonly auth      = inject(AuthService);
+  private readonly caisseApi = inject(CaisseService);
 
   /** Intervalle de rafraîchissement automatique (ms). */
   private static readonly POLLING_INTERVAL_MS = 10_000;
@@ -59,10 +63,36 @@ export class SupervisionComponent implements OnInit, OnDestroy {
   /** Compte à rebours visuel jusqu'au prochain refresh (en secondes). */
   readonly secondsUntilRefresh = signal(SupervisionComponent.POLLING_INTERVAL_MS / 1000);
 
+  /** IDs et codes des caisses affectees a l'AGENT_RECETTE connecte.
+   *  Vide pour ADMIN / SUPERVISEUR (= pas de filtre, on voit tout). */
+  private mesCaisseIds:   Set<number> = new Set<number>();
+  private mesCaisseCodes: Set<string> = new Set<string>();
+
   private pollingSub?: Subscription;
   private countdownSub?: Subscription;
 
   ngOnInit(): void {
+    // Pour l'AGENT_RECETTE on doit limiter la vue a sa propre caisse :
+    // on charge d'abord la liste des caisses pour identifier "mes caisses"
+    // (celles ou agentRecetteId = userId), puis on demarre le polling.
+    const role = this.auth.currentRole();
+    if (role === 'AGENT_RECETTE') {
+      const userId = this.auth.currentUser()?.utilisateurId;
+      this.caisseApi.lister().subscribe({
+        next: (toutes) => {
+          const mesCaisses = toutes.filter(c => c.agentRecetteId === userId);
+          this.mesCaisseIds   = new Set(mesCaisses.map(c => c.id));
+          this.mesCaisseCodes = new Set(mesCaisses.map(c => c.code));
+          this.demarrerPolling();
+        },
+        error: () => this.demarrerPolling()  // fallback : on tente quand meme
+      });
+    } else {
+      this.demarrerPolling();
+    }
+  }
+
+  private demarrerPolling(): void {
     // Polling principal toutes les 10s, démarré immédiatement
     this.pollingSub = interval(SupervisionComponent.POLLING_INTERVAL_MS)
       .pipe(
@@ -71,7 +101,7 @@ export class SupervisionComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (s) => {
-          this.snapshot.set(s);
+          this.snapshot.set(this.filtrerPourAgent(s));
           this.loading.set(false);
           this.errorMsg.set(null);
           this.secondsUntilRefresh.set(SupervisionComponent.POLLING_INTERVAL_MS / 1000);
@@ -94,6 +124,31 @@ export class SupervisionComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.pollingSub?.unsubscribe();
     this.countdownSub?.unsubscribe();
+  }
+
+  /**
+   * Pour l'AGENT_RECETTE : restreint le snapshot a sa caisse affectee.
+   * On filtre les caisses par id et l'activite recente par code caisse.
+   * On recalcule aussi les agregats du jour pour qu'ils refletent uniquement
+   * sa caisse — sinon il verrait "0 F CFA" alors que sa caisse a des operations.
+   * Pour les autres roles, on renvoie le snapshot tel quel.
+   */
+  private filtrerPourAgent(s: SupervisionSnapshot): SupervisionSnapshot {
+    if (this.mesCaisseIds.size === 0) return s;
+    const caissesFiltrees = s.caisses.filter(c => this.mesCaisseIds.has(c.id));
+    const activiteFiltree = s.activiteRecente.filter(a => this.mesCaisseCodes.has(a.caisseCode));
+    const totalEntrees = caissesFiltrees.reduce((sum, c) => sum + (Number(c.totalEntreesJour) || 0), 0);
+    const totalSorties = caissesFiltrees.reduce((sum, c) => sum + (Number(c.totalSortiesJour) || 0), 0);
+    return {
+      ...s,
+      totalCaisses:     caissesFiltrees.length,
+      caissesOuvertes:  caissesFiltrees.filter(c => c.statut === 'OUVERTE').length,
+      totalEntreesJour: totalEntrees,
+      totalSortiesJour: totalSorties,
+      soldeNetJour:     totalEntrees - totalSorties,
+      caisses:          caissesFiltrees,
+      activiteRecente:  activiteFiltree
+    };
   }
 
   // ==================================================================

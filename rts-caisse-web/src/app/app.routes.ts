@@ -20,9 +20,10 @@ export const routes: Routes = [
       import('./layout/main-layout/main-layout.component').then((m) => m.MainLayoutComponent),
     canActivate: [authGuard],
     children: [
-      // Route par défaut : /caisses est accessible à tous les rôles authentifiés,
-      // donc aucun risque de boucle "accès refusé" quel que soit le rôle.
-      { path: '', redirectTo: 'caisses', pathMatch: 'full' },
+      // Route par defaut : /dashboard est accessible a TOUS les roles
+      // (ADMIN, SUPERVISEUR, CAISSIER, AGENT_RECETTE), donc aucun risque
+      // de boucle "acces refuse" peu importe le role connecte.
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
         path: 'dashboard',
         loadComponent: () =>
@@ -41,7 +42,8 @@ export const routes: Routes = [
       {
         path: 'caisses',
         loadComponent: () =>
-          import('./features/caisses/caisses.component').then((m) => m.CaissesComponent)
+          import('./features/caisses/caisses.component').then((m) => m.CaissesComponent),
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER'])]
       },
       {
         path: 'categories',
@@ -102,9 +104,9 @@ export const routes: Routes = [
           import('./features/backup/backup.component').then((m) => m.BackupComponent),
         canActivate: [roleGuard(['ADMIN'])]
       },
-      // Si un guard refuse un accès, on renvoie sur /caisses (page sûre pour tous)
-      // plutôt que sur /login qui ferait croire à tort à une session expirée.
-      { path: 'unauthorized', redirectTo: 'caisses' }
+      // Si un guard refuse un acces, on renvoie sur /dashboard (page accessible
+      // a TOUS les roles) plutot que /caisses qui exclut maintenant AGENT_RECETTE.
+      { path: 'unauthorized', redirectTo: 'dashboard' }
     ]
   },
   { path: '**', redirectTo: '' }

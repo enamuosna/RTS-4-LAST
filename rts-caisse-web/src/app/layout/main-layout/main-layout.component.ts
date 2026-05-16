@@ -65,7 +65,7 @@ export class MainLayoutComponent {
   private readonly navItems = signal<NavItem[]>([
     { label: 'Tableau de bord',  icon: 'dashboard',      route: '/dashboard',    roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] },
     { label: 'Supervision',      icon: 'monitor_heart',  route: '/supervision',  roles: ['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'] },
-    { label: 'Caisses',          icon: 'point_of_sale',  route: '/caisses',      roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] },
+    { label: 'Caisses',          icon: 'point_of_sale',  route: '/caisses',      roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER'] },
     { label: 'Opérations',       icon: 'receipt_long',   route: '/operations',   roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] },
     { label: 'Journaux',         icon: 'event_note',     route: '/journaux',     roles: ['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'] },
     { label: 'Clients',          icon: 'business',       route: '/clients',      roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] },

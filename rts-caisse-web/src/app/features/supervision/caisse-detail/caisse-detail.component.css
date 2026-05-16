@@ -279,3 +279,45 @@
 .badge-info    { background: var(--rts-info-soft);    color: var(--rts-info); }
 .badge-success { background: var(--rts-success-soft); color: var(--rts-success); }
 .badge-rts     { background: var(--rts-red-soft);     color: var(--rts-red-dark); }
+
+/* ===================== Graphiques ===================== */
+.charts-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 10px;
+}
+
+@media (max-width: 1100px) {
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+.chart-block {
+  background: var(--rts-gray-50);
+  border-radius: var(--rts-radius);
+  padding: 14px 16px;
+}
+
+.chart-title {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--rts-gray-700);
+}
+
+.chart-wrap {
+  position: relative;
+  height: 280px;
+}
+
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--rts-gray-500);
+  font-style: italic;
+  font-size: 13px;
+}

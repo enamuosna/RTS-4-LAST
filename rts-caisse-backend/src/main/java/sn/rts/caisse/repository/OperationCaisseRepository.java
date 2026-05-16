@@ -21,6 +21,9 @@ public interface OperationCaisseRepository extends JpaRepository<OperationCaisse
 
     Page<OperationCaisse> findByCaisseId(Long caisseId, Pageable pageable);
 
+    Page<OperationCaisse> findByCaisseIdAndDateOperationBetween(
+            Long caisseId, LocalDateTime debut, LocalDateTime fin, Pageable pageable);
+
     List<OperationCaisse> findByCaisseIdAndDateOperationBetweenAndAnnuleeFalse(
             Long caisseId, LocalDateTime debut, LocalDateTime fin);
 

@@ -30,6 +30,7 @@ import sn.rts.caisse.repository.UtilisateurRepository;
 import sn.rts.caisse.util.NumeroRecuGenerator;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -557,6 +558,29 @@ public class OperationCaisseService {
     @Transactional(readOnly = true)
     public Page<OperationCaisseResponse> historiqueParCaisse(Long caisseId, Pageable pageable) {
         return operationRepository.findByCaisseId(caisseId, pageable)
+                .map(OperationCaisseResponse::from);
+    }
+
+    /**
+     * Variante filtrée sur une plage de dates [dateDebut, dateFin] inclusives.
+     * Si les deux dates sont nulles → délégué à la version non filtrée.
+     * Une seule des deux nulle = bornée à 10 ans en arrière / aujourd'hui.
+     */
+    @Transactional(readOnly = true)
+    public Page<OperationCaisseResponse> historiqueParCaisse(Long caisseId,
+                                                              LocalDate dateDebut,
+                                                              LocalDate dateFin,
+                                                              Pageable pageable) {
+        if (dateDebut == null && dateFin == null) {
+            return historiqueParCaisse(caisseId, pageable);
+        }
+        LocalDate d1 = dateDebut != null ? dateDebut : LocalDate.now().minusYears(10);
+        LocalDate d2 = dateFin   != null ? dateFin   : LocalDate.now();
+        if (d2.isBefore(d1)) { LocalDate tmp = d1; d1 = d2; d2 = tmp; }
+        LocalDateTime debut = d1.atStartOfDay();
+        LocalDateTime fin   = d2.plusDays(1).atStartOfDay();
+        return operationRepository
+                .findByCaisseIdAndDateOperationBetween(caisseId, debut, fin, pageable)
                 .map(OperationCaisseResponse::from);
     }
 

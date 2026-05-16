@@ -130,6 +130,42 @@
       }
     </mat-card>
 
+    <!-- ====================== Graphiques ====================== -->
+    @if (hasChartData()) {
+      <mat-card class="section-card">
+        <div class="section-header">
+          <mat-icon>bar_chart</mat-icon>
+          <h3>Graphiques de la période</h3>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-block">
+            <h4 class="chart-title">Entrées vs Sorties par catégorie</h4>
+            <div class="chart-wrap">
+              <canvas baseChart
+                      type="bar"
+                      [data]="barCategorieData()"
+                      [options]="barOptions"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-block">
+            <h4 class="chart-title">Répartition des entrées par mode de paiement</h4>
+            <div class="chart-wrap">
+              @if (donutModeData().labels?.length) {
+                <canvas baseChart
+                        type="doughnut"
+                        [data]="donutModeData()"
+                        [options]="doughnutOptions"></canvas>
+              } @else {
+                <div class="chart-empty">Aucune entrée sur la période visible.</div>
+              }
+            </div>
+          </div>
+        </div>
+      </mat-card>
+    }
+
     <!-- ====================== Opérations ====================== -->
     <mat-card class="section-card">
       <div class="section-header">

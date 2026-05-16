@@ -50,9 +50,16 @@ export class OperationService {
   historiqueParCaisse(
     caisseId: number,
     page = 0,
-    size = 20
+    size = 20,
+    dateDebut?: string,
+    dateFin?: string
   ): Observable<Page<OperationCaisse>> {
-    const params = new HttpParams().set('page', page).set('size', size).set('sort', 'dateOperation,desc');
+    let params = new HttpParams()
+        .set('page', page)
+        .set('size', size)
+        .set('sort', 'dateOperation,desc');
+    if (dateDebut) params = params.set('dateDebut', dateDebut);
+    if (dateFin)   params = params.set('dateFin', dateFin);
     return this.http.get<Page<OperationCaisse>>(`${this.base}/caisse/${caisseId}`, { params });
   }
 

@@ -4,6 +4,7 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  computed,
   inject,
   signal
 } from '@angular/core';
@@ -22,6 +23,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ChartConfiguration, ChartData } from 'chart.js';
+import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { Subscription, interval, startWith, switchMap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
@@ -72,8 +75,10 @@ import {
     MatDividerModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    RouterLink
+    RouterLink,
+    BaseChartDirective
   ],
+  providers: [provideCharts(withDefaultRegisterables())],
   templateUrl: './caisse-detail.component.html',
   styleUrls: ['./caisse-detail.component.css']
 })
@@ -113,6 +118,75 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
     'date', 'caissier', 'fond', 'entrees', 'sorties',
     'soldeTheorique', 'soldeReel', 'ecart', 'statut'
   ];
+
+  // ==================================================================
+  //  Graphiques (chart.js via ng2-charts)
+  // ==================================================================
+  readonly barOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (v) => new Intl.NumberFormat('fr-FR').format(v as number)
+        }
+      }
+    }
+  };
+
+  readonly doughnutOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } } }
+  };
+
+  /** Bar chart : Entrées vs Sorties par catégorie. */
+  readonly barCategorieData = computed<ChartData<'bar'>>(() => {
+    const s = this.stats();
+    if (!s) return { labels: [], datasets: [] };
+    const labels = s.repartitionParCategorie.map((c) => c.libelleCategorie);
+    const entrees = s.repartitionParCategorie.map(
+        (c) => c.typeOperation === 'ENTREE' ? c.montantTotal : 0);
+    const sorties = s.repartitionParCategorie.map(
+        (c) => c.typeOperation === 'SORTIE' ? c.montantTotal : 0);
+    return {
+      labels,
+      datasets: [
+        { label: 'Entrées', data: entrees, backgroundColor: '#2ecc71', borderRadius: 4 },
+        { label: 'Sorties', data: sorties, backgroundColor: '#e74c3c', borderRadius: 4 }
+      ]
+    };
+  });
+
+  /** Donut chart : répartition des entrées par mode de paiement (depuis operations()). */
+  readonly donutModeData = computed<ChartData<'doughnut'>>(() => {
+    const ops = this.operations().filter(o => !o.annulee && o.typeOperation === 'ENTREE');
+    if (ops.length === 0) return { labels: [], datasets: [] };
+    const sumByMode = new Map<string, number>();
+    for (const o of ops) {
+      const k = o.modePaiement || 'AUTRE';
+      sumByMode.set(k, (sumByMode.get(k) ?? 0) + (Number(o.montantTtc) || 0));
+    }
+    const labels = Array.from(sumByMode.keys());
+    const data   = Array.from(sumByMode.values());
+    return {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: ['#E30613', '#1a1a1a', '#B30510', '#7A030B', '#F47A82', '#4a4a4a'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    };
+  });
+
+  /** Indique si les charts ont de la donnée à afficher. */
+  readonly hasChartData = computed(() => {
+    const s = this.stats();
+    return s != null && s.repartitionParCategorie.length > 0;
+  });
 
   private refreshSub?: Subscription;
 
@@ -154,7 +228,11 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
 
   chargerOperations(): void {
     this.loadingOps.set(true);
-    this.opApi.historiqueParCaisse(this.caisseId(), this.pageIndex, this.pageSize)
+    let debut = this.dateDebut, fin = this.dateFin;
+    if (debut && fin && fin < debut) [debut, fin] = [fin, debut];
+    this.opApi.historiqueParCaisse(
+        this.caisseId(), this.pageIndex, this.pageSize,
+        this.toIso(debut), this.toIso(fin))
       .subscribe({
         next: (page) => {
           this.operations.set(page.content);

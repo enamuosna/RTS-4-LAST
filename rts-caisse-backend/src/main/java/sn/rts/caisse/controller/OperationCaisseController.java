@@ -89,11 +89,22 @@ public class OperationCaisseController {
     }
 
     @GetMapping("/caisse/{caisseId}")
-    @Operation(summary = "Historique paginé des opérations pour une caisse")
+    @Operation(summary = "Historique paginé des opérations pour une caisse",
+               description = "Filtrage optionnel sur une plage [dateDebut, dateFin] "
+                       + "au format ISO yyyy-MM-dd. Sans dates → toutes les opérations.")
     public ResponseEntity<Page<OperationCaisseResponse>> historique(
             @PathVariable Long caisseId,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateDebut,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(
+                    iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate dateFin,
             Pageable pageable) {
-        return ResponseEntity.ok(service.historiqueParCaisse(caisseId, pageable));
+        return ResponseEntity.ok(
+                service.historiqueParCaisse(caisseId, dateDebut, dateFin, pageable));
     }
 
     @GetMapping("/caisse/{caisseId}/jour")

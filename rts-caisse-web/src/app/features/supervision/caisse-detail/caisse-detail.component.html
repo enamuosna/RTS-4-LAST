@@ -63,24 +63,22 @@
 
       <div class="filter-bar">
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Date de début</mat-label>
-          <input matInput [matDatepicker]="pickerDebut"
-                 [(ngModel)]="dateDebut" (dateChange)="appliquerFiltre()" />
+          <mat-label>Date de debut</mat-label>
+          <input matInput [matDatepicker]="pickerDebut" [(ngModel)]="dateDebut" />
           <mat-datepicker-toggle matSuffix [for]="pickerDebut"></mat-datepicker-toggle>
           <mat-datepicker #pickerDebut></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Date de fin</mat-label>
-          <input matInput [matDatepicker]="pickerFin"
-                 [(ngModel)]="dateFin" (dateChange)="appliquerFiltre()" />
+          <input matInput [matDatepicker]="pickerFin" [(ngModel)]="dateFin" />
           <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
           <mat-datepicker #pickerFin></mat-datepicker>
         </mat-form-field>
 
-        <button mat-stroked-button color="primary" (click)="appliquerFiltre()">
-          <mat-icon>refresh</mat-icon>
-          Actualiser
+        <button mat-flat-button color="primary" (click)="appliquerFiltre()">
+          <mat-icon>filter_alt</mat-icon>
+          Appliquer le filtre
         </button>
       </div>
 

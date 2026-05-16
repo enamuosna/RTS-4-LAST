@@ -244,9 +244,16 @@ export class SupervisionService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/supervision`;
 
-  /** Snapshot complet : caisses + agrégats du jour + flux d'activité. */
-  snapshot(): Observable<SupervisionSnapshot> {
-    return this.http.get<SupervisionSnapshot>(`${this.base}/snapshot`);
+  /**
+   * Snapshot complet : caisses + agregats + flux d'activite.
+   * @param dateDebut/dateFin optionnels au format ISO yyyy-MM-dd ;
+   * sans dates -> vue temps reel du jour (polling), avec dates -> vue historique.
+   */
+  snapshot(dateDebut?: string, dateFin?: string): Observable<SupervisionSnapshot> {
+    let params = new HttpParams();
+    if (dateDebut) params = params.set('dateDebut', dateDebut);
+    if (dateFin)   params = params.set('dateFin',   dateFin);
+    return this.http.get<SupervisionSnapshot>(`${this.base}/snapshot`, { params });
   }
 }
 

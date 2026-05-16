@@ -3,16 +3,46 @@
     <div>
       <h1>Supervision en temps réel</h1>
       <div class="page-subtitle">
-        Vue d'ensemble pour le responsable des caisses RTS.
-        Rafraîchissement automatique toutes les 10 secondes.
+        @if (modeHistorique()) {
+          Vue historique sur la periode selectionnee — rafraichissement automatique desactive.
+        } @else {
+          Vue d'ensemble pour le responsable des caisses RTS.
+          Rafraichissement automatique toutes les 10 secondes.
+        }
       </div>
     </div>
-    @if (snapshot(); as s) {
+    @if (snapshot() && !modeHistorique()) {
       <div class="refresh-indicator" matTooltip="Prochain refresh">
         <mat-icon class="spin-on-tick">sync</mat-icon>
         <span>{{ secondsUntilRefresh() }}s</span>
       </div>
     }
+    @if (modeHistorique()) {
+      <button mat-stroked-button color="primary" (click)="revenirEnDirect()">
+        <mat-icon>play_arrow</mat-icon>
+        Revenir en direct
+      </button>
+    }
+  </div>
+
+  <!-- Filtre periode (toujours visible) -->
+  <div class="filter-bar">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Date de debut</mat-label>
+      <input matInput [matDatepicker]="pickerDebut" [(ngModel)]="dateDebut" />
+      <mat-datepicker-toggle matSuffix [for]="pickerDebut"></mat-datepicker-toggle>
+      <mat-datepicker #pickerDebut></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Date de fin</mat-label>
+      <input matInput [matDatepicker]="pickerFin" [(ngModel)]="dateFin" />
+      <mat-datepicker-toggle matSuffix [for]="pickerFin"></mat-datepicker-toggle>
+      <mat-datepicker #pickerFin></mat-datepicker>
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="appliquerFiltre()">
+      <mat-icon>filter_alt</mat-icon>
+      Appliquer le filtre
+    </button>
   </div>
 
   @if (loading()) {

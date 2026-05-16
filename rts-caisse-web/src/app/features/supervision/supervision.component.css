@@ -15,6 +15,23 @@
   color: var(--rts-info);
 }
 
+/* Barre de filtre periode */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: white;
+  padding: 12px 16px;
+  border-radius: var(--rts-radius);
+  box-shadow: var(--rts-shadow);
+  margin-bottom: 18px;
+}
+
+.filter-bar mat-form-field {
+  width: 180px;
+}
+
 .spin-on-tick {
   animation: spin 1s linear infinite;
   font-size: 18px;

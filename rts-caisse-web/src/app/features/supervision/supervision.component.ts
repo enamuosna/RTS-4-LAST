@@ -4,12 +4,19 @@ import {
   Component,
   OnDestroy,
   OnInit,
+  computed,
   inject,
   signal
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router, RouterLink } from '@angular/router';
@@ -35,12 +42,18 @@ import { SupervisionService } from '../../core/services/caisse.services';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
+    FormsModule,
     CurrencyPipe,
     DatePipe,
     DecimalPipe,
+    MatButtonModule,
     MatCardModule,
     MatChipsModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
     MatIconModule,
+    MatInputModule,
+    MatNativeDateModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
     RouterLink
@@ -68,6 +81,13 @@ export class SupervisionComponent implements OnInit, OnDestroy {
   private mesCaisseIds:   Set<number> = new Set<number>();
   private mesCaisseCodes: Set<string> = new Set<string>();
 
+  // Filtre periode. Par defaut today/today => mode live (avec polling).
+  // Si l'utilisateur change les dates, on bascule en mode historique
+  // (polling stoppe pour ne pas spammer le backend).
+  dateDebut: Date = new Date();
+  dateFin:   Date = new Date();
+  readonly modeHistorique = signal<boolean>(false);
+
   private pollingSub?: Subscription;
   private countdownSub?: Subscription;
 
@@ -93,7 +113,7 @@ export class SupervisionComponent implements OnInit, OnDestroy {
   }
 
   private demarrerPolling(): void {
-    // Polling principal toutes les 10s, démarré immédiatement
+    // Polling principal toutes les 10s, démarré immédiatement (mode live).
     this.pollingSub = interval(SupervisionComponent.POLLING_INTERVAL_MS)
       .pipe(
         startWith(0),
@@ -119,6 +139,48 @@ export class SupervisionComponent implements OnInit, OnDestroy {
         ? SupervisionComponent.POLLING_INTERVAL_MS / 1000
         : v - 1);
     });
+  }
+
+  /**
+   * Bascule en mode historique : stoppe le polling et fait un seul appel
+   * snapshot avec les dates choisies. La page n'est plus rafraichie auto
+   * tant que l'utilisateur n'a pas relance le mode live.
+   */
+  appliquerFiltre(): void {
+    let debut = this.dateDebut, fin = this.dateFin;
+    if (debut && fin && fin < debut) [debut, fin] = [fin, debut];
+    this.modeHistorique.set(true);
+    this.pollingSub?.unsubscribe();
+    this.countdownSub?.unsubscribe();
+    this.loading.set(true);
+    this.api.snapshot(this.toIso(debut), this.toIso(fin)).subscribe({
+      next: (s) => {
+        this.snapshot.set(this.filtrerPourAgent(s));
+        this.loading.set(false);
+        this.errorMsg.set(null);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.errorMsg.set(err?.error?.message ?? 'Snapshot indisponible.');
+      }
+    });
+  }
+
+  /** Repasse en mode live : aujourd'hui + relance du polling. */
+  revenirEnDirect(): void {
+    this.dateDebut = new Date();
+    this.dateFin   = new Date();
+    this.modeHistorique.set(false);
+    this.pollingSub?.unsubscribe();
+    this.countdownSub?.unsubscribe();
+    this.demarrerPolling();
+  }
+
+  private toIso(d: Date): string {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const j = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${j}`;
   }
 
   ngOnDestroy(): void {

@@ -43,8 +43,23 @@ public class SupervisionService {
     private final OperationCaisseRepository operationRepository;
 
     public SupervisionSnapshotResponse snapshot() {
-        LocalDateTime debutJour = LocalDate.now().atStartOfDay();
-        LocalDateTime finJour   = debutJour.plusDays(1);
+        return snapshot(null, null);
+    }
+
+    /**
+     * Variante avec plage de dates optionnelle. Sans dates -> journee courante
+     * (comportement legacy, mode "temps reel"). Avec dates -> vue historique
+     * sur [dateDebut, dateFin] inclusives.
+     */
+    public SupervisionSnapshotResponse snapshot(LocalDate dateDebut, LocalDate dateFin) {
+        LocalDate aujourdhui = LocalDate.now();
+        LocalDate d1 = dateDebut != null ? dateDebut
+                : (dateFin != null ? dateFin : aujourdhui);
+        LocalDate d2 = dateFin   != null ? dateFin
+                : (dateDebut != null ? dateDebut : aujourdhui);
+        if (d2.isBefore(d1)) { LocalDate tmp = d1; d1 = d2; d2 = tmp; }
+        LocalDateTime debutJour = d1.atStartOfDay();
+        LocalDateTime finJour   = d2.plusDays(1).atStartOfDay();
 
         // Toutes les caisses (pour les compteurs total/ouvert)
         List<Caisse> toutes = caisseRepository.findAll();

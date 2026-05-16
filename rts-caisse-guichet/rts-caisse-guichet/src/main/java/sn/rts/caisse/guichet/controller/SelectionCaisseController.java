@@ -56,15 +56,27 @@ public class SelectionCaisseController {
     }
 
     private void charger() {
-        Long monId = Session.getInstance().getAuth() != null
-                ? Session.getInstance().getAuth().utilisateurId : null;
+        sn.rts.caisse.guichet.model.Dto.AuthResponse auth =
+                Session.getInstance().getAuth();
+        Long monId = auth != null ? auth.utilisateurId : null;
+        sn.rts.caisse.guichet.model.Role monRole = auth != null ? auth.role : null;
 
         AsyncRunner.run(
                 api::listerCaisses,
                 caisses -> {
+                    java.util.stream.Stream<CaisseDTO> stream = caisses.stream();
+
+                    // Pour un AGENT_RECETTE : ne montre QUE la (les) caisse(s)
+                    // ou il est affecte. Il n'a aucune raison d'en voir
+                    // d'autres puisqu'il ne peut intervenir que sur la sienne.
+                    if (monRole == sn.rts.caisse.guichet.model.Role.AGENT_RECETTE
+                            && monId != null) {
+                        stream = stream.filter(c -> monId.equals(c.agentRecetteId));
+                    }
+
                     // Tri : "ma caisse" en premier (caissier OU agent de recette
                     // affecte), puis ordre alphabetique sur le code.
-                    List<CaisseDTO> triees = caisses.stream()
+                    List<CaisseDTO> triees = stream
                             .sorted(Comparator
                                     .<CaisseDTO, Integer>comparing(c ->
                                             (monId != null
@@ -74,6 +86,15 @@ public class SelectionCaisseController {
                                     .thenComparing(c -> c.code))
                             .toList();
                     caissesList.setItems(FXCollections.observableArrayList(triees));
+
+                    // Si l'agent n'a aucune caisse, message d'aide.
+                    if (triees.isEmpty()
+                            && monRole == sn.rts.caisse.guichet.model.Role.AGENT_RECETTE) {
+                        Ui.info("Aucune caisse affectée",
+                                "Vous n'êtes affecté à aucune caisse en tant qu'agent "
+                                        + "de recette. Demandez à un administrateur de "
+                                        + "vous rattacher à une caisse via la page Caisses.");
+                    }
                 },
                 e -> Ui.erreur("Erreur", "Impossible de charger les caisses : " + e.getMessage()));
     }

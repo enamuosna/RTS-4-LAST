@@ -27,9 +27,10 @@ public class SupervisionController {
     private final SupervisionService service;
 
     @GetMapping("/snapshot")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISEUR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE')")
     @Operation(summary = "Cliché temps réel : caisses + agrégats du jour + activité récente",
-               description = "À appeler en polling régulier (10s) côté UI.")
+               description = "À appeler en polling régulier (10s) côté UI. "
+                       + "Ouvert aux ADMIN, SUPERVISEUR et AGENT_RECETTE.")
     public ResponseEntity<SupervisionSnapshotResponse> snapshot() {
         return ResponseEntity.ok(service.snapshot());
     }

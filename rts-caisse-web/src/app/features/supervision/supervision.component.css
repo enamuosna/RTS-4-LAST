@@ -154,6 +154,40 @@
   gap: 10px;
 }
 
+/* Variante cliquable : curseur main + effet de survol clair */
+.caisse-card-clickable {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  position: relative;
+}
+
+.caisse-card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rts-shadow-lg);
+  border-left-color: var(--rts-red);
+}
+
+.caisse-card-clickable:hover::after {
+  content: 'Voir le détail →';
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--rts-red);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--rts-red-soft);
+  padding: 3px 10px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.caisse-card-clickable:focus-visible {
+  outline: 2px solid var(--rts-red);
+  outline-offset: 2px;
+}
+
 .caisse-card.caisse-fermee {
   border-left-color: var(--rts-gray-400);
   opacity: 0.75;

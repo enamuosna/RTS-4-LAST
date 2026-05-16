@@ -78,10 +78,13 @@
         <h3 class="section-title">État des caisses</h3>
         <div class="caisses-grid">
           @for (c of s.caisses; track c.id) {
-            <mat-card class="caisse-card" [class.caisse-fermee]="c.statut === 'FERMEE'"
+            <mat-card class="caisse-card caisse-card-clickable"
+                      [class.caisse-fermee]="c.statut === 'FERMEE'"
                       [routerLink]="['/supervision/caisse', c.id]"
-                      matTooltip="Voir le détail (statistiques, opérations, journaux, reçus)"
-                      style="cursor: pointer;">
+                      matTooltip="Cliquez pour voir le détail (statistiques, opérations, journaux, reçus)"
+                      matTooltipPosition="above"
+                      role="button"
+                      tabindex="0">
               <div class="caisse-header">
                 <div>
                   <div class="caisse-code">{{ c.code }}</div>

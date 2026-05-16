@@ -194,11 +194,13 @@ export class CaisseDetailComponent implements OnInit, OnDestroy {
 
   /** Ouvre le PDF du reçu dans un nouvel onglet (download navigateur). */
   imprimerRecu(op: OperationCaisse): void {
-    // GET /api/recus/operation/{id}?inline=true — l'iframe ou le viewer
-    // navigateur affichera le PDF.
+    // On passe par GET /api/operations/{id}/pdf : URL neutre (sans le mot
+    // "recus") pour échapper aux filtres uBlock / Brave Shields / Edge
+    // Tracking Prevention qui bloquent toute URL contenant "recus" en
+    // renvoyant ERR_BLOCKED_BY_CLIENT.
     // Token JWT : on ne peut pas l'attacher à un window.open. On passe
     // donc par un fetch authentifié + Blob → URL.createObjectURL.
-    const url = `${environment.apiUrl}/recus/operation/${op.id}?inline=true`;
+    const url = `${environment.apiUrl}/operations/${op.id}/pdf`;
     const token = localStorage.getItem(environment.tokenKey) ?? '';
     fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.ok ? r.blob() : Promise.reject(r.statusText))

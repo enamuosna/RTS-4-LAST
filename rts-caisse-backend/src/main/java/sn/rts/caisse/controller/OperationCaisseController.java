@@ -26,6 +26,7 @@ import java.util.List;
 public class OperationCaisseController {
 
     private final OperationCaisseService service;
+    private final sn.rts.caisse.service.RecuPdfService recuPdfService;
 
     @PostMapping
     @Operation(summary = "Enregistrer une nouvelle opération (encaissement / décaissement)")
@@ -52,6 +53,22 @@ public class OperationCaisseController {
     public ResponseEntity<OperationCaisseResponse> reactiver(@PathVariable Long id,
                                                               Authentication authentication) {
         return ResponseEntity.ok(service.reactiver(id, authentication.getName()));
+    }
+
+    @GetMapping(value = "/{id}/pdf", produces = org.springframework.http.MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Renvoie le reçu PDF d'une opération",
+               description = "Alias neutre de GET /api/recus/operation/{id} pour eviter les "
+                       + "extensions anti-tracking qui bloquent les URL contenant le mot "
+                       + "'recus' (uBlock / Brave Shields / Edge Tracking Prevention).")
+    public org.springframework.http.ResponseEntity<byte[]> pdf(@PathVariable Long id) {
+        byte[] pdf = recuPdfService.genererRecu(id);
+        org.springframework.http.HttpHeaders h = new org.springframework.http.HttpHeaders();
+        h.setContentType(org.springframework.http.MediaType.APPLICATION_PDF);
+        h.setContentDisposition(org.springframework.http.ContentDisposition
+                .inline().filename("recu-" + id + ".pdf").build());
+        h.setCacheControl("no-store, no-cache, must-revalidate");
+        h.setContentLength(pdf.length);
+        return org.springframework.http.ResponseEntity.ok().headers(h).body(pdf);
     }
 
     @org.springframework.web.bind.annotation.PutMapping("/{id}")

@@ -9,6 +9,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -38,6 +40,8 @@ import { ModifierOperationDialogComponent } from './modifier-operation-dialog.co
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     MatSelectModule,
     MatTooltipModule,
     MatDialogModule
@@ -97,6 +101,10 @@ export class OperationsComponent implements OnInit {
   pageIndex = 0;
   pageSize = 20;
 
+  /** Plage de dates (incluses) pour le filtrage. Par defaut : 30 derniers jours. */
+  dateDebut: Date = (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d; })();
+  dateFin:   Date = new Date();
+
   ngOnInit(): void {
     this.caisseService.lister().subscribe((list) => {
       // AGENT_RECETTE ne voit QUE la (les) caisse(s) qui lui sont affectees.
@@ -116,18 +124,35 @@ export class OperationsComponent implements OnInit {
 
   charger(): void {
     if (!this.caisseSelectionneeId) return;
+    let debut = this.dateDebut, fin = this.dateFin;
+    if (debut && fin && fin < debut) [debut, fin] = [fin, debut];
     this.operationService
-      .historiqueParCaisse(this.caisseSelectionneeId, this.pageIndex, this.pageSize)
+      .historiqueParCaisse(this.caisseSelectionneeId, this.pageIndex, this.pageSize,
+                            this.toIso(debut), this.toIso(fin))
       .subscribe((page) => {
         this.operations.set(page.content);
         this.total.set(page.totalElements);
       });
   }
 
+  /** Relance le chargement en revenant a la premiere page (clic "Appliquer"). */
+  appliquerFiltre(): void {
+    this.pageIndex = 0;
+    this.charger();
+  }
+
   changerPage(event: PageEvent): void {
     this.pageIndex = event.pageIndex;
     this.pageSize = event.pageSize;
     this.charger();
+  }
+
+  private toIso(d: Date | null | undefined): string | undefined {
+    if (!d) return undefined;
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const j = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${j}`;
   }
 
   annuler(operation: OperationCaisse): void {

@@ -16,10 +16,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { DashboardResponse } from '../../core/models/models';
+import { Caisse, DashboardResponse } from '../../core/models/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CaisseService } from '../../core/services/admin.services';
 import { ReportingService } from '../../core/services/caisse.services';
@@ -41,6 +42,7 @@ import { ReportingService } from '../../core/services/caisse.services';
     MatDatepickerModule,
     MatNativeDateModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
     MatTableModule,
     BaseChartDirective
   ],
@@ -54,12 +56,20 @@ export class DashboardComponent implements OnInit {
   private readonly auth      = inject(AuthService);
   private readonly caisseApi = inject(CaisseService);
 
-  /** Pour l'AGENT_RECETTE : id de sa caisse affectee, passe en filtre
-   *  caisseId au backend ReportingService. null sinon = pas de filtre. */
+  /** Pour l'AGENT_RECETTE : id de sa caisse affectee, lockee = on ne propose
+   *  pas le selecteur de caisse. Null pour les autres roles = "Toutes les caisses". */
   private maCaisseId: number | null = null;
 
   readonly loading = signal(false);
   readonly data = signal<DashboardResponse | null>(null);
+
+  /** Liste des caisses pour le selecteur (ADMIN / SUPERVISEUR / CAISSIER). */
+  readonly caisses = signal<Caisse[]>([]);
+  /** Caisse selectionnee dans le filtre ; null = "Toutes les caisses". */
+  caisseSelectionneeId: number | null = null;
+  /** L'utilisateur peut-il choisir une caisse ? (Non pour AGENT_RECETTE.) */
+  readonly peutChoisirCaisse = computed(() =>
+      this.auth.currentRole() !== 'AGENT_RECETTE');
 
   /** Bornes de la plage de dates (incluses). Par défaut : aujourd'hui → aujourd'hui. */
   dateDebut: Date = new Date();
@@ -132,21 +142,24 @@ export class DashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    // AGENT_RECETTE : on identifie d'abord la caisse affectee pour limiter
-    // toutes les statistiques (KPI, donut, bar chart) a cette caisse.
-    if (this.auth.currentRole() === 'AGENT_RECETTE') {
-      const userId = this.auth.currentUser()?.utilisateurId;
-      this.caisseApi.lister().subscribe({
-        next: (toutes) => {
+    // On charge la liste des caisses pour alimenter le selecteur.
+    // AGENT_RECETTE : on lock sur sa caisse (caisseSelectionneeId = maCaisseId).
+    // Autres roles : selecteur libre (par defaut null = "Toutes les caisses").
+    this.caisseApi.lister().subscribe({
+      next: (toutes) => {
+        if (this.auth.currentRole() === 'AGENT_RECETTE') {
+          const userId = this.auth.currentUser()?.utilisateurId;
           const ma = toutes.find(c => c.agentRecetteId === userId);
           this.maCaisseId = ma ? ma.id : null;
-          this.charger();
-        },
-        error: () => this.charger()
-      });
-    } else {
-      this.charger();
-    }
+          this.caisseSelectionneeId = this.maCaisseId;
+          this.caisses.set(ma ? [ma] : []);
+        } else {
+          this.caisses.set(toutes);
+        }
+        this.charger();
+      },
+      error: () => this.charger()
+    });
   }
 
   charger(): void {
@@ -159,7 +172,11 @@ export class DashboardComponent implements OnInit {
     }
     const isoDebut = debut ? this.toIso(debut) : undefined;
     const isoFin   = fin   ? this.toIso(fin)   : undefined;
-    const caisseId = this.maCaisseId ?? undefined;
+    // Priorite : AGENT_RECETTE lock sur sa caisse, sinon valeur du selecteur,
+    // sinon null = toutes les caisses (pas de filtre).
+    const caisseId = this.maCaisseId
+        ?? this.caisseSelectionneeId
+        ?? undefined;
     this.reporting.dashboard(isoDebut, isoFin, caisseId).subscribe({
       next: (resp) => {
         this.data.set(resp);

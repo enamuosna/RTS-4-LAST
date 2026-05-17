@@ -43,7 +43,7 @@ export const routes: Routes = [
         path: 'caisses',
         loadComponent: () =>
           import('./features/caisses/caisses.component').then((m) => m.CaissesComponent),
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER'])]
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR'])]
       },
       {
         path: 'categories',

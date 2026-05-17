@@ -101,6 +101,7 @@ public record AuditLogResponse(
             case SUPPRIMER_CLIENT           -> "Suppression de client";
             case CREER_UTILISATEUR          -> "Création d'utilisateur";
             case MODIFIER_UTILISATEUR       -> "Modification d'utilisateur";
+            case MODIFIER_ROLE_UTILISATEUR  -> "Modification du rôle d'utilisateur";
             case DESACTIVER_UTILISATEUR     -> "Désactivation d'utilisateur";
             case REACTIVER_UTILISATEUR      -> "Réactivation d'utilisateur";
             case REINITIALISER_MOT_DE_PASSE -> "Réinitialisation de mot de passe";

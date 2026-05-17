@@ -73,17 +73,24 @@ mat-nav-list {
   border-radius: 8px;
   margin-bottom: 4px;
   color: rgba(255, 255, 255, 0.92);
-  transition: background-color 0.15s, color 0.15s, transform 0.05s;
+  transition: background-color 0.22s ease, color 0.22s ease,
+              box-shadow 0.22s ease, transform 0.18s ease;
   position: relative;
   overflow: hidden;
 }
 
 .nav-item .mat-icon {
   color: rgba(255, 255, 255, 0.85);
+  transition: transform 0.18s ease, color 0.22s ease;
 }
 
 .nav-item:hover {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(2px);
+}
+
+.nav-item:hover .mat-icon {
+  transform: scale(1.08);
 }
 
 /* Item actif : fond blanc, texte rouge — contraste fort, signature RTS */
@@ -91,11 +98,18 @@ mat-nav-list {
   background-color: #ffffff;
   color: var(--rts-red-dark);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  transform: translateX(0);
+}
+
+.nav-item.active:hover {
+  transform: translateX(0);
+  background-color: #ffffff;
 }
 
 .nav-item.active .mat-icon {
   color: var(--rts-red);
+  transform: scale(1);
 }
 
 /* Petit liseré rouge à gauche de l'item actif (rappel marque) */

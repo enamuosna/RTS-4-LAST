@@ -5,33 +5,44 @@
   min-height: 100vh;
   /* Fond rouge RTS — gradient + halo radial pour donner de la profondeur */
   background:
-    radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.10), transparent 60%),
-    radial-gradient(ellipse at bottom right, rgba(0, 0, 0, 0.20), transparent 55%),
+    radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.12), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(0, 0, 0, 0.22), transparent 55%),
     linear-gradient(135deg, #E30613 0%, #B30510 55%, #7A030B 100%);
   padding: 24px;
   position: relative;
   overflow: hidden;
 }
 
-/* Bandes décoratives évoquant l'identité RTS (filet noir + filet rouge) */
-:host::before,
-:host::after {
+/* Halo flou animé en arriere-plan, evoque le mouvement des ondes radio */
+:host::before {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  height: 6px;
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+  top: -200px;
+  right: -200px;
+  animation: floatHalo 16s ease-in-out infinite;
   pointer-events: none;
 }
 
-:host::before {
-  top: 0;
-  background: linear-gradient(90deg, #1a1a1a 0%, #1a1a1a 60%, transparent 100%);
+:host::after {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.15) 0%, transparent 70%);
+  bottom: -150px;
+  left: -150px;
+  animation: floatHalo 20s ease-in-out infinite reverse;
+  pointer-events: none;
 }
 
-:host::after {
-  bottom: 0;
-  background: linear-gradient(90deg, transparent 0%, #1a1a1a 40%, #1a1a1a 100%);
+@keyframes floatHalo {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(40px, -30px) scale(1.08); }
 }
 
 .login-card {
@@ -39,11 +50,20 @@
   max-width: 440px;
   padding: 44px 36px 32px;
   border-radius: 18px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
   position: relative;
   z-index: 1;
   background: #ffffff;
   overflow: hidden;
+  /* Apparition de la card : slide-up + fade-in */
+  animation: cardEnter 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
 /* Bandeau rouge en haut de la carte (rappel logo RTS) */
@@ -80,6 +100,13 @@
   box-shadow:
     0 8px 18px rgba(227, 6, 19, 0.35),
     inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  /* Pulse subtil au montage pour attirer l'oeil sur la marque */
+  animation: logoPulse 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+@keyframes logoPulse {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 h1 {
@@ -110,6 +137,20 @@ button[type='submit'] {
   font-weight: 600;
   letter-spacing: 0.3px;
   border-radius: 10px !important;
+  /* Transition tres legere pour lift et ombre au survol */
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 4px 12px rgba(227, 6, 19, 0.28);
+}
+
+button[type='submit']:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(227, 6, 19, 0.42);
+  filter: brightness(1.04);
+}
+
+button[type='submit']:not(:disabled):active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(227, 6, 19, 0.30);
 }
 
 .inline-spinner {
@@ -129,6 +170,16 @@ button[type='submit'] {
   gap: 8px;
   margin-bottom: 16px;
   border-left: 4px solid var(--rts-danger);
+  /* Shake horizontal subtil pour signaler une nouvelle erreur */
+  animation: errorShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(5px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(2px); }
 }
 
 /* ===== Footer ===== */

@@ -45,6 +45,17 @@ export class UtilisateurService {
   }
 
   /**
+   * Modifie le role d'un utilisateur (ADMIN requis).
+   * Backend : PATCH /api/utilisateurs/{id}/role?nouveau=ROLE
+   * Valeurs : ADMIN | SUPERVISEUR | CAISSIER | AGENT_RECETTE.
+   */
+  modifierRole(id: number, nouveau: import('../models/models').Role): Observable<Utilisateur> {
+    return this.http.patch<Utilisateur>(`${this.base}/${id}/role`, null, {
+      params: new HttpParams().set('nouveau', nouveau)
+    });
+  }
+
+  /**
    * Modifie le login d'un utilisateur (réservé super-admin côté backend).
    * Backend : PATCH /api/utilisateurs/{id}/login?nouveau=xxx
    */

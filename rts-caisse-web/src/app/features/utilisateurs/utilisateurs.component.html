@@ -51,6 +51,17 @@
             <th mat-header-cell *matHeaderCellDef class="actions-col"></th>
             <td mat-cell *matCellDef="let u" class="actions-col">
 
+                <!-- Modifier le role : ouvert a tout ADMIN. Le backend protege
+                     deja le super-admin contre tout changement de role. -->
+                <button
+                        mat-icon-button
+                        color="primary"
+                        matTooltip="Modifier le rôle"
+                        (click)="modifierRole(u)"
+                >
+                    <mat-icon>admin_panel_settings</mat-icon>
+                </button>
+
                 @if (isSuperAdmin()) {
                     <button
                             mat-icon-button

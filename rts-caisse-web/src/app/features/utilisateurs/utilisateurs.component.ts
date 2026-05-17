@@ -22,6 +22,7 @@ import { Role, Utilisateur } from '../../core/models/models';
 import { UtilisateurService } from '../../core/services/admin.services';
 import { UtilisateurDialogComponent } from './dialogs/utilisateur-dialog.component';
 import { ModifierLoginDialogComponent } from './dialogs/modifier-login-dialog.component';
+import { ModifierRoleDialogComponent } from './dialogs/modifier-role-dialog.component';
 import { ReinitialiserMdpDialogComponent } from './dialogs/reinitialiser-mdp-dialog.component';
 
 
@@ -102,6 +103,23 @@ export class UtilisateursComponent implements OnInit {
     this.dialog
         .open(ModifierLoginDialogComponent, {
           width: '460px',
+          data: { utilisateur: u },
+          autoFocus: 'first-tabbable'
+        })
+        .afterClosed()
+        .subscribe(modifie => {
+          if (modifie) this.charger();
+        });
+  }
+
+  /**
+   * Ouvre un dialog pour modifier le role d'un utilisateur. Reserve aux ADMIN.
+   * Le backend rejette la modification du role du super admin.
+   */
+  modifierRole(u: Utilisateur): void {
+    this.dialog
+        .open(ModifierRoleDialogComponent, {
+          width: '480px',
           data: { utilisateur: u },
           autoFocus: 'first-tabbable'
         })

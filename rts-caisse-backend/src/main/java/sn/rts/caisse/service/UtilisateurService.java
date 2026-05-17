@@ -202,6 +202,63 @@ public class UtilisateurService {
     }
 
     // ------------------------------------------------------------------
+    //  Modification du ROLE — autorisee a tout ADMIN
+    // ------------------------------------------------------------------
+
+    /**
+     * Change le role d'un utilisateur. Reservee aux ADMIN (filtre au
+     * niveau SecurityConfig). Protection : on ne peut pas changer le role
+     * de l'administrateur general (super admin).
+     */
+    public UtilisateurDTO modifierRole(Long id, sn.rts.caisse.model.Role nouveauRole) {
+        try {
+            if (nouveauRole == null) {
+                throw new BusinessException("Le nouveau role est obligatoire.");
+            }
+            Utilisateur u = trouver(id);
+
+            // Protection : on ne peut pas degrader le super admin
+            if (superAdminPolicy.isSuperAdmin(u)
+                    && nouveauRole != sn.rts.caisse.model.Role.ADMIN) {
+                throw new BusinessException(
+                        "Le role de l'administrateur general ne peut pas etre modifie.");
+            }
+
+            sn.rts.caisse.model.Role ancienRole = u.getRole();
+            if (Objects.equals(ancienRole, nouveauRole)) {
+                // Idempotent : pas de changement, pas de write, pas d'audit.
+                return UtilisateurDTO.from(u);
+            }
+
+            u.setRole(nouveauRole);
+            Utilisateur saved = utilisateurRepository.save(u);
+
+            log.info("Role modifie : login={} ancien={} nouveau={}",
+                    saved.getLogin(), ancienRole, nouveauRole);
+
+            auditService.logSuccess(
+                    AuditAction.MODIFIER_ROLE_UTILISATEUR,
+                    "Utilisateur",
+                    saved.getId(),
+                    saved.getLogin() + " (" + saved.getMatricule() + ")",
+                    "Login=" + saved.getLogin()
+                            + " AncienRole=" + ancienRole
+                            + " NouveauRole=" + nouveauRole);
+
+            return UtilisateurDTO.from(saved);
+
+        } catch (BusinessException | ResourceNotFoundException e) {
+            auditService.logFailure(
+                    AuditAction.MODIFIER_ROLE_UTILISATEUR,
+                    "Utilisateur",
+                    id,
+                    "tentative=modifierRole nouveau=" + nouveauRole,
+                    e.getMessage());
+            throw e;
+        }
+    }
+
+    // ------------------------------------------------------------------
     //  Modification du LOGIN — RÉSERVÉE AU SUPER ADMIN
     // ------------------------------------------------------------------
 

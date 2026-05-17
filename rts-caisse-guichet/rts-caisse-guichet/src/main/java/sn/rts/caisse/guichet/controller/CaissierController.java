@@ -538,18 +538,20 @@ public class CaissierController {
         soldeLabel.setText(Ui.formatMontant(caisse.soldeCourant));
 
         // Ouverture/cloture de caisse : reservé au CAISSIER affecté
-        // (l'agent de recette ne gere pas les ouvertures/clotures).
+        // (l'agent de recette ne gere pas les ouvertures/clotures de journee).
         boolean estCaissierAffecte = estCaissierDeCetteCaisse(caisse);
         ouvrirButton.setVisible(!ouverte && !suspendue && estCaissierAffecte);
         ouvrirButton.setManaged(!ouverte && !suspendue && estCaissierAffecte);
         cloturerButton.setVisible(ouverte && estCaissierAffecte);
         cloturerButton.setManaged(ouverte && estCaissierAffecte);
 
-        // Bouton "Nouvelle opération" : visible uniquement pour le CAISSIER
-        // affecté (l'agent de recette ne saisit pas, il corrige).
-        // Désactivé tant que la caisse est fermée.
-        nouvelleOperationButton.setVisible(estCaissierAffecte);
-        nouvelleOperationButton.setManaged(estCaissierAffecte);
+        // Bouton "Nouvelle opération" : visible pour le CAISSIER affecté ET
+        // pour l'AGENT_RECETTE affecté a cette caisse. Dans la realite metier
+        // RTS, l'agent de recette peut aussi encaisser/decaisser, pas seulement
+        // corriger. Desactive tant que la caisse est fermee (peu importe le role).
+        boolean peutSaisir = peutFaireOperation(caisse);
+        nouvelleOperationButton.setVisible(peutSaisir);
+        nouvelleOperationButton.setManaged(peutSaisir);
         nouvelleOperationButton.setDisable(!ouverte);
 
         if (ouverte) {
@@ -787,6 +789,31 @@ public class CaissierController {
             CaisseDTO caisse = Session.getInstance().getCaisseActive();
             return caisse != null && caisse.agentRecetteId != null
                     && caisse.agentRecetteId.equals(auth.utilisateurId);
+        }
+        return false;
+    }
+
+    /**
+     * Renvoie true si l'utilisateur courant a le droit de SAISIR une
+     * nouvelle operation sur cette caisse :
+     * <ul>
+     *   <li>CAISSIER : uniquement le caissier affecte a cette caisse</li>
+     *   <li>AGENT_RECETTE : uniquement l'agent de recette affecte a cette
+     *       caisse. Dans la realite metier RTS, l'agent de recette peut
+     *       aussi encaisser/decaisser, pas seulement corriger.</li>
+     *   <li>ADMIN, SUPERVISEUR : non (ils utilisent l'app web pour le
+     *       reporting, pas le guichet pour la saisie courante).</li>
+     * </ul>
+     */
+    private boolean peutFaireOperation(CaisseDTO caisse) {
+        sn.rts.caisse.guichet.model.Dto.AuthResponse auth = Session.getInstance().getAuth();
+        if (auth == null || auth.role == null || caisse == null) return false;
+        sn.rts.caisse.guichet.model.Role role = auth.role;
+        if (role == sn.rts.caisse.guichet.model.Role.CAISSIER) {
+            return caisse.caissierId != null && caisse.caissierId.equals(auth.utilisateurId);
+        }
+        if (role == sn.rts.caisse.guichet.model.Role.AGENT_RECETTE) {
+            return caisse.agentRecetteId != null && caisse.agentRecetteId.equals(auth.utilisateurId);
         }
         return false;
     }

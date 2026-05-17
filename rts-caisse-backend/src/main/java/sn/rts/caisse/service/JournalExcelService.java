@@ -102,7 +102,28 @@ public class JournalExcelService {
         log.info("Export Excel du journal {} (caisse {}, date {})",
                 journalId, journal.getCaisse().getCode(), journal.getDateJournal());
 
-        List<OperationCaisse> operations = operationRepository.findByJournalId(journalId);
+        // On combine 2 sources pour ne JAMAIS rater une operation :
+        //  1) les ops attachees au journal (apres cloture)
+        //  2) toutes les ops de la caisse sur la date du journal (annulees incluses)
+        // Puis dedoublonnage par id. Resoud le bug ou les ops annulees ou non
+        // encore rattachees au journal n'apparaissaient pas dans l'export.
+        LocalDateTime debutJour = journal.getDateJournal().atStartOfDay();
+        LocalDateTime finJour   = debutJour.plusDays(1);
+        Long caisseId = journal.getCaisse().getId();
+
+        java.util.Map<Long, OperationCaisse> dedup = new java.util.LinkedHashMap<>();
+        for (OperationCaisse op : operationRepository.findByJournalId(journalId)) {
+            dedup.putIfAbsent(op.getId(), op);
+        }
+        for (OperationCaisse op : operationRepository
+                .findByCaisseIdAndDateOperationBetweenOrderByDateOperationAsc(
+                        caisseId, debutJour, finJour)) {
+            dedup.putIfAbsent(op.getId(), op);
+        }
+        List<OperationCaisse> operations = new java.util.ArrayList<>(dedup.values());
+        operations.sort(java.util.Comparator.comparing(
+                OperationCaisse::getDateOperation,
+                java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
 
         try (XSSFWorkbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {

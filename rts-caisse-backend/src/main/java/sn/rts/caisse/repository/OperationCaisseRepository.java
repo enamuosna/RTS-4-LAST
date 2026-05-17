@@ -27,6 +27,10 @@ public interface OperationCaisseRepository extends JpaRepository<OperationCaisse
     List<OperationCaisse> findByCaisseIdAndDateOperationBetweenAndAnnuleeFalse(
             Long caisseId, LocalDateTime debut, LocalDateTime fin);
 
+    /** TOUTES les operations (annulees incluses) sur une plage, triees par date asc. */
+    List<OperationCaisse> findByCaisseIdAndDateOperationBetweenOrderByDateOperationAsc(
+            Long caisseId, LocalDateTime debut, LocalDateTime fin);
+
     List<OperationCaisse> findByDateOperationBetween(LocalDateTime debut, LocalDateTime fin);
 
     List<OperationCaisse> findByJournalId(Long journalId);

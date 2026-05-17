@@ -166,12 +166,15 @@
    ║  ÉCRAN DE LOGIN                                                         ║
    ╚══════════════════════════════════════════════════════════════════════════╝ */
 
+/* Fond gris doux pour les ecrans Login et Serveur. La marque RTS reste
+   tres presente sur la carte (logo rouge, bouton rouge, accents rouges)
+   -> identite preservee sans agresser l'oeil. */
 .login-pane {
     -fx-background-color: linear-gradient(
         from 0% 0% to 100% 100%,
-        -rts-primary 0%,
-        -rts-primary-dark 50%,
-        #052C52 100%
+        #F5F6F8 0%,
+        #E9EBEF 60%,
+        #DDE0E6 100%
     );
 }
 
@@ -179,10 +182,11 @@
     -fx-background-color: white;
     -fx-background-radius: 18;
     -fx-border-radius: 18;
-    -fx-border-color: rgba(255, 255, 255, 0.30);
+    -fx-border-color: rgba(20, 22, 28, 0.08);
     -fx-border-width: 1;
     -fx-padding: 44 48 40 48;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 36, 0.0, 0, 14);
+    /* Ombre recalibree pour fond clair : moins d'opacite, plus diffuse */
+    -fx-effect: dropshadow(gaussian, rgba(20, 22, 28, 0.18), 32, 0.0, 0, 10);
 }
 
 .login-logo {

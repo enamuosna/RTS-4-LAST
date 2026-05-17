@@ -537,21 +537,26 @@ public class CaissierController {
         soldeBox.setManaged(ouverte);
         soldeLabel.setText(Ui.formatMontant(caisse.soldeCourant));
 
-        // Ouverture/cloture de caisse : reservé au CAISSIER affecté
-        // (l'agent de recette ne gere pas les ouvertures/clotures de journee).
-        boolean estCaissierAffecte = estCaissierDeCetteCaisse(caisse);
-        ouvrirButton.setVisible(!ouverte && !suspendue && estCaissierAffecte);
-        ouvrirButton.setManaged(!ouverte && !suspendue && estCaissierAffecte);
-        cloturerButton.setVisible(ouverte && estCaissierAffecte);
-        cloturerButton.setManaged(ouverte && estCaissierAffecte);
+        // Ouverture de caisse : CAISSIER affecte OU AGENT_RECETTE affecte.
+        // Dans la realite metier RTS, l'agent de recette peut aussi tenir
+        // la caisse pour la journee (il devient alors le detenteur).
+        boolean peutOperer = peutFaireOperation(caisse);
+        ouvrirButton.setVisible(!ouverte && !suspendue && peutOperer);
+        ouvrirButton.setManaged(!ouverte && !suspendue && peutOperer);
 
-        // Bouton "Nouvelle opération" : visible pour le CAISSIER affecté ET
-        // pour l'AGENT_RECETTE affecté a cette caisse. Dans la realite metier
-        // RTS, l'agent de recette peut aussi encaisser/decaisser, pas seulement
-        // corriger. Desactive tant que la caisse est fermee (peu importe le role).
-        boolean peutSaisir = peutFaireOperation(caisse);
-        nouvelleOperationButton.setVisible(peutSaisir);
-        nouvelleOperationButton.setManaged(peutSaisir);
+        // Cloture : reservee a celui qui detient actuellement la caisse
+        // (caissierId du DTO = utilisateur qui a ouvert la journee). Le
+        // backend rejette deja toute autre tentative ("Seul le caissier qui
+        // a ouvert la caisse peut la cloturer."). On masque le bouton ici
+        // pour eviter le frottement UX.
+        boolean estDetenteur = estDetenteurDeCetteCaisse(caisse);
+        cloturerButton.setVisible(ouverte && estDetenteur);
+        cloturerButton.setManaged(ouverte && estDetenteur);
+
+        // Bouton "Nouvelle opération" : visible pour CAISSIER ou AGENT_RECETTE
+        // affectes. Desactive tant que la caisse est fermee.
+        nouvelleOperationButton.setVisible(peutOperer);
+        nouvelleOperationButton.setManaged(peutOperer);
         nouvelleOperationButton.setDisable(!ouverte);
 
         if (ouverte) {
@@ -761,12 +766,26 @@ public class CaissierController {
 
     /**
      * Renvoie true si l'utilisateur courant est le caissier affecté à
-     * cette caisse (responsable de la saisie + ouverture + cloture).
+     * cette caisse (uniquement role CAISSIER).
      */
     private boolean estCaissierDeCetteCaisse(CaisseDTO caisse) {
         sn.rts.caisse.guichet.model.Dto.AuthResponse auth = Session.getInstance().getAuth();
         if (auth == null || caisse == null) return false;
         if (auth.role != sn.rts.caisse.guichet.model.Role.CAISSIER) return false;
+        return caisse.caissierId != null && caisse.caissierId.equals(auth.utilisateurId);
+    }
+
+    /**
+     * Renvoie true si l'utilisateur courant detient ACTUELLEMENT la caisse
+     * (caissier_id du DTO est mis a jour a l'ouverture du journal et reflete
+     * donc l'utilisateur qui a ouvert la journee, qu'il soit CAISSIER ou
+     * AGENT_RECETTE). Permet de masquer le bouton "Cloturer" pour quiconque
+     * n'a pas ouvert la caisse (le backend bloque deja, on evite la
+     * frustration UX).
+     */
+    private boolean estDetenteurDeCetteCaisse(CaisseDTO caisse) {
+        sn.rts.caisse.guichet.model.Dto.AuthResponse auth = Session.getInstance().getAuth();
+        if (auth == null || caisse == null) return false;
         return caisse.caissierId != null && caisse.caissierId.equals(auth.utilisateurId);
     }
 

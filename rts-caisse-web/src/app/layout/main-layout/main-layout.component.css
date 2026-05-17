@@ -7,37 +7,50 @@
   height: 100vh;
 }
 
-/* ===== Sidenav (rouge RTS) ===== */
+/* ===================================================================
+   Sidenav (rouge RTS) — moderne, collapsible, sections regroupees
+   =================================================================== */
 mat-sidenav {
-  width: 264px;
-  /* Dégradé subtil rouge RTS -> rouge profond pour donner du relief */
+  width: 268px;
+  /* Degrade subtil rouge RTS -> rouge profond pour donner du relief */
   background: linear-gradient(180deg, #E30613 0%, #B30510 60%, #8E040D 100%);
   color: white;
   border-right: none;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 2px 0 14px rgba(0, 0, 0, 0.10);
+  display: flex;
+  flex-direction: column;
+  /* Transition douce de largeur lors du toggle collapse */
+  transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-x: hidden;
 }
 
+mat-sidenav.collapsed {
+  width: 76px;
+}
+
+/* ===== Bandeau marque + bouton toggle ===== */
 .sidenav-header {
-  padding: 22px 18px;
+  padding: 18px 14px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(0, 0, 0, 0.10);
+  min-height: 68px;
 }
 
-/* Pastille logo : carré blanc avec "RTS" rouge — calque officiel RTS */
+/* Pastille logo : carre blanc avec "RTS" rouge — calque officiel RTS */
 .logo-badge {
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--rts-red);
   font-weight: 800;
-  font-size: 16px;
+  font-size: 15px;
   letter-spacing: 0.5px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
@@ -47,41 +60,110 @@ mat-sidenav {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  flex: 1;
+  min-width: 0;
+  /* Fade-in de l'identifiant quand on etend */
+  animation: fadeIn 0.3s 0.05s ease-out backwards;
 }
 
 .brand-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: #fff;
   letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 
 .brand-subtitle {
-  font-size: 11px;
+  font-size: 10px;
   opacity: 0.85;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.7px;
   text-transform: uppercase;
   color: #fff;
+  white-space: nowrap;
 }
 
-/* ===== Navigation ===== */
-mat-nav-list {
-  padding: 16px 10px;
+.toggle-btn {
+  color: rgba(255, 255, 255, 0.85) !important;
+  transition: background-color 0.18s ease, color 0.18s ease;
+  flex-shrink: 0;
 }
 
+.toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  color: #fff !important;
+}
+
+mat-sidenav.collapsed .toggle-btn {
+  /* Centrer le toggle quand la sidebar est reduite et qu'il est seul */
+  margin: 0 auto;
+}
+
+/* ===== Navigation : sections + items ===== */
+.nav-sections {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 10px 12px;
+  /* Scroll fin et discret en marque blanche transparente */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.nav-sections::-webkit-scrollbar { width: 6px; }
+.nav-sections::-webkit-scrollbar-track { background: transparent; }
+.nav-sections::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 3px;
+}
+.nav-sections::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.nav-section {
+  margin-bottom: 14px;
+}
+
+.nav-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Titre de section en mode etendu */
+.nav-section-label {
+  padding: 12px 14px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  animation: fadeIn 0.3s 0.05s ease-out backwards;
+}
+
+/* Separateur fin entre sections en mode reduit */
+.nav-section-divider {
+  height: 1px;
+  margin: 10px 14px 8px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* ===== Items de navigation ===== */
 .nav-item {
-  border-radius: 8px;
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 3px;
   color: rgba(255, 255, 255, 0.92);
-  transition: background-color 0.22s ease, color 0.22s ease,
-              box-shadow 0.22s ease, transform 0.18s ease;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
   position: relative;
-  overflow: hidden;
-}
-
-.nav-item .mat-icon {
-  color: rgba(255, 255, 255, 0.85);
-  transition: transform 0.18s ease, color 0.22s ease;
+  cursor: pointer;
+  transition: background-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease,
+              transform 0.16s ease;
 }
 
 .nav-item:hover {
@@ -89,11 +171,29 @@ mat-nav-list {
   transform: translateX(2px);
 }
 
-.nav-item:hover .mat-icon {
+.nav-item:hover .nav-icon {
   transform: scale(1.08);
 }
 
-/* Item actif : fond blanc, texte rouge — contraste fort, signature RTS */
+.nav-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.88);
+  transition: transform 0.16s ease, color 0.2s ease;
+}
+
+.nav-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: fadeIn 0.3s 0.05s ease-out backwards;
+}
+
+/* Item actif : fond blanc, texte rouge — signature RTS, contraste fort */
 .nav-item.active {
   background-color: #ffffff;
   color: var(--rts-red-dark);
@@ -107,24 +207,98 @@ mat-nav-list {
   background-color: #ffffff;
 }
 
-.nav-item.active .mat-icon {
+.nav-item.active .nav-icon {
   color: var(--rts-red);
   transform: scale(1);
 }
 
-/* Petit liseré rouge à gauche de l'item actif (rappel marque) */
+/* Liseré rouge a gauche de l'item actif (rappel marque) */
 .nav-item.active::before {
   content: '';
   position: absolute;
-  left: 0;
+  left: -10px;
   top: 8px;
   bottom: 8px;
   width: 3px;
   border-radius: 2px;
-  background: var(--rts-red);
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
 }
 
-/* ===== Toolbar ===== */
+/* ===== Mode reduit : items en icones uniquement, centres ===== */
+mat-sidenav.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
+  margin: 0 auto 4px;
+  width: 48px;
+  height: 48px;
+  gap: 0;
+}
+
+mat-sidenav.collapsed .nav-item.active::before {
+  left: -2px;
+}
+
+/* ===== Footer utilisateur dans la sidebar (mode etendu uniquement) ===== */
+.sidenav-footer {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.10);
+  animation: fadeIn 0.3s 0.05s ease-out backwards;
+}
+
+.footer-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--rts-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.footer-info {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.footer-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footer-role {
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ===================================================================
+   Toolbar (top bar)
+   =================================================================== */
 mat-toolbar.top-bar {
   background: #ffffff;
   color: var(--rts-gray-900);
@@ -139,11 +313,6 @@ mat-toolbar.top-bar {
   font-weight: 600;
   color: var(--rts-gray-900);
   letter-spacing: 0.1px;
-}
-
-.app-title {
-  color: var(--rts-red);
-  font-weight: 600;
 }
 
 .toolbar-spacer {

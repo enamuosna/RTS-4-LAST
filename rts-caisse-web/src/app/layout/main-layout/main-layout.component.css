@@ -28,6 +28,12 @@ mat-sidenav.collapsed {
   width: 76px;
 }
 
+/* Suit visuellement la sidebar quand elle bascule : meme courbe, meme duree.
+   Sans ca, le contenu sautait d'une marge a l'autre apres la transition CSS. */
+mat-sidenav-content {
+  transition: margin-left 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
 /* ===== Bandeau marque + bouton toggle ===== */
 .sidenav-header {
   padding: 18px 14px;
@@ -228,11 +234,24 @@ mat-sidenav.collapsed .toggle-btn {
 /* ===== Mode reduit : items en icones uniquement, centres ===== */
 mat-sidenav.collapsed .nav-item {
   justify-content: center;
-  padding: 12px 0;
-  margin: 0 auto 4px;
-  width: 48px;
-  height: 48px;
+  padding: 10px 0;
+  margin: 0 auto 5px;
+  width: 52px;
+  height: 52px;
   gap: 0;
+}
+
+/* Icones plus grosses et plus contrastees en mode reduit (sinon perdues
+   sur le fond rouge a si peu de surface). */
+mat-sidenav.collapsed .nav-icon {
+  font-size: 26px;
+  width: 26px;
+  height: 26px;
+  color: #ffffff;
+}
+
+mat-sidenav.collapsed .nav-item.active .nav-icon {
+  color: var(--rts-red);
 }
 
 mat-sidenav.collapsed .nav-item.active::before {

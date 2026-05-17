@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  ViewChild,
   computed,
   inject,
   signal
@@ -11,7 +12,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSidenavContainer, MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -60,6 +61,11 @@ interface NavSection {
 })
 export class MainLayoutComponent {
   private readonly auth = inject(AuthService);
+
+  /** Reference au mat-sidenav-container pour pouvoir forcer la recomputation
+   *  des margins du content quand la largeur du sidenav change dynamiquement
+   *  via CSS (Angular Material ne le detecte pas tout seul). */
+  @ViewChild(MatSidenavContainer) private sidenavContainer?: MatSidenavContainer;
 
   readonly currentUser = this.auth.currentUser;
 
@@ -128,6 +134,13 @@ export class MainLayoutComponent {
   toggleSidebar(): void {
     const next = !this.collapsed();
     this.collapsed.set(next);
+    // Force Material a recalculer la margin du mat-sidenav-content. Sans ca
+    // le contenu garde la marge calculee au demarrage (~268px) meme quand on
+    // reduit la sidebar a 76px -> grand vide entre la sidebar et le contenu.
+    // Le timing : juste apres que le CSS class est applique (animation frame
+    // suivante) puis a la fin de la transition de 280ms pour bien atterrir.
+    requestAnimationFrame(() => this.sidenavContainer?.updateContentMargins());
+    setTimeout(() => this.sidenavContainer?.updateContentMargins(), 300);
     try {
       localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
     } catch { /* ignore quota / private mode */ }

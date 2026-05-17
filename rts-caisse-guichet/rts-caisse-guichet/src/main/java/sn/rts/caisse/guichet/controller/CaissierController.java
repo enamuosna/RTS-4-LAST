@@ -541,6 +541,11 @@ public class CaissierController {
         // Dans la realite metier RTS, l'agent de recette peut aussi tenir
         // la caisse pour la journee (il devient alors le detenteur).
         boolean peutOperer = peutFaireOperation(caisse);
+        sn.rts.caisse.guichet.model.Dto.AuthResponse authDbg = Session.getInstance().getAuth();
+        log.info("[ACCESS] role={} userId={} caisse={} caissierId={} agentRecetteId={} -> peutOperer={}",
+                authDbg != null ? authDbg.role : null,
+                authDbg != null ? authDbg.utilisateurId : null,
+                caisse.code, caisse.caissierId, caisse.agentRecetteId, peutOperer);
         ouvrirButton.setVisible(!ouverte && !suspendue && peutOperer);
         ouvrirButton.setManaged(!ouverte && !suspendue && peutOperer);
 

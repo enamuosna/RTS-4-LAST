@@ -49,7 +49,16 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuditService auditService;
 
-    @Transactional
+    /**
+     * On declare {@code noRollbackFor} pour que l'increment du compteur
+     * d'echecs (et la pose du lock a 5) soit COMMITTE meme quand on relance
+     * une AuthenticationException ou AccountLockedException. Par defaut Spring
+     * rollback toute RuntimeException -> le compteur ne persisterait jamais.
+     */
+    @Transactional(noRollbackFor = {
+            org.springframework.security.core.AuthenticationException.class,
+            AccountLockedException.class
+    })
     public AuthResponse login(LoginRequest request) {
         // -------- 1. Pre-check : compte deja verrouille ? --------
         // On regarde si l'utilisateur existe et s'il est sous lock temporaire.
@@ -77,7 +86,7 @@ public class AuthService {
                             "Utilisateur introuvable après authentification."));
 
             // -------- 3a. Succes : reset du compteur + emission JWT --------
-            if (utilisateur.getFailedLoginAttempts() != 0
+            if (utilisateur.getFailedLoginAttemptsSafe() != 0
                     || utilisateur.getLockedUntil() != null) {
                 utilisateur.setFailedLoginAttempts(0);
                 utilisateur.setLockedUntil(null);
@@ -126,7 +135,7 @@ public class AuthService {
                 Utilisateur fresh = utilisateurRepository.findByLogin(request.login())
                         .orElse(null);
                 if (fresh != null) {
-                    int nouvelle = fresh.getFailedLoginAttempts() + 1;
+                    int nouvelle = fresh.getFailedLoginAttemptsSafe() + 1;
                     fresh.setFailedLoginAttempts(nouvelle);
                     if (nouvelle >= MAX_FAILED_ATTEMPTS) {
                         fresh.setLockedUntil(LocalDateTime.now().plusMinutes(LOCK_MINUTES));

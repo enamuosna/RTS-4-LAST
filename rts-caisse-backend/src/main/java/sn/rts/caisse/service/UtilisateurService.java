@@ -215,11 +215,11 @@ public class UtilisateurService {
     public UtilisateurDTO deverrouiller(Long id) {
         try {
             Utilisateur u = trouver(id);
-            boolean wasLocked = u.isLocked() || u.getFailedLoginAttempts() > 0;
+            boolean wasLocked = u.isLocked() || u.getFailedLoginAttemptsSafe() > 0;
             if (!wasLocked) {
                 return UtilisateurDTO.from(u);
             }
-            int ancienCompteur = u.getFailedLoginAttempts();
+            int ancienCompteur = u.getFailedLoginAttemptsSafe();
             u.setFailedLoginAttempts(0);
             u.setLockedUntil(null);
             Utilisateur saved = utilisateurRepository.save(u);

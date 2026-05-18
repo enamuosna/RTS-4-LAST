@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -78,9 +79,12 @@ public class Utilisateur extends Auditable implements UserDetails {
     //  le compte lui-meme quelle que soit l'origine des tentatives.
     // ------------------------------------------------------------------
 
-    /** Nombre d'echecs de connexion consecutifs. Reset au login reussi. */
-    @Column(name = "failed_login_attempts", nullable = false)
-    private int failedLoginAttempts = 0;
+    /** Nombre d'echecs de connexion consecutifs. Reset au login reussi.
+     *  Nullable + Integer pour autoriser le ALTER TABLE sur une base existante
+     *  (avant l'ajout, les lignes ont implicitement NULL -> traite comme 0). */
+    @Column(name = "failed_login_attempts")
+    @ColumnDefault("0")
+    private Integer failedLoginAttempts = 0;
 
     /** Si non null, le compte est verrouille jusqu'a cette date. */
     @Column(name = "locked_until")
@@ -89,6 +93,11 @@ public class Utilisateur extends Auditable implements UserDetails {
     /** Le compte est-il actuellement bloque par lock temporaire ? */
     public boolean isLocked() {
         return lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now());
+    }
+
+    /** Valeur sure du compteur d'echecs (traite null comme 0). */
+    public int getFailedLoginAttemptsSafe() {
+        return failedLoginAttempts != null ? failedLoginAttempts : 0;
     }
 
     // ------------------------------------------------------------------

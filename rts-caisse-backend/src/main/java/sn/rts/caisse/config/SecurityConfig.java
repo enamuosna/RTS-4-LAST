@@ -91,6 +91,21 @@ public class SecurityConfig {
                         // ⚠ DOIT TOUJOURS RESTER LA DERNIÈRE LIGNE de authorizeHttpRequests
                         .anyRequest().authenticated()
                 )
+                // Quand la requete n'est PAS authentifiee (pas de token, token
+                // expire, signature invalide), Spring Security 6 renvoie 403
+                // par defaut, ce qui est trompeur : le front ne sait pas qu'il
+                // doit rediriger vers le login. On force 401 dans ce cas pour
+                // que l'interceptor frontal redirige proprement vers /login.
+                // Les vraies "interdictions" (utilisateur authentifie mais
+                // sans le bon role) continuent de renvoyer 403 via le handler
+                // AccessDeniedException du GlobalExceptionHandler.
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"status\":401,\"message\":\"Session expirée ou non authentifiée. Veuillez vous reconnecter.\"}");
+                        }))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);

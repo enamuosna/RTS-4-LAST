@@ -12,6 +12,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -72,6 +73,25 @@ public class Utilisateur extends Auditable implements UserDetails {
     private boolean actif = true;
 
     // ------------------------------------------------------------------
+    //  Verrouillage de compte apres echecs successifs (anti brute-force
+    //  cible sur un compte). Independant du rate limit par IP : on lock
+    //  le compte lui-meme quelle que soit l'origine des tentatives.
+    // ------------------------------------------------------------------
+
+    /** Nombre d'echecs de connexion consecutifs. Reset au login reussi. */
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts = 0;
+
+    /** Si non null, le compte est verrouille jusqu'a cette date. */
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
+    /** Le compte est-il actuellement bloque par lock temporaire ? */
+    public boolean isLocked() {
+        return lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now());
+    }
+
+    // ------------------------------------------------------------------
     //  Spring Security : UserDetails
     // ------------------------------------------------------------------
 
@@ -97,7 +117,9 @@ public class Utilisateur extends Auditable implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return actif;
+        // Compte verrouille si desactive par admin OU sous lock temporaire
+        // (apres trop d'echecs de connexion).
+        return actif && !isLocked();
     }
 
     @Override

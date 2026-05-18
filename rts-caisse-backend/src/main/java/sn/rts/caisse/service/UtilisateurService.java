@@ -202,6 +202,52 @@ public class UtilisateurService {
     }
 
     // ------------------------------------------------------------------
+    //  Deverrouillage d'un compte verrouille apres trop d'echecs
+    // ------------------------------------------------------------------
+
+    /**
+     * Reset le compteur d'echecs et leve le lock temporaire pour un compte.
+     * Utile quand un agent legitime s'est fait verrouiller (ex : il oublie
+     * son mot de passe et tape 5 fois faux). Reserve aux ADMIN.
+     * Idempotent : si le compte n'etait pas verrouille, retourne le DTO
+     * sans modification ni audit.
+     */
+    public UtilisateurDTO deverrouiller(Long id) {
+        try {
+            Utilisateur u = trouver(id);
+            boolean wasLocked = u.isLocked() || u.getFailedLoginAttempts() > 0;
+            if (!wasLocked) {
+                return UtilisateurDTO.from(u);
+            }
+            int ancienCompteur = u.getFailedLoginAttempts();
+            u.setFailedLoginAttempts(0);
+            u.setLockedUntil(null);
+            Utilisateur saved = utilisateurRepository.save(u);
+
+            log.info("Compte deverrouille : login={} (compteur etait a {})",
+                    saved.getLogin(), ancienCompteur);
+
+            auditService.logSuccess(
+                    AuditAction.MODIFIER_UTILISATEUR,
+                    "Utilisateur",
+                    saved.getId(),
+                    saved.getLogin() + " (" + saved.getMatricule() + ")",
+                    "Action=Deverrouillage AncienCompteur=" + ancienCompteur);
+
+            return UtilisateurDTO.from(saved);
+
+        } catch (BusinessException | ResourceNotFoundException e) {
+            auditService.logFailure(
+                    AuditAction.MODIFIER_UTILISATEUR,
+                    "Utilisateur",
+                    id,
+                    "tentative=deverrouillage",
+                    e.getMessage());
+            throw e;
+        }
+    }
+
+    // ------------------------------------------------------------------
     //  Modification du ROLE — autorisee a tout ADMIN
     // ------------------------------------------------------------------
 

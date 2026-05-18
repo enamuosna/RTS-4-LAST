@@ -73,6 +73,7 @@ public record AuditLogResponse(
         return switch (a) {
             case LOGIN_SUCCESS              -> "Connexion réussie";
             case LOGIN_FAILED               -> "Connexion refusée";
+            case COMPTE_VERROUILLE          -> "Compte verrouillé (trop d'échecs)";
             case LOGOUT                     -> "Déconnexion";
             case OUVRIR_CAISSE              -> "Ouverture de caisse";
             case CLOTURER_CAISSE            -> "Clôture de caisse";

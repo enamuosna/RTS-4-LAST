@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import sn.rts.caisse.security.AccountLockedException;
 import sn.rts.caisse.security.TooManyLoginAttemptsException;
 
 import java.time.LocalDateTime;
@@ -54,6 +55,26 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 null);
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(seconds))
+                .body(body);
+    }
+
+    /**
+     * Compte verrouille apres trop d'echecs (5 par defaut). HTTP 423 Locked
+     * (RFC 4918) + header Retry-After pour le deverrouillage automatique
+     * apres 30 minutes.
+     */
+    @ExceptionHandler(AccountLockedException.class)
+    public ResponseEntity<ApiError> handleAccountLocked(AccountLockedException ex) {
+        long seconds = ex.getRetryAfterSeconds();
+        ApiError body = new ApiError(
+                HttpStatus.LOCKED.value(),
+                "Compte verrouille suite a trop d'echecs de connexion. "
+                        + "Reessayez dans " + seconds + " secondes ou contactez "
+                        + "un administrateur.",
+                LocalDateTime.now(),
+                null);
+        return ResponseEntity.status(HttpStatus.LOCKED)
                 .header("Retry-After", String.valueOf(seconds))
                 .body(body);
     }

@@ -23,6 +23,9 @@ public enum AuditAction {
     /** Tentative de connexion refusée (mauvais mot de passe, compte désactivé…). */
     LOGIN_FAILED,
 
+    /** Compte verrouille apres trop d'echecs successifs (5 par defaut). */
+    COMPTE_VERROUILLE,
+
     /** Déconnexion explicite (le côté client signale la fin de session). */
     LOGOUT,
 

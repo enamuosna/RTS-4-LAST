@@ -411,11 +411,13 @@ public final class PrintRecu {
         boolean afficheDetail = timbre.signum() > 0;
 
         if (afficheDetail) {
-            // Lignes Montant HT + Timbre alignées
+            // Lignes Montant HT + Timbre alignées.
+            // Ui.formatMontant() inclut deja " FCFA", pas besoin de l'ajouter
+            // (sinon doublon "FCFA FCFA" sur le recu).
             box.getChildren().add(ligneMontantInline(ctx, "Montant HT",
-                    Ui.formatMontant(montant) + " FCFA"));
+                    Ui.formatMontant(montant)));
             box.getChildren().add(ligneMontantInline(ctx, "Timbre fiscal",
-                    Ui.formatMontant(timbre) + " FCFA"));
+                    Ui.formatMontant(timbre)));
 
             // Séparateur
             Region sep = new Region();
@@ -432,7 +434,7 @@ public final class PrintRecu {
             libelleTtc.setTextFill(ctx.texte2);
             box.getChildren().add(libelleTtc);
 
-            Label valeurTtc = new Label(Ui.formatMontant(ttc) + " FCFA");
+            Label valeurTtc = new Label(Ui.formatMontant(ttc));
             valeurTtc.setFont(Font.font("Consolas", FontWeight.BOLD, ctx.tailleMontant));
             valeurTtc.setTextFill(ctx.primaire);
             box.getChildren().add(valeurTtc);
@@ -442,7 +444,7 @@ public final class PrintRecu {
             libelle.setTextFill(ctx.texte2);
             box.getChildren().add(libelle);
 
-            Label valeur = new Label(Ui.formatMontant(montant) + " FCFA");
+            Label valeur = new Label(Ui.formatMontant(montant));
             valeur.setFont(Font.font("Consolas", FontWeight.BOLD, ctx.tailleMontant));
             valeur.setTextFill(ctx.primaire);
             box.getChildren().add(valeur);

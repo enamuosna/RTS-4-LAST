@@ -324,9 +324,9 @@ public class RecuPdfService {
             PdfPTable lignes = new PdfPTable(new float[]{55, 45});
             lignes.setWidthPercentage(100);
 
-            ajouterLigneMontant(lignes, "Montant HT",       formatMontant(montant) + " FCFA",
+            ajouterLigneMontant(lignes, "Montant HT",       formatMontant(montant),
                     cTexte, cTexte, tCorps);
-            ajouterLigneMontant(lignes, "Timbre fiscal",    formatMontant(timbre) + " FCFA",
+            ajouterLigneMontant(lignes, "Timbre fiscal",    formatMontant(timbre),
                     cTexte, cTexte, tCorps);
             cell.addElement(lignes);
 
@@ -341,7 +341,7 @@ public class RecuPdfService {
             cell.addElement(label);
 
             Paragraph m = new Paragraph(
-                    formatMontant(ttc) + " FCFA",
+                    formatMontant(ttc),
                     font(tMontant, Font.BOLD, entree ? cSuccess : cDanger));
             m.setAlignment(Element.ALIGN_CENTER);
             cell.addElement(m);
@@ -351,7 +351,7 @@ public class RecuPdfService {
             cell.addElement(label);
 
             Paragraph m = new Paragraph(
-                    formatMontant(montant) + " FCFA",
+                    formatMontant(montant),
                     font(tMontant, Font.BOLD, entree ? cSuccess : cDanger));
             m.setAlignment(Element.ALIGN_CENTER);
             cell.addElement(m);
@@ -522,8 +522,10 @@ public class RecuPdfService {
         document.add(p);
     }
 
+    /** Suffixe devise FCFA inclus pour eviter toute duplication aux appelants. */
     private String formatMontant(BigDecimal montant) {
-        return montant == null ? "0" : MONTANT_FMT.format(montant);
+        String nombre = montant == null ? "0" : MONTANT_FMT.format(montant);
+        return nombre + " FCFA";
     }
 
     private static Color hex(String hex, Color fallback) {

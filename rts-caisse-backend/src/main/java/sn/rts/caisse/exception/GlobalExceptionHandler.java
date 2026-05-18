@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import sn.rts.caisse.security.TooManyLoginAttemptsException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -37,6 +38,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials(BadCredentialsException ex) {
         return build(HttpStatus.UNAUTHORIZED, "Identifiants invalides.");
+    }
+
+    /**
+     * Rate limiting sur /api/auth/login. On renvoie un 429 + header
+     * Retry-After (en secondes), conformement a la RFC 6585.
+     */
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    public ResponseEntity<ApiError> handleTooManyAttempts(TooManyLoginAttemptsException ex) {
+        long seconds = ex.getRetryAfterSeconds();
+        ApiError body = new ApiError(
+                HttpStatus.TOO_MANY_REQUESTS.value(),
+                "Trop de tentatives de connexion. Reessayez dans "
+                        + seconds + " secondes.",
+                LocalDateTime.now(),
+                null);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(seconds))
+                .body(body);
     }
 
     @ExceptionHandler(AuthenticationException.class)

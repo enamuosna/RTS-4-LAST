@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import sn.rts.caisse.security.AccountLockedException;
+import sn.rts.caisse.security.TooManyBackupRequestsException;
 import sn.rts.caisse.security.TooManyLoginAttemptsException;
 
 import java.time.LocalDateTime;
@@ -52,6 +53,24 @@ public class GlobalExceptionHandler {
                 HttpStatus.TOO_MANY_REQUESTS.value(),
                 "Trop de tentatives de connexion. Reessayez dans "
                         + seconds + " secondes.",
+                LocalDateTime.now(),
+                null);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(seconds))
+                .body(body);
+    }
+
+    /**
+     * Rate limit sur /api/backup/export et /api/backup/import : un admin
+     * ne peut declencher qu'une operation backup toutes les 60 minutes.
+     */
+    @ExceptionHandler(TooManyBackupRequestsException.class)
+    public ResponseEntity<ApiError> handleTooManyBackupRequests(TooManyBackupRequestsException ex) {
+        long seconds = ex.getRetryAfterSeconds();
+        ApiError body = new ApiError(
+                HttpStatus.TOO_MANY_REQUESTS.value(),
+                "Operation backup trop frequente. Reessayez dans "
+                        + (seconds / 60) + " minutes (1 par heure max).",
                 LocalDateTime.now(),
                 null);
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)

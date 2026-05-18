@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import sn.rts.caisse.exception.BusinessException;
+import sn.rts.caisse.security.BackupRateLimitService;
+import sn.rts.caisse.security.TooManyBackupRequestsException;
 import sn.rts.caisse.service.BackupService;
 
 import java.time.LocalDateTime;
@@ -48,12 +50,25 @@ public class BackupController {
     private static final long TAILLE_MAX_OCTETS = 100L * 1024 * 1024;
 
     private final BackupService backupService;
+    private final BackupRateLimitService backupRateLimit;
 
     @GetMapping("/export")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Télécharge un dump SQL complet de la BDD")
+    @Operation(summary = "Télécharge un dump SQL complet de la BDD",
+               description = "Rate limit : 1 operation backup (export ou import) "
+                       + "par utilisateur toutes les 60 minutes. 429 + Retry-After "
+                       + "au-dela.")
     public ResponseEntity<ByteArrayResource> exporter(Authentication authentication) {
         String login = authentication.getName();
+
+        // Rate limit : un export complet de la BDD est une operation
+        // ponctuelle, jamais recurrente. Si un meme admin enchaine 5 exports
+        // en 10 min, c'est anormal -> on bloque pour empecher l'exfiltration
+        // a grande vitesse si le compte est compromis.
+        backupRateLimit.checkAllowed(login).ifPresent(secondsToWait -> {
+            throw new TooManyBackupRequestsException(secondsToWait);
+        });
+
         String nomFichier = "rts-caisse-backup-"
                 + LocalDateTime.now().format(NOM_FICHIER_FMT) + ".sql";
 
@@ -62,6 +77,7 @@ public class BackupController {
         // (HTTP/3 / QUIC + StreamingResponseBody = ERR_QUIC_PROTOCOL_ERROR
         // sur Edge derrière Caddy).
         byte[] dump = backupService.exporter(login);
+        backupRateLimit.recordOperation(login);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentDisposition(
@@ -86,10 +102,20 @@ public class BackupController {
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
 
+        String login = authentication.getName();
+
+        // Meme rate limit que pour l'export : 1 operation backup max par
+        // heure pour cet utilisateur. Import et export partagent le meme
+        // compteur car ce sont deux operations egalement sensibles.
+        backupRateLimit.checkAllowed(login).ifPresent(secondsToWait -> {
+            throw new TooManyBackupRequestsException(secondsToWait);
+        });
+
         valider(file);
         try {
             BackupService.ResultatImport r = backupService.importer(
-                    file.getInputStream(), authentication.getName());
+                    file.getInputStream(), login);
+            backupRateLimit.recordOperation(login);
             return ResponseEntity.ok(new RapportImport(
                     true,
                     r.tailleOctets(),

@@ -141,16 +141,34 @@ public class NouvelleOperationController {
         appliquerModeClient(false);
         appliquerModePaiement(ModePaiement.ESPECES);
 
-        // Recalcul live du montant TTC = montant + timbre
+        // Le timbre est CALCULE automatiquement a partir du montant HT.
+        // L'utilisateur ne le saisit plus : le champ est readonly.
+        timbreField.setEditable(false);
+        timbreField.setFocusTraversable(false);
+        timbreField.getStyleClass().add("timbre-calcule");
+
+        // Recalcul live du timbre + montant TTC quand le montant HT change.
         montantField.textProperty().addListener((o, a, b) -> recalculerTtc());
-        timbreField.textProperty().addListener((o, a, b) -> recalculerTtc());
         recalculerTtc();
     }
 
+    /** Seuil d'application du timbre fiscal (inclusif) : 20 000 FCFA. */
+    private static final BigDecimal TIMBRE_SEUIL = new BigDecimal("20000");
+    /** Taux du timbre : 1% du montant HT. */
+    private static final BigDecimal TIMBRE_TAUX  = new BigDecimal("0.01");
+
+    /**
+     * Calcule le timbre selon la regle RTS : 1% du montant si montant
+     * &ge; 20 000 FCFA, sinon 0. Met a jour les champs Timbre + TTC.
+     * Doit reproduire EXACTEMENT le calcul backend (autoritatif).
+     */
     private void recalculerTtc() {
         BigDecimal montant = parseOuZero(montantField.getText());
-        BigDecimal timbre  = parseOuZero(timbreField.getText());
-        BigDecimal ttc     = montant.add(timbre);
+        BigDecimal timbre = montant.compareTo(TIMBRE_SEUIL) >= 0
+                ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        timbreField.setText(timbre.signum() == 0 ? "" : Ui.formatMontant(timbre));
+        BigDecimal ttc = montant.add(timbre);
         montantTtcField.setText(Ui.formatMontant(ttc));
     }
 
@@ -549,13 +567,12 @@ public class NouvelleOperationController {
             return null;
         }
 
-        BigDecimal timbre = Ui.parseMontant(timbreField.getText());
-        if (timbre == null) timbre = BigDecimal.ZERO;
-        if (timbre.signum() < 0) {
-            Ui.erreur("Timbre invalide", "Le timbre doit être positif ou nul.");
-            timbreField.requestFocus();
-            return null;
-        }
+        // Timbre calcule automatiquement a partir du montant HT, identique
+        // a la regle backend (1% si montant >= 20 000, sinon 0). On l'envoie
+        // pour information mais le backend recalcule de toute facon.
+        BigDecimal timbre = montant.compareTo(TIMBRE_SEUIL) >= 0
+                ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
 
         OperationCaisseRequest req = new OperationCaisseRequest();
         req.caisseId      = caisse.id;

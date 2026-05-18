@@ -63,8 +63,11 @@ import { OperationService } from '../../core/services/caisse.services';
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Timbre fiscal (FCFA)</mat-label>
-          <input matInput type="number" min="0" [(ngModel)]="timbre" (ngModelChange)="recalculer()" />
+          <mat-label>Timbre fiscal (FCFA, calculé)</mat-label>
+          <input matInput type="text" readonly
+                 [value]="timbre"
+                 style="font-weight: 600;" />
+          <mat-hint>1% si montant &ge; 20 000 FCFA, sinon 0</mat-hint>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full">
@@ -161,13 +164,22 @@ export class ModifierOperationDialogComponent {
     this.recalculer();
   }
 
+  /**
+   * Recalcule le timbre fiscal en local (meme regle que le backend) :
+   *   - montant >= 20 000 FCFA -> timbre = 1% du montant, arrondi au FCFA
+   *   - montant <  20 000 FCFA -> timbre = 0
+   * Le backend recalcule TOUJOURS de toute facon, mais on affiche le bon
+   * montant tout de suite a l'utilisateur.
+   */
   recalculer(): void {
-    this.montantSig.set(Number(this.montant) || 0);
-    this.timbreSig.set(Number(this.timbre) || 0);
+    const montantNum = Number(this.montant) || 0;
+    this.timbre = montantNum >= 20000 ? Math.round(montantNum * 0.01) : 0;
+    this.montantSig.set(montantNum);
+    this.timbreSig.set(this.timbre);
   }
 
   estValide(): boolean {
-    return this.montant > 0 && this.timbre >= 0;
+    return this.montant > 0;
   }
 
   enregistrer(): void {

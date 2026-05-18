@@ -67,6 +67,7 @@ public class OperationCaisseService {
     private final ClientService             clientService;
     private final NumeroRecuGenerator       numeroRecuGenerator;
     private final AuditService              auditService;
+    private final TimbreFiscalCalculator    timbreCalculator;
 
     // ==================================================================
     //  ENREGISTREMENT
@@ -96,8 +97,12 @@ public class OperationCaisseService {
                         "Catégorie désactivée : " + categorie.getLibelle());
             }
 
-            // ---------- 3. Calcul du montant TTC (montant + timbre) ----------
-            BigDecimal timbre = request.timbre() != null ? request.timbre() : BigDecimal.ZERO;
+            // ---------- 3. Calcul automatique du timbre + montant TTC ----------
+            // Regle metier RTS : si montant HT >= 20 000 FCFA, le timbre est
+            // de 1% du montant ; sinon, pas de timbre. On IGNORE la valeur
+            // envoyee par le client (request.timbre()) pour eviter toute
+            // manipulation : seul le calcul backend fait foi.
+            BigDecimal timbre = timbreCalculator.calculer(request.montant());
             BigDecimal montantTtc = request.montant().add(timbre);
 
             // Solde suffisant pour les sorties (sur le TTC)
@@ -354,9 +359,11 @@ public class OperationCaisseService {
                     ? clientService.trouver(request.clientId())
                     : null;
 
-            // ---------- Recalcul TTC ----------
-            BigDecimal nouveauTimbre = request.timbre() != null
-                    ? request.timbre() : BigDecimal.ZERO;
+            // ---------- Recalcul automatique du timbre + TTC ----------
+            // On recalcule aussi sur la modification : si le nouveau montant
+            // passe au-dessus ou sous le seuil de 20 000 FCFA, le timbre suit
+            // automatiquement. On ignore request.timbre() (autoritatif backend).
+            BigDecimal nouveauTimbre = timbreCalculator.calculer(request.montant());
             BigDecimal nouveauTtc = request.montant().add(nouveauTimbre);
 
             // ---------- Recalcul du solde caisse ----------

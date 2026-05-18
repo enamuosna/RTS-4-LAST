@@ -52,6 +52,7 @@ public class UtilisateurService {
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
     private final SuperAdminPolicy superAdminPolicy;
+    private final sn.rts.caisse.security.PasswordPolicyService passwordPolicy;
 
     // ------------------------------------------------------------------
     //  Création
@@ -59,6 +60,10 @@ public class UtilisateurService {
 
     public UtilisateurDTO creer(RegisterRequest request) {
         try {
+            // Validation policy du mot de passe : min 12, maj/min/chiffre/special
+            // (BusinessException claire si non conforme).
+            passwordPolicy.validate(request.motDePasse());
+
             // Normalisation : trim + lowercase pour le login (cohérent avec
             // l'authentification qui est case-insensitive en pratique).
             String loginNorm     = request.login() == null
@@ -409,9 +414,9 @@ public class UtilisateurService {
 
             Utilisateur u = trouver(id);
 
-            if (nouveau == null || nouveau.isBlank()) {
-                throw new BusinessException("Le nouveau mot de passe ne peut pas être vide.");
-            }
+            // Validation policy : min 12, maj/min/chiffre/special.
+            // BusinessException claire si non conforme.
+            passwordPolicy.validate(nouveau);
 
             u.setMotDePasse(passwordEncoder.encode(nouveau));
             utilisateurRepository.save(u);

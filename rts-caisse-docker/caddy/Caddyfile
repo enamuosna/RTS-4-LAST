@@ -50,13 +50,26 @@
 	encode zstd gzip
 
 	# -------------------------------------------------------------
-	# Headers de securite (HSTS pour 1 an + sous-domaines)
+	# Headers de securite
 	# -------------------------------------------------------------
+	# Note CSP : la directive style-src inclut 'unsafe-inline' car
+	# Angular Material (CDK) injecte des styles inline via JS pour les
+	# composants overlay/positionnement (mat-form-field, mat-table,
+	# mat-datepicker, etc.). Sans 'unsafe-inline', toutes les interfaces
+	# Material casseraient.
+	# script-src reste strict 'self' (Angular AOT prod n'a pas d'inline
+	# JS). On ne met PAS 'unsafe-eval' : la prod build ne l'utilise pas.
+	# img-src autorise data: (logos base64) et blob: (recus PDF generes
+	# cote client avec URL.createObjectURL).
+	# frame-ancestors 'none' remplace X-Frame-Options (RFC plus moderne)
+	# -> aucun site ne peut embarquer notre app en iframe (anti-clickjacking).
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options    "nosniff"
-		X-Frame-Options           "SAMEORIGIN"
+		X-Frame-Options           "DENY"
 		Referrer-Policy           "strict-origin-when-cross-origin"
+		Permissions-Policy        "camera=(), microphone=(), geolocation=(), payment=()"
+		Content-Security-Policy   "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
 		# Masque la version de Caddy dans la reponse
 		-Server
 	}

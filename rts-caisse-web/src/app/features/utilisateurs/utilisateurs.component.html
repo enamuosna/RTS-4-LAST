@@ -8,7 +8,85 @@
         </button>
     </div>
 
-    <table mat-table [dataSource]="utilisateurs()">
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card stat-total">
+            <div class="stat-icon"><mat-icon>group</mat-icon></div>
+            <div class="stat-body">
+                <div class="stat-value">{{ stats().total }}</div>
+                <div class="stat-label">Total utilisateurs</div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-actifs">
+            <div class="stat-icon"><mat-icon>verified_user</mat-icon></div>
+            <div class="stat-body">
+                <div class="stat-value">{{ stats().actifs }}</div>
+                <div class="stat-label">Actifs</div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-inactifs">
+            <div class="stat-icon"><mat-icon>block</mat-icon></div>
+            <div class="stat-body">
+                <div class="stat-value">{{ stats().inactifs }}</div>
+                <div class="stat-label">Inactifs</div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-admin">
+            <div class="stat-icon"><mat-icon>shield</mat-icon></div>
+            <div class="stat-body">
+                <div class="stat-value">{{ stats().admin }}</div>
+                <div class="stat-label">Administrateurs</div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-superviseur">
+            <div class="stat-icon"><mat-icon>visibility</mat-icon></div>
+            <div class="stat-body">
+                <div class="stat-value">{{ stats().superviseur }}</div>
+                <div class="stat-label">Superviseurs</div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-agent">
+            <div class="stat-icon"><mat-icon>account_balance_wallet</mat-icon></div>
+            <div class="stat-body">
+                <div class="stat-value">{{ stats().agent }}</div>
+                <div class="stat-label">Agents de recette</div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-caissier">
+            <div class="stat-icon"><mat-icon>point_of_sale</mat-icon></div>
+            <div class="stat-body">
+                <div class="stat-value">{{ stats().caissier }}</div>
+                <div class="stat-label">Caissiers</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="search-bar">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+            <mat-label>Rechercher (matricule, nom, login, e-mail)</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput
+                   [ngModel]="recherche()"
+                   (ngModelChange)="onRechercheChange($event)"
+                   placeholder="ex : ansou"
+                   autocomplete="off" />
+        </mat-form-field>
+        <span class="result-count">
+            {{ utilisateursFiltres().length }} resultat(s)
+            @if (recherche()) {
+                · <a class="clear-link" (click)="onRechercheChange('')">effacer</a>
+            }
+        </span>
+    </div>
+
+    <table mat-table [dataSource]="utilisateursPage()">
 
         <ng-container matColumnDef="matricule">
             <th mat-header-cell *matHeaderCellDef>Matricule</th>
@@ -96,4 +174,23 @@
         <tr mat-row *matRowDef="let row; columns: colonnes"></tr>
 
     </table>
+
+    @if (utilisateursPage().length === 0) {
+        <div class="empty-state">
+            @if (recherche()) {
+                Aucun résultat pour « {{ recherche() }} ».
+            } @else {
+                Aucun utilisateur enregistré.
+            }
+        </div>
+    }
+
+    <mat-paginator
+        [length]="utilisateursFiltres().length"
+        [pageSize]="pageSize()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="[5, 10, 20, 50, 100]"
+        (page)="changerPage($event)"
+        showFirstLastButtons>
+    </mat-paginator>
 </div>

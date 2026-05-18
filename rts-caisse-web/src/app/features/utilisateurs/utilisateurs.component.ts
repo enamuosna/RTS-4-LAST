@@ -1,19 +1,20 @@
-// =====================================================================
-//  Fichier : src/app/features/utilisateurs/utilisateurs.component.ts
-//  >>> remplacer intégralement le fichier existant <<<
-// =====================================================================
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  computed,
   inject,
   signal
 } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
@@ -31,9 +32,13 @@ import { ReinitialiserMdpDialogComponent } from './dialogs/reinitialiser-mdp-dia
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatTableModule,
+    MatPaginatorModule,
     MatButtonModule,
     MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
     MatSlideToggleModule,
     MatTooltipModule
   ],
@@ -51,6 +56,53 @@ export class UtilisateursComponent implements OnInit {
   readonly isSuperAdmin = signal(false);
   readonly colonnes = ['matricule', 'nom', 'login', 'email', 'role', 'actif', 'actions'];
 
+  // ==================================================================
+  //  Recherche + pagination cote client (la liste est rarement enorme)
+  // ==================================================================
+
+  /** Texte de recherche libre (matricule, nom, login, email). */
+  readonly recherche = signal<string>('');
+  /** Page courante (0-based) et taille de page pour mat-paginator. */
+  readonly pageIndex = signal<number>(0);
+  readonly pageSize  = signal<number>(10);
+
+  /** Liste filtree selon la recherche (insensible a la casse). */
+  readonly utilisateursFiltres = computed<Utilisateur[]>(() => {
+    const q = this.recherche().trim().toLowerCase();
+    const all = this.utilisateurs();
+    if (!q) return all;
+    return all.filter(u =>
+        (u.matricule  ?? '').toLowerCase().includes(q) ||
+        (u.prenom     ?? '').toLowerCase().includes(q) ||
+        (u.nom        ?? '').toLowerCase().includes(q) ||
+        (u.login      ?? '').toLowerCase().includes(q) ||
+        (u.email      ?? '').toLowerCase().includes(q));
+  });
+
+  /** Page courante a afficher dans le mat-table. */
+  readonly utilisateursPage = computed<Utilisateur[]>(() => {
+    const start = this.pageIndex() * this.pageSize();
+    return this.utilisateursFiltres().slice(start, start + this.pageSize());
+  });
+
+  // ==================================================================
+  //  Statistiques (calcul reactif depuis la liste complete)
+  // ==================================================================
+
+  readonly stats = computed(() => {
+    const all = this.utilisateurs();
+    const par = (r: Role) => all.filter(u => u.role === r).length;
+    return {
+      total:       all.length,
+      actifs:      all.filter(u => u.actif).length,
+      inactifs:    all.filter(u => !u.actif).length,
+      admin:       par('ADMIN'),
+      superviseur: par('SUPERVISEUR'),
+      agent:       par('AGENT_RECETTE'),
+      caissier:    par('CAISSIER')
+    };
+  });
+
   ngOnInit(): void {
     this.http
         .get<{ superAdmin: boolean }>('/api/utilisateurs/me/super-admin')
@@ -60,7 +112,24 @@ export class UtilisateursComponent implements OnInit {
   }
 
   charger(): void {
-    this.service.lister().subscribe(list => this.utilisateurs.set(list));
+    this.service.lister().subscribe(list => {
+      this.utilisateurs.set(list);
+      // Si la nouvelle liste est plus courte, on remet la page a 0 pour
+      // eviter d'afficher une page vide apres une suppression.
+      this.pageIndex.set(0);
+    });
+  }
+
+  /** Recherche : on revient toujours sur la premiere page. */
+  onRechercheChange(value: string): void {
+    this.recherche.set(value);
+    this.pageIndex.set(0);
+  }
+
+  /** Pagination Material : on persiste juste l'index + la taille. */
+  changerPage(e: PageEvent): void {
+    this.pageIndex.set(e.pageIndex);
+    this.pageSize.set(e.pageSize);
   }
 
   creer(): void {

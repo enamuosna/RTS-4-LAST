@@ -837,13 +837,50 @@ public final class PrintRecu {
             return op != null && op.motif != null && !op.motif.isBlank();
         }
 
+        /** IDs de l'ancien format coarse (avant la granularite max).
+         *  Si l'un d'eux apparait, on considere le layout obsolete et on
+         *  retombe sur la config granulaire par defaut. Migration identique
+         *  cote backend (RecuPdfService) et frontend web. */
+        private static final java.util.Set<String> ANCIENS_IDS = java.util.Set.of(
+                "header", "details", "client", "footer", "numero", "titre");
+
         List<SectionRecu> sections() {
             if (params != null && params.sections != null && !params.sections.isEmpty()) {
-                return params.sections;
+                // Detection d'un ancien layout : si un seul ancien ID est
+                // present, on ignore le layout sauvegarde et on retombe sur
+                // les 29 rubriques granulaires. Evite que le recu apparaisse
+                // vide quand l'admin n'a pas encore re-enregistre les
+                // parametres depuis la mise a jour.
+                boolean obsolete = params.sections.stream()
+                        .anyMatch(s -> ANCIENS_IDS.contains(s.id));
+                if (!obsolete) {
+                    return params.sections;
+                }
+                log.info("Layout recu obsolete detecte cote guichet, "
+                        + "fallback sur la config granulaire par defaut.");
             }
-            // Ordre par défaut (cohérent avec le backend)
-            String[] ids = {"header","titre","numero","details","client","montant",
-                            "motif","annulation","signature","footer"};
+            // Ordre par defaut : 29 rubriques granulaires (coherent avec
+            // backend RecuPdfService.sectionsDefaut()).
+            String[] ids = {
+                    // En-tete societe (8)
+                    "logo","raison_sociale","ligne_legale","capital",
+                    "adresse_societe","telephone_societe","boite_postale","ninea",
+                    // Titre + numero
+                    "titre_recu","numero_recu",
+                    // Details operation (8)
+                    "date_operation","caisse","agent","type_operation",
+                    "categorie","mode_paiement","reference","diffusion",
+                    // Banque
+                    "banque",
+                    // Client (4)
+                    "client_raison","client_telephone","client_adresse","client_ninea",
+                    // Montant
+                    "montant",
+                    // Motif, annulation, signature
+                    "motif","annulation","signature",
+                    // Footer (2)
+                    "footer_ligne1","footer_ligne2"
+            };
             List<SectionRecu> list = new ArrayList<>();
             for (String id : ids) {
                 SectionRecu s = new SectionRecu();

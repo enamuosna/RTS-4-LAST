@@ -449,9 +449,13 @@ public class OperationCaisseService {
      *       les opérations</li>
      *   <li>{@link sn.rts.caisse.model.Role#AGENT_RECETTE} : uniquement
      *       sur les opérations de la caisse à laquelle il est affecté</li>
+     *   <li>{@link sn.rts.caisse.model.Role#CAISSIER} : uniquement sur
+     *       les opérations de la caisse dont il est le caissier affecté
+     *       (correction d'erreur de saisie sur sa propre journée).
+     *       Les autres protections classiques continuent de s'appliquer :
+     *       on ne peut pas modifier une opération annulée ni une journée
+     *       clôturée.</li>
      * </ul>
-     * Les CAISSIERS ne peuvent pas modifier ni réactiver — ils ne peuvent
-     * qu'annuler.
      */
     private void verifierDroitModifierOuReactiver(OperationCaisse operation, String login) {
         Utilisateur user = utilisateurRepository.findByLogin(login)
@@ -463,8 +467,8 @@ public class OperationCaisseService {
                 || role == sn.rts.caisse.model.Role.SUPERVISEUR) {
             return; // OK, accès global
         }
+        Caisse caisse = operation.getCaisse();
         if (role == sn.rts.caisse.model.Role.AGENT_RECETTE) {
-            Caisse caisse = operation.getCaisse();
             Utilisateur agent = caisse.getAgentRecette();
             if (agent != null && user.getId().equals(agent.getId())) {
                 return; // OK, agent affecté à cette caisse
@@ -472,8 +476,16 @@ public class OperationCaisseService {
             throw new BusinessException(
                     "Vous n'êtes pas l'agent de recette affecté à cette caisse.");
         }
+        if (role == sn.rts.caisse.model.Role.CAISSIER) {
+            Utilisateur caissier = caisse.getCaissier();
+            if (caissier != null && user.getId().equals(caissier.getId())) {
+                return; // OK, caissier affecte a cette caisse
+            }
+            throw new BusinessException(
+                    "Vous n'êtes pas le caissier affecté à cette caisse.");
+        }
         throw new BusinessException(
-                "Action réservée aux agents de recette, superviseurs et administrateurs.");
+                "Action réservée au personnel autorisé sur cette caisse.");
     }
 
     // ==================================================================

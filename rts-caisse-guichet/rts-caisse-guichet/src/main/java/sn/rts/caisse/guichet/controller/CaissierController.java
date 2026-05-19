@@ -800,7 +800,10 @@ public class CaissierController {
      * <ul>
      *   <li>ADMIN, SUPERVISEUR : toujours</li>
      *   <li>AGENT_RECETTE : uniquement s'il est l'agent affecté à cette caisse</li>
-     *   <li>CAISSIER : jamais</li>
+     *   <li>CAISSIER : uniquement s'il est le caissier affecté à cette caisse
+     *       (correction d'erreur de saisie sur sa propre journée). Le backend
+     *       refusera de toute façon si la journée est cloturée ou si
+     *       l'operation est deja annulee.</li>
      * </ul>
      */
     private boolean peutCorriger() {
@@ -809,10 +812,15 @@ public class CaissierController {
         sn.rts.caisse.guichet.model.Role role = auth.role;
         if (role == sn.rts.caisse.guichet.model.Role.ADMIN
                 || role == sn.rts.caisse.guichet.model.Role.SUPERVISEUR) return true;
+        CaisseDTO caisse = Session.getInstance().getCaisseActive();
+        if (caisse == null) return false;
         if (role == sn.rts.caisse.guichet.model.Role.AGENT_RECETTE) {
-            CaisseDTO caisse = Session.getInstance().getCaisseActive();
-            return caisse != null && caisse.agentRecetteId != null
+            return caisse.agentRecetteId != null
                     && caisse.agentRecetteId.equals(auth.utilisateurId);
+        }
+        if (role == sn.rts.caisse.guichet.model.Role.CAISSIER) {
+            return caisse.caissierId != null
+                    && caisse.caissierId.equals(auth.utilisateurId);
         }
         return false;
     }

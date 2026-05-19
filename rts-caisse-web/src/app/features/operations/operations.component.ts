@@ -70,15 +70,20 @@ export class OperationsComponent implements OnInit {
    * de la caisse actuellement affichée ?
    * - ADMIN, SUPERVISEUR : oui sur toutes
    * - AGENT_RECETTE : oui uniquement si affecté à cette caisse
-   * - CAISSIER : non
+   * - CAISSIER : oui uniquement si caissier affecté à cette caisse
+   *   (correction d'erreur de saisie sur sa propre journée)
    */
   readonly peutCorriger = computed<boolean>(() => {
     const role = this.auth.currentRole();
     if (role === 'ADMIN' || role === 'SUPERVISEUR') return true;
+    const caisse = this.caisseCourante();
+    const userId = this.auth.currentUser()?.utilisateurId;
+    if (!caisse || userId == null) return false;
     if (role === 'AGENT_RECETTE') {
-      const caisse = this.caisseCourante();
-      const userId = this.auth.currentUser()?.utilisateurId;
-      return !!caisse && caisse.agentRecetteId === userId;
+      return caisse.agentRecetteId === userId;
+    }
+    if (role === 'CAISSIER') {
+      return caisse.caissierId === userId;
     }
     return false;
   });

@@ -116,7 +116,11 @@ public class RecuPdfService {
 
     private byte[] genererPdf(OperationCaisse op, ParametresRecu params) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Document document = new Document(PageSize.A6, 20, 20, 20, 20);
+        // Format A5 (148 x 210 mm) au lieu de A6 (105 x 148 mm) : le recu
+        // gagne en largeur et les libelles + valeurs s'aerent (notamment
+        // l'entete RTS et le bloc Banque). Marges legerement augmentees
+        // pour profiter de l'espace sans coller au bord.
+        Document document = new Document(PageSize.A5, 28, 28, 28, 28);
 
         // Couleurs et tailles depuis les paramètres (avec fallback)
         Color cPrimaire = hex(params.getCouleurPrimaire(), new Color(227, 6, 19));

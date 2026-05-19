@@ -56,9 +56,14 @@ public final class PrintRecu {
 
     /** Date + heure : utilise pour la ligne "Diffusion" sur le recu. */
     private static final DateTimeFormatter DATE_HEURE_FR =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy 'a' HH:mm");
+            DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm");
 
-    private static final double LARGEUR_RECU = 380;
+    /**
+     * Largeur du recu pour l'apercu et l'impression desktop. Passe de 380 a
+     * 520 px pour s'aligner sur le format A5 du PDF backend (148 mm de large)
+     * et eviter que les libelles longs (categorie, banque) ne soient tronques.
+     */
+    private static final double LARGEUR_RECU = 520;
 
     // Couleurs de fallback (si backend KO ou champ null)
     private static final Color FB_PRIMAIRE = Color.web("#E30613");

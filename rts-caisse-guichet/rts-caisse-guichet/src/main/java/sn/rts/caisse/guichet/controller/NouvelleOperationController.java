@@ -8,6 +8,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
@@ -34,6 +35,10 @@ import sn.rts.caisse.guichet.util.AsyncRunner;
 import sn.rts.caisse.guichet.util.Ui;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -59,6 +64,13 @@ public class NouvelleOperationController {
     @FXML private TextField timbreField;
     @FXML private TextField montantTtcField;
     @FXML private TextField referenceField;
+
+    // ---------------- Heure de diffusion (optionnel) ----------------
+    // RTS est une chaine TV : pour un spot/sponsoring, on imprime sur le
+    // recu la date+heure de diffusion antenne. DatePicker + champ heure
+    // (HH:mm) pour ne pas dependre de saisie texte libre.
+    @FXML private DatePicker dateDiffusionPicker;
+    @FXML private TextField  heureDiffusionField;
 
     // ---------------- Banque (conditionnel) ----------------
     @FXML private VBox banqueBox;
@@ -222,6 +234,9 @@ public class NouvelleOperationController {
         timbreField.setText(op.timbre == null
                 || op.timbre.signum() == 0 ? "" : op.timbre.toPlainString());
         referenceField.setText(op.reference == null ? "" : op.reference);
+
+        // Pre-remplissage de la date+heure de diffusion (si presente).
+        prefRemplirDateDiffusion(op.dateDiffusion);
 
         // Mode de paiement
         if (op.modePaiement != null) {
@@ -429,6 +444,13 @@ public class NouvelleOperationController {
         montantTtcField.clear();
         referenceField.clear();
 
+        if (dateDiffusionPicker != null) {
+            dateDiffusionPicker.setValue(null);
+        }
+        if (heureDiffusionField != null) {
+            heureDiffusionField.clear();
+        }
+
         clientCombo.getSelectionModel().clearSelection();
         clientCombo.setValue(null);
         clientCombo.getEditor().clear();
@@ -587,6 +609,14 @@ public class NouvelleOperationController {
                 ? null
                 : referenceField.getText().trim();
 
+        // Date+heure de diffusion OBLIGATOIRES (regle metier RTS).
+        // Si l'un des deux champs est vide / mal forme, collecterDateDiffusion
+        // affiche l'erreur appropriee et retourne null. On annule.
+        req.dateDiffusion = collecterDateDiffusion();
+        if (req.dateDiffusion == null) {
+            return null;
+        }
+
         // Validation banque pour CHÈQUE / VIREMENT
         if (banqueRequise(mode)) {
             BanqueDTO banque = banqueCombo.getValue();
@@ -608,6 +638,95 @@ public class NouvelleOperationController {
     private TypeOperation getTypeSelectionne() {
         if (sortieToggle.isSelected()) return TypeOperation.SORTIE;
         return TypeOperation.ENTREE;
+    }
+
+    // ==================================================================
+    //  Diffusion (date + heure)
+    // ==================================================================
+
+    private static final DateTimeFormatter HEURE_FMT =
+            DateTimeFormatter.ofPattern("H:mm");
+
+    /**
+     * Compose la date+heure de diffusion a partir des deux champs FXML.
+     * Desormais OBLIGATOIRE : si l'un des deux champs est vide, affiche une
+     * erreur et retourne null pour bloquer l'enregistrement.
+     */
+    private LocalDateTime collecterDateDiffusion() {
+        if (dateDiffusionPicker == null || heureDiffusionField == null) {
+            return null;
+        }
+        // Piege JavaFX : si l'utilisateur a TAPE la date dans l'editeur du
+        // DatePicker sans appuyer sur Entree ni cliquer dans le calendrier,
+        // getValue() retourne null meme si l'editeur contient du texte. On
+        // force la validation pour recuperer la valeur saisie au clavier.
+        forcerCommitDatePicker(dateDiffusionPicker);
+        LocalDate date = dateDiffusionPicker.getValue();
+        String heureTexte = heureDiffusionField.getText();
+        boolean heureRenseignee = heureTexte != null && !heureTexte.isBlank();
+
+        if (date == null && !heureRenseignee) {
+            Ui.erreur("Diffusion obligatoire",
+                    "Vous devez saisir la date ET l'heure de diffusion "
+                            + "antenne de cette operation.");
+            return null;
+        }
+        if (date == null) {
+            Ui.erreur("Date de diffusion manquante",
+                    "Saisissez la date de diffusion (format JJ/MM/AAAA).");
+            dateDiffusionPicker.requestFocus();
+            return null;
+        }
+        if (!heureRenseignee) {
+            Ui.erreur("Heure de diffusion manquante",
+                    "Saisissez l'heure de diffusion (format HH:mm, ex. 20:30).");
+            heureDiffusionField.requestFocus();
+            return null;
+        }
+        try {
+            LocalTime heure = LocalTime.parse(heureTexte.trim(), HEURE_FMT);
+            return LocalDateTime.of(date, heure);
+        } catch (Exception ex) {
+            Ui.erreur("Heure invalide",
+                    "L'heure de diffusion doit etre au format HH:mm "
+                            + "(ex. 20:30). Valeur saisie : " + heureTexte);
+            heureDiffusionField.requestFocus();
+            return null;
+        }
+    }
+
+    /**
+     * Force le DatePicker a valider le texte saisi dans son editeur en
+     * appelant son converter. Sans ca, {@code getValue()} reste null si
+     * l'utilisateur a juste tape la date sans appuyer sur Entree.
+     */
+    private static void forcerCommitDatePicker(DatePicker picker) {
+        try {
+            String texte = picker.getEditor().getText();
+            if (texte == null || texte.isBlank()) {
+                return;
+            }
+            // Le DatePicker JavaFX a un StringConverter par defaut au format
+            // local. On l'utilise pour parser le texte saisi.
+            LocalDate parse = picker.getConverter().fromString(texte);
+            picker.setValue(parse);
+        } catch (Exception ignored) {
+            // Format invalide : on laisse getValue() retourner null, et la
+            // validation aval affichera l'erreur appropriee.
+        }
+    }
+
+    /** Pre-remplit les deux champs depuis une operation existante. */
+    private void prefRemplirDateDiffusion(LocalDateTime dt) {
+        if (dateDiffusionPicker == null || heureDiffusionField == null) return;
+        if (dt == null) {
+            dateDiffusionPicker.setValue(null);
+            heureDiffusionField.clear();
+            return;
+        }
+        dateDiffusionPicker.setValue(dt.toLocalDate());
+        heureDiffusionField.setText(String.format("%02d:%02d",
+                dt.getHour(), dt.getMinute()));
     }
 
     // ==================================================================

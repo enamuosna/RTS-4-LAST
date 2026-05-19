@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
@@ -136,6 +137,28 @@
                     <TextField fx:id="montantTtcField" editable="false"
                                promptText="0"
                                style="-fx-font-weight: bold;"/>
+                </VBox>
+            </GridPane>
+
+            <!-- ========== Date + Heure de diffusion (OBLIGATOIRE) ==========
+                 RTS est une chaine TV : toute operation de caisse doit etre
+                 rattachee a un creneau de diffusion antenne (spot pub,
+                 sponsoring, message). Imprime sur le recu (ligne
+                 "Diffusion"). Date ET heure sont desormais obligatoires
+                 cote backend (regle metier). -->
+            <GridPane hgap="14" vgap="6">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="65"/>
+                    <ColumnConstraints percentWidth="35"/>
+                </columnConstraints>
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="DATE DE DIFFUSION *"/>
+                    <DatePicker fx:id="dateDiffusionPicker" maxWidth="Infinity"
+                                promptText="JJ/MM/AAAA"/>
+                </VBox>
+                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="HEURE (HH:MM) *"/>
+                    <TextField fx:id="heureDiffusionField" promptText="20:30"/>
                 </VBox>
             </GridPane>
 

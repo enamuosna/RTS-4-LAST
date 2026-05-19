@@ -54,6 +54,10 @@ public final class PrintRecu {
     private static final DateTimeFormatter DATE_FR =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+    /** Date + heure : utilise pour la ligne "Diffusion" sur le recu. */
+    private static final DateTimeFormatter DATE_HEURE_FR =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy 'a' HH:mm");
+
     private static final double LARGEUR_RECU = 380;
 
     // Couleurs de fallback (si backend KO ou champ null)
@@ -344,6 +348,13 @@ public final class PrintRecu {
             if (ctx.op.reference != null && !ctx.op.reference.isBlank()) {
                 box.getChildren().add(ligneCleValeur(ctx, "Référence", ctx.op.reference));
             }
+            // Heure de diffusion du produit a l'antenne (spot, sponsoring...).
+            // TOUJOURS affichee : on imprime "—" si non renseignee, pour que la
+            // rubrique soit visible sur tous les recus.
+            String diffusion = ctx.op.dateDiffusion != null
+                    ? ctx.op.dateDiffusion.format(DATE_HEURE_FR)
+                    : "—";
+            box.getChildren().add(ligneCleValeur(ctx, "Diffusion", diffusion));
             if (aDesInfosBanque(ctx.op)) {
                 box.getChildren().add(blocBanque(ctx));
             }
@@ -398,8 +409,10 @@ public final class PrintRecu {
         VBox box = new VBox(2);
         box.setAlignment(Pos.CENTER);
         box.setPadding(new Insets(8, 12, 8, 12));
+        // Bloc montant : fond blanc, look plat (on ignore volontairement
+        // ctx.fondMontant pour ne pas reintroduire un encadre colore).
         box.setBackground(new Background(new BackgroundFill(
-                ctx.fondMontant, new CornerRadii(4), Insets.EMPTY)));
+                Color.WHITE, new CornerRadii(4), Insets.EMPTY)));
 
         java.math.BigDecimal montant = ctx.op != null && ctx.op.montant != null
                 ? ctx.op.montant : java.math.BigDecimal.ZERO;
@@ -416,7 +429,7 @@ public final class PrintRecu {
             // (sinon doublon "FCFA FCFA" sur le recu).
             box.getChildren().add(ligneMontantInline(ctx, "Montant HT",
                     Ui.formatMontant(montant)));
-            box.getChildren().add(ligneMontantInline(ctx, "Timbre fiscal",
+            box.getChildren().add(ligneMontantInline(ctx, "Timbre",
                     Ui.formatMontant(timbre)));
 
             // Séparateur

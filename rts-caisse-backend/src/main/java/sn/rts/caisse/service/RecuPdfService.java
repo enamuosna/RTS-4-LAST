@@ -254,6 +254,15 @@ public class RecuPdfService {
             if (op.getReference() != null && !op.getReference().isBlank()) {
                 ajouterLigne(table, "Référence", op.getReference(), cTexte, cTexteSec, tCorps);
             }
+            // Heure de diffusion du produit (spot pub, sponsoring...). TOUJOURS
+            // affichee : si non renseignee, on imprime "—" pour que la rubrique
+            // soit visible sur tous les recus (RTS est une chaine TV : l'info
+            // diffusion est attendue par defaut, l'omettre rendrait le recu
+            // ambigu).
+            String diffusion = op.getDateDiffusion() != null
+                    ? op.getDateDiffusion().format(DATE_FMT)
+                    : "—";
+            ajouterLigne(table, "Diffusion", diffusion, cTexte, cTexteSec, tCorps);
         } else {
             // Aperçu fictif
             ajouterLigne(table, "Date",      LocalDate.now().format(DATE_COURTE), cTexte, cTexteSec, tCorps);
@@ -262,6 +271,8 @@ public class RecuPdfService {
             ajouterLigne(table, "Type",      "Encaissement",                      cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Catégorie", "Catégorie exemple",                 cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Mode régl.","Espèces",                           cTexte, cTexteSec, tCorps);
+            ajouterLigne(table, "Diffusion", LocalDate.now().format(DATE_COURTE) + " à 20:00",
+                    cTexte, cTexteSec, tCorps);
         }
         document.add(table);
         saut(document, 4);
@@ -311,7 +322,10 @@ public class RecuPdfService {
 
         PdfPCell cell = new PdfPCell();
         cell.setBorder(PdfPCell.NO_BORDER);
-        cell.setBackgroundColor(cFond);
+        // Fond du bloc montant : blanc (look plat, sans encadre colore).
+        // Le parametre cFond reste lu mais on l'ignore volontairement pour
+        // garantir un recu sobre quel que soit l'historique des parametres.
+        cell.setBackgroundColor(Color.WHITE);
         cell.setPadding(10);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
@@ -326,7 +340,7 @@ public class RecuPdfService {
 
             ajouterLigneMontant(lignes, "Montant HT",       formatMontant(montant),
                     cTexte, cTexte, tCorps);
-            ajouterLigneMontant(lignes, "Timbre fiscal",    formatMontant(timbre),
+            ajouterLigneMontant(lignes, "Timbre",            formatMontant(timbre),
                     cTexte, cTexte, tCorps);
             cell.addElement(lignes);
 

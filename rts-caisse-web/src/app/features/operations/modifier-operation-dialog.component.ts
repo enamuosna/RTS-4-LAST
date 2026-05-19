@@ -86,6 +86,15 @@ import { OperationService } from '../../core/services/caisse.services';
           <mat-label>Référence (optionnel)</mat-label>
           <input matInput [(ngModel)]="reference" maxlength="100" />
         </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Heure de diffusion *</mat-label>
+          <input matInput type="datetime-local" [(ngModel)]="dateDiffusion" required />
+          <mat-hint>Date et heure prevues de diffusion a l'antenne (obligatoire)</mat-hint>
+          @if (!dateDiffusion) {
+            <mat-error>La date et l'heure de diffusion sont obligatoires.</mat-error>
+          }
+        </mat-form-field>
       </div>
     </mat-dialog-content>
 
@@ -150,6 +159,8 @@ export class ModifierOperationDialogComponent {
   timbre = 0;
   motif = '';
   reference = '';
+  /** Au format "YYYY-MM-DDTHH:mm" attendu par <input type="datetime-local">. */
+  dateDiffusion = '';
 
   readonly ttcAffiche = computed(() =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 })
@@ -161,6 +172,12 @@ export class ModifierOperationDialogComponent {
     this.timbre  = op.timbre || 0;
     this.motif   = op.motif || '';
     this.reference = op.reference || '';
+    // L'input datetime-local attend "YYYY-MM-DDTHH:mm". Le backend renvoie
+    // une string ISO 8601 (avec secondes/millis et eventuellement timezone).
+    // On tronque a la minute pour coller au format de l'input.
+    this.dateDiffusion = op.dateDiffusion
+      ? op.dateDiffusion.substring(0, 16)
+      : '';
     this.recalculer();
   }
 
@@ -179,7 +196,9 @@ export class ModifierOperationDialogComponent {
   }
 
   estValide(): boolean {
-    return this.montant > 0;
+    // Le montant doit etre positif ET la date de diffusion est desormais
+    // obligatoire (regle metier RTS : toute operation = un creneau d'antenne).
+    return this.montant > 0 && !!this.dateDiffusion;
   }
 
   enregistrer(): void {
@@ -195,7 +214,9 @@ export class ModifierOperationDialogComponent {
       modePaiement: op.modePaiement,
       motif: this.motif,
       reference: this.reference || undefined,
-      banqueId: op.banqueId
+      banqueId: op.banqueId,
+      // Date de diffusion : desormais obligatoire (validee par estValide()).
+      dateDiffusion: this.dateDiffusion
     };
     this.saving.set(true);
     this.api.modifier(op.id, req).subscribe({

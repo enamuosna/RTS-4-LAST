@@ -106,6 +106,12 @@ export interface OperationCaisseRequest {
   motif: string;
   reference?: string;
   banqueId?: number;
+  /**
+   * Date+heure prévue de diffusion du produit à l'antenne (spot, sponsoring,
+   * message). Optionnel : laissé vide quand l'opération n'est pas liée à
+   * une diffusion. Format ISO 8601 attendu par le backend.
+   */
+  dateDiffusion?: string | null;
 }
 
 // ──────────────────────────────
@@ -132,6 +138,8 @@ export interface OperationCaisse {
   modePaiement: ModePaiement;
   reference?: string;
   dateOperation: string;
+  /** Date+heure de diffusion du produit a l'antenne (optionnel). */
+  dateDiffusion?: string | null;
   caisseId: number;
   caisseLibelle: string;
   caissierId: number;

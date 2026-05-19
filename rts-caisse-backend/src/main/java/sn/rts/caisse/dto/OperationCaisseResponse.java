@@ -40,6 +40,7 @@ public record OperationCaisseResponse(
         ModePaiement  modePaiement,
         String        reference,
         LocalDateTime dateOperation,
+        LocalDateTime dateDiffusion,
 
         // ---------- Caisse ----------
         Long   caisseId,
@@ -92,6 +93,7 @@ public record OperationCaisseResponse(
                 o.getModePaiement(),
                 o.getReference(),
                 o.getDateOperation(),
+                o.getDateDiffusion(),
 
                 // Caisse
                 o.getCaisse().getId(),

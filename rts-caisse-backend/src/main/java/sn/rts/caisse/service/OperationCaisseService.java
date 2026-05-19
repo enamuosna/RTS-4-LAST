@@ -76,6 +76,23 @@ public class OperationCaisseService {
     public OperationCaisseResponse enregistrer(OperationCaisseRequest request,
                                                String loginCaissier) {
         try {
+            // ---------- 0. Diagnostic dateDiffusion ----------
+            log.info("Creation operation : caisse={} categorie={} montant={} "
+                    + "reference={} dateDiffusion={} (par {})",
+                    request.caisseId(), request.categorieId(),
+                    request.montant(), request.reference(),
+                    request.dateDiffusion(), loginCaissier);
+
+            // ---------- 0bis. Date de diffusion obligatoire ----------
+            // Garde-fou : la regle est aussi posee par @NotNull sur le DTO,
+            // mais on remet une verification ici pour fournir un message clair
+            // meme si un client venait a contourner la validation.
+            if (request.dateDiffusion() == null) {
+                throw new BusinessException(
+                        "La date et l'heure de diffusion sont obligatoires "
+                                + "pour toute operation de caisse.");
+            }
+
             // ---------- 1. Caisse ----------
             Caisse caisse = caisseService.trouver(request.caisseId());
             if (caisse.getStatut() != StatutCaisse.OUVERTE) {
@@ -155,6 +172,7 @@ public class OperationCaisseService {
                     .modePaiement(mode)
                     .reference(request.reference())
                     .dateOperation(LocalDateTime.now())
+                    .dateDiffusion(request.dateDiffusion())
                     .caisse(caisse)
                     .caissier(caissier)
                     .categorie(categorie)
@@ -312,6 +330,21 @@ public class OperationCaisseService {
                                              String loginModificateur) {
         OperationCaisse operation;
         try {
+            // Log diagnostic pour tracer l'envoi de dateDiffusion lors de la
+            // modification (via le dialog web ou via /operations/{id} guichet).
+            log.info("Modification operation id={} : reference={} dateDiffusion={} (par {})",
+                    operationId, request.reference(), request.dateDiffusion(),
+                    loginModificateur);
+
+            // Date de diffusion obligatoire aussi sur la modification :
+            // on ne peut pas re-enregistrer une operation sans la rattacher
+            // a un creneau de diffusion antenne.
+            if (request.dateDiffusion() == null) {
+                throw new BusinessException(
+                        "La date et l'heure de diffusion sont obligatoires "
+                                + "pour modifier une operation.");
+            }
+
             operation = trouver(operationId);
             verifierDroitModifierOuReactiver(operation, loginModificateur);
 
@@ -399,6 +432,7 @@ public class OperationCaisseService {
             operation.setMotif(request.motif());
             operation.setModePaiement(mode);
             operation.setReference(request.reference());
+            operation.setDateDiffusion(request.dateDiffusion());
             operation.setCategorie(categorie);
             operation.setClient(client);
             operation.setBanque(banque);

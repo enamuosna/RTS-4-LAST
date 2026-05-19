@@ -293,6 +293,13 @@ public final class Dto {
         /** Banque émettrice — obligatoire si modePaiement = CHEQUE ou VIREMENT. */
         public Long banqueId;
 
+        /**
+         * Date+heure prevue de diffusion du produit a l'antenne (spot pub,
+         * sponsoring, message). Optionnel : null si pas de diffusion (ex.
+         * vente d'archives, prestation). Affiche sur le recu sous "Reference".
+         */
+        public LocalDateTime dateDiffusion;
+
         public OperationCaisseRequest() {}
     }
 
@@ -324,6 +331,8 @@ public final class Dto {
         public ModePaiement  modePaiement;
         public String        reference;
         public LocalDateTime dateOperation;
+        /** Date+heure de diffusion du produit a l'antenne (optionnel). */
+        public LocalDateTime dateDiffusion;
 
         // ----- Caisse -----
         public Long   caisseId;

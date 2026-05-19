@@ -76,6 +76,17 @@ public class OperationCaisse extends Auditable {
     @Column(name = "date_operation", nullable = false)
     private LocalDateTime dateOperation;
 
+    /**
+     * Date et heure prevues de diffusion du produit/spot/sponsoring sur
+     * l'antenne (RTS est une chaine TV : ce champ permet d'imprimer sur
+     * le recu la date+heure a laquelle le contenu paye sera diffuse).
+     *
+     * <p>Optionnel : toutes les operations n'ont pas de diffusion associee
+     * (vente d'archives, prestation, etc.).</p>
+     */
+    @Column(name = "date_diffusion")
+    private LocalDateTime dateDiffusion;
+
     // ---------- Relations ----------
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

@@ -8,6 +8,7 @@ import sn.rts.caisse.model.ModePaiement;
 import sn.rts.caisse.model.TypeOperation;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * Payload de création d'une opération de caisse.
@@ -63,6 +64,17 @@ public record OperationCaisseRequest(
          * chèque ou virement (validation côté service). {@code null} pour
          * espèces, Wave, Orange Money, Free Money, carte bancaire.
          */
-        Long banqueId
+        Long banqueId,
+
+        /**
+         * Date et heure prevues de diffusion du produit a l'antenne (spot
+         * publicitaire, sponsoring, message).
+         *
+         * <p><b>Obligatoire</b> (regle metier RTS) : toute operation de caisse
+         * doit etre rattachee a une diffusion antenne. Le backend renvoie 400
+         * si le champ est absent ou null.</p>
+         */
+        @NotNull
+        LocalDateTime dateDiffusion
 ) {
 }

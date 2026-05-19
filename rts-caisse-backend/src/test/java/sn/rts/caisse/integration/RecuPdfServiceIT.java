@@ -70,7 +70,10 @@ class RecuPdfServiceIT extends AbstractTestcontainersIT {
                         caisse.getId(), cat.getId(), null,
                         TypeOperation.ENTREE, new BigDecimal("150000"),
                         BigDecimal.ZERO, // timbre
-                        ModePaiement.WAVE, "Spot publicitaire JT 20h", "TX-WAVE-1234", null),
+                        ModePaiement.WAVE, "Spot publicitaire JT 20h", "TX-WAVE-1234",
+                        null, // banqueId
+                        null  // dateDiffusion
+                ),
                 caissier.getLogin());
     }
 

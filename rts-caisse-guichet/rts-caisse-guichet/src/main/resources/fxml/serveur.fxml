@@ -15,7 +15,10 @@
 
     <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="500" spacing="14" styleClass="login-card">
 
-        <!-- ======================== Logo RTS ======================== -->
+        <!-- ======================== Logo RTS ========================
+             Logo seul : on a retire le titre "Connexion au serveur"
+             et le subtitle (l'identite est portee par le logo et le
+             label "URL DU SERVEUR" qui explique deja le but de l'ecran). -->
         <StackPane alignment="CENTER" styleClass="login-logo">
             <ImageView fitHeight="76" fitWidth="76" preserveRatio="true" smooth="true">
                 <image>
@@ -23,9 +26,6 @@
                 </image>
             </ImageView>
         </StackPane>
-
-        <Label styleClass="login-title" text="Connexion au serveur" />
-        <Label styleClass="login-subtitle" text="Indiquez l'URL du serveur RTS Caisse avant de vous authentifier." />
 
         <!-- ===================== Formulaire ===================== -->
         <VBox maxWidth="440" spacing="14">

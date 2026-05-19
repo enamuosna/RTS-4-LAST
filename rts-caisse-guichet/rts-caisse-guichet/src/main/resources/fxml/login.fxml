@@ -15,7 +15,9 @@
 
     <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="420" spacing="14" styleClass="login-card">
 
-        <!-- ======================== Logo RTS ======================== -->
+        <!-- ======================== Logo RTS ========================
+             Logo seul : on a retire le titre "RTS Caisse" et le subtitle
+             "Guichet Radiodiffusion..." (redondants avec le logo).      -->
         <StackPane alignment="CENTER" styleClass="login-logo">
             <ImageView fitHeight="76" fitWidth="76" preserveRatio="true" smooth="true">
                 <image>
@@ -23,9 +25,6 @@
                 </image>
             </ImageView>
         </StackPane>
-
-        <Label styleClass="login-title" text="RTS Caisse" />
-        <Label styleClass="login-subtitle" text="Guichet  Radiodiffusion Télévision Sénégalaise" />
 
         <!-- ===================== Formulaire ===================== -->
         <VBox maxWidth="360" spacing="14">

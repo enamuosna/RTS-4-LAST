@@ -146,17 +146,57 @@ public class RecuPdfService {
             for (ParametresRecuDto.Section s : sections) {
                 if (!s.visible()) continue;
                 switch (s.id()) {
-                    case "header"     -> ecrireEnTete(document, params, cPrimaire, cTexte, cTexteSec, tEntete);
-                    case "titre"      -> ecrireTitreRecu(document, op, cPrimaire, tTitre);
-                    case "numero"     -> ecrireNumeroEtDate(document, op, cPrimaire, cTexteSec, tCorps);
-                    case "details"    -> ecrireDetails(document, op, cTexte, cTexteSec, tCorps);
-                    case "client"     -> ecrireClient(document, op, cTexte, cTexteSec, tCorps);
-                    case "montant"    -> ecrireMontant(document, op, cTexte, cFondMnt, cSuccess, cDanger, tCorps, tMontant);
-                    case "motif"      -> ecrireMotif(document, op, cTexte, cTexteSec, tCorps);
-                    case "annulation" -> ecrireAnnulation(document, op, cDanger, tCorps);
-                    case "signature"  -> ecrireSignature(document, params, cTexte, cTexteSec, tCorps);
-                    case "footer"     -> ecrirePiedPage(document, params, cAccent, cTexte, cTexteSec, tFooter);
-                    default           -> log.warn("Section inconnue ignorée : {}", s.id());
+                    // -------- En-tete / societe (8 rubriques granulaires) --------
+                    case "logo"              -> ecrireLogo(document, params, cPrimaire, tEntete);
+                    case "raison_sociale"    -> ecrireLigneCentree(document, params.getRaisonSociale(), font(8.5f, Font.BOLD, cPrimaire));
+                    case "ligne_legale"      -> ecrireLigneCentree(document, params.getLigneLegale(),   font(7, Font.NORMAL, cTexteSec));
+                    case "capital"           -> ecrireLigneCentree(document, params.getCapital(),       font(7, Font.NORMAL, cTexteSec));
+                    case "adresse_societe"   -> ecrireLigneCentree(document, params.getAdresse(),       font(7, Font.NORMAL, cTexteSec));
+                    case "telephone_societe" -> ecrireLigneCentree(document, params.getTelephone(),     font(7, Font.NORMAL, cTexteSec));
+                    case "boite_postale"     -> ecrireLigneCentree(document, params.getBoitePostale(),  font(7, Font.NORMAL, cTexteSec));
+                    case "ninea"             -> ecrireLigneCentree(document, params.getNinea(),         font(7, Font.BOLD, cTexte));
+
+                    // -------- Titre + numero --------
+                    case "titre_recu"        -> ecrireTitreRecu(document, op, cPrimaire, tTitre);
+                    case "numero_recu"       -> ecrireNumeroEtDate(document, op, cPrimaire, cTexteSec, tCorps);
+
+                    // -------- Details operation (8 rubriques granulaires) --------
+                    case "date_operation"    -> ecrireLigneCleValeur(document, "Date",       op != null ? op.getDateOperation().format(DATE_FMT) : LocalDate.now().format(DATE_COURTE), cTexte, cTexteSec, tCorps);
+                    case "caisse"            -> ecrireLigneCleValeur(document, "Caisse",     op != null ? op.getCaisse().getLibelle() : "Caisse — Aperçu", cTexte, cTexteSec, tCorps);
+                    case "agent"             -> ecrireLigneCleValeur(document, "Agent",      op != null ? op.getCaissier().getNomComplet() : "AGENT TEST", cTexte, cTexteSec, tCorps);
+                    case "type_operation"    -> ecrireLigneCleValeur(document, "Type",       libelleType(op),                                              cTexte, cTexteSec, tCorps);
+                    case "categorie"         -> ecrireLigneCleValeur(document, "Catégorie",  op != null ? op.getCategorie().getLibelle() : "Catégorie exemple", cTexte, cTexteSec, tCorps);
+                    case "mode_paiement"     -> ecrireLigneCleValeur(document, "Mode régl.", op != null ? op.getModePaiement().name().replace('_', ' ') : "Espèces", cTexte, cTexteSec, tCorps);
+                    case "reference"         -> { if (op != null && op.getReference() != null && !op.getReference().isBlank())
+                                                       ecrireLigneCleValeur(document, "Référence", op.getReference(), cTexte, cTexteSec, tCorps); }
+                    case "diffusion"         -> ecrireLigneCleValeur(document, "Diffusion",
+                                                    op != null && op.getDateDiffusion() != null
+                                                            ? op.getDateDiffusion().format(DATE_FMT)
+                                                            : "—",
+                                                    cTexte, cTexteSec, tCorps);
+
+                    // -------- Banque (bloc unitaire, conditionnel CHEQUE/VIREMENT) --------
+                    case "banque"            -> ecrireBanque(document, op, cTexte, cTexteSec, tCorps);
+
+                    // -------- Client (4 rubriques granulaires, toutes conditionnelles) --------
+                    case "client_raison"     -> ecrireClientChamp(document, op, "M.",        c -> c.getRaisonSociale(),     cTexte, cTexteSec, tCorps);
+                    case "client_telephone"  -> ecrireClientChamp(document, op, "Téléphone", c -> c.getTelephone(),         cTexte, cTexteSec, tCorps);
+                    case "client_adresse"    -> ecrireClientChamp(document, op, "Adresse",   c -> c.getAdresse(),           cTexte, cTexteSec, tCorps);
+                    case "client_ninea"      -> ecrireClientChamp(document, op, "NINEA/RCCM",c -> c.getIdentifiantFiscal(), cTexte, cTexteSec, tCorps);
+
+                    // -------- Montant (bloc visuel unitaire) --------
+                    case "montant"           -> ecrireMontant(document, op, cTexte, cFondMnt, cSuccess, cDanger, tCorps, tMontant);
+
+                    // -------- Motif, annulation, signature --------
+                    case "motif"             -> ecrireMotif(document, op, cTexte, cTexteSec, tCorps);
+                    case "annulation"        -> ecrireAnnulation(document, op, cDanger, tCorps);
+                    case "signature"         -> ecrireSignature(document, params, cTexte, cTexteSec, tCorps);
+
+                    // -------- Pied de page (2 rubriques granulaires) --------
+                    case "footer_ligne1"     -> ecrireLigneCentree(document, blankIfNull(params.getFooterLigne1(), "Merci de votre passage."), font(tFooter + 1, Font.ITALIC, cTexte));
+                    case "footer_ligne2"     -> ecrireLigneCentree(document, blankIfNull(params.getFooterLigne2(), "RTS - Conservez ce reçu."), font(tFooter, Font.NORMAL, cTexteSec));
+
+                    default                  -> log.warn("Section inconnue ignorée : {}", s.id());
                 }
             }
 
@@ -470,6 +510,13 @@ public class RecuPdfService {
     //  Helpers
     // ==================================================================
 
+    /** IDs de l'ancien format de sections (avant la granularite max).
+     *  Si l'un d'eux apparait dans layout_json, on considere le layout obsolete
+     *  et on retombe sur sectionsDefaut(). Permet une migration automatique
+     *  des installations existantes sans intervention manuelle. */
+    private static final java.util.Set<String> ANCIENS_IDS = java.util.Set.of(
+            "header", "details", "client", "footer", "numero", "titre");
+
     private List<ParametresRecuDto.Section> sectionsOrdonnees(ParametresRecu params) {
         String json = params.getLayoutJson();
         if (json == null || json.isBlank()) {
@@ -478,7 +525,21 @@ public class RecuPdfService {
         try {
             List<ParametresRecuDto.Section> sections = objectMapper.readValue(
                     json, new TypeReference<List<ParametresRecuDto.Section>>() {});
-            return sections != null && !sections.isEmpty() ? sections : sectionsDefaut();
+            if (sections == null || sections.isEmpty()) {
+                return sectionsDefaut();
+            }
+            // Migration : si le layout enregistre contient encore un des
+            // anciens identifiants coarse (header, details, client, footer,
+            // numero, titre), on reset a la nouvelle config par defaut.
+            // L'admin pourra ensuite reorganiser les nouvelles rubriques.
+            for (ParametresRecuDto.Section s : sections) {
+                if (ANCIENS_IDS.contains(s.id())) {
+                    log.info("Layout receipt obsolete detecte (id={}), "
+                            + "reset a la config par defaut granulaire.", s.id());
+                    return sectionsDefaut();
+                }
+            }
+            return sections;
         } catch (Exception e) {
             log.warn("layout_json corrompu, fallback ordre par défaut : {}", e.getMessage());
             return sectionsDefaut();
@@ -486,17 +547,46 @@ public class RecuPdfService {
     }
 
     private List<ParametresRecuDto.Section> sectionsDefaut() {
+        // 29 rubriques granulaires (cf. switch dans genererPdf). Chacune
+        // toggleable et reordonnable depuis la page Parametres recu admin.
         return List.of(
-                new ParametresRecuDto.Section("header",     true),
-                new ParametresRecuDto.Section("titre",      true),
-                new ParametresRecuDto.Section("numero",     true),
-                new ParametresRecuDto.Section("details",    true),
-                new ParametresRecuDto.Section("client",     true),
-                new ParametresRecuDto.Section("montant",    true),
-                new ParametresRecuDto.Section("motif",      true),
-                new ParametresRecuDto.Section("annulation", true),
-                new ParametresRecuDto.Section("signature",  true),
-                new ParametresRecuDto.Section("footer",     true)
+                // --- En-tete societe (8) ---
+                new ParametresRecuDto.Section("logo",              true),
+                new ParametresRecuDto.Section("raison_sociale",    true),
+                new ParametresRecuDto.Section("ligne_legale",      true),
+                new ParametresRecuDto.Section("capital",           true),
+                new ParametresRecuDto.Section("adresse_societe",   true),
+                new ParametresRecuDto.Section("telephone_societe", true),
+                new ParametresRecuDto.Section("boite_postale",     true),
+                new ParametresRecuDto.Section("ninea",             true),
+                // --- Titre + numero ---
+                new ParametresRecuDto.Section("titre_recu",        true),
+                new ParametresRecuDto.Section("numero_recu",       true),
+                // --- Details operation (8) ---
+                new ParametresRecuDto.Section("date_operation",    true),
+                new ParametresRecuDto.Section("caisse",            true),
+                new ParametresRecuDto.Section("agent",             true),
+                new ParametresRecuDto.Section("type_operation",    true),
+                new ParametresRecuDto.Section("categorie",         true),
+                new ParametresRecuDto.Section("mode_paiement",     true),
+                new ParametresRecuDto.Section("reference",         true),
+                new ParametresRecuDto.Section("diffusion",         true),
+                // --- Banque (conditionnelle) ---
+                new ParametresRecuDto.Section("banque",            true),
+                // --- Client (4 rubriques conditionnelles) ---
+                new ParametresRecuDto.Section("client_raison",     true),
+                new ParametresRecuDto.Section("client_telephone",  true),
+                new ParametresRecuDto.Section("client_adresse",    true),
+                new ParametresRecuDto.Section("client_ninea",      true),
+                // --- Montant (bloc visuel unitaire) ---
+                new ParametresRecuDto.Section("montant",           true),
+                // --- Motif, annulation, signature ---
+                new ParametresRecuDto.Section("motif",             true),
+                new ParametresRecuDto.Section("annulation",        true),
+                new ParametresRecuDto.Section("signature",         true),
+                // --- Footer (2 rubriques granulaires) ---
+                new ParametresRecuDto.Section("footer_ligne1",     true),
+                new ParametresRecuDto.Section("footer_ligne2",     true)
         );
     }
 
@@ -504,6 +594,100 @@ public class RecuPdfService {
         if (texte == null || texte.isBlank()) return;
         Paragraph p = new Paragraph(texte, f);
         cell.addElement(p);
+    }
+
+    // ==================================================================
+    //  Helpers granulaires
+    // ==================================================================
+
+    /** Logo (image ou texte de fallback) — version standalone, sans grille 2-col. */
+    private void ecrireLogo(Document document, ParametresRecu p,
+                             Color cPrim, int tEntete) throws Exception {
+        if (p.getLogoImage() != null && p.getLogoImage().length > 0) {
+            try {
+                Image img = Image.getInstance(p.getLogoImage());
+                img.scaleToFit(60, 60);
+                img.setAlignment(Image.ALIGN_CENTER);
+                document.add(img);
+                return;
+            } catch (Exception ex) {
+                log.warn("Logo image illisible ({}), fallback sur le texte.",
+                        ex.getMessage());
+            }
+        }
+        // Fallback : pastille texte centree
+        Paragraph logo = new Paragraph(blankIfNull(p.getLogoTexte(), "RTS"),
+                font(tEntete + 4, Font.BOLD, cPrim));
+        logo.setAlignment(Element.ALIGN_CENTER);
+        document.add(logo);
+    }
+
+    /** Ligne centree (utilisee pour chaque info societe et pied de page). */
+    private void ecrireLigneCentree(Document document, String texte, Font f)
+            throws Exception {
+        if (texte == null || texte.isBlank()) return;
+        Paragraph p = new Paragraph(texte, f);
+        p.setAlignment(Element.ALIGN_CENTER);
+        document.add(p);
+    }
+
+    /** Ligne "Label : Valeur" sur 35%/65% — utilisee pour Date/Caisse/Agent/... */
+    private void ecrireLigneCleValeur(Document document, String label, String valeur,
+                                       Color cTexte, Color cTexteSec, int tCorps)
+            throws Exception {
+        PdfPTable table = new PdfPTable(new float[]{35, 65});
+        table.setWidthPercentage(100);
+        ajouterLigne(table, label, valeur, cTexte, cTexteSec, tCorps);
+        document.add(table);
+    }
+
+    /** Extracteur generique pour les rubriques client. Le getter peut renvoyer
+     *  null ou blanc, dans ce cas la rubrique est silencieusement omise
+     *  (conditionnelle).
+     */
+    private void ecrireClientChamp(Document document, OperationCaisse op,
+                                    String label,
+                                    java.util.function.Function<sn.rts.caisse.model.Client, String> getter,
+                                    Color cTexte, Color cTexteSec, int tCorps)
+            throws Exception {
+        if (op == null) {
+            // Apercu fictif
+            ecrireLigneCleValeur(document, label, "Client exemple",
+                    cTexte, cTexteSec, tCorps);
+            return;
+        }
+        if (op.getClient() == null) return;
+        String valeur = getter.apply(op.getClient());
+        if (valeur == null || valeur.isBlank()) return;
+        ecrireLigneCleValeur(document, label, valeur, cTexte, cTexteSec, tCorps);
+    }
+
+    /** Bloc Banque (header "BANQUE EMETTRICE" + 4 lignes), conditionnel. */
+    private void ecrireBanque(Document document, OperationCaisse op,
+                               Color cTexte, Color cTexteSec, int tCorps)
+            throws Exception {
+        if (op == null || op.getBanque() == null) return;
+        var b = op.getBanque();
+        Paragraph titre = new Paragraph("BANQUE ÉMETTRICE",
+                font(tCorps - 1, Font.BOLD, cTexteSec));
+        document.add(titre);
+        if (b.getCode() != null && !b.getCode().isBlank()) {
+            ecrireLigneCleValeur(document, "Code", b.getCode(),
+                    cTexte, cTexteSec, tCorps);
+        }
+        if (b.getLibelle() != null && !b.getLibelle().isBlank()) {
+            ecrireLigneCleValeur(document, "Libellé", b.getLibelle(),
+                    cTexte, cTexteSec, tCorps);
+        }
+        if (b.getCodeEtablissement() != null && !b.getCodeEtablissement().isBlank()) {
+            ecrireLigneCleValeur(document, "Code étab.", b.getCodeEtablissement(),
+                    cTexte, cTexteSec, tCorps);
+        }
+        if (b.getSiteInternet() != null && !b.getSiteInternet().isBlank()) {
+            ecrireLigneCleValeur(document, "Site", b.getSiteInternet(),
+                    cTexte, cTexteSec, tCorps);
+        }
+        saut(document, 4);
     }
 
     private String libelleType(OperationCaisse op) {

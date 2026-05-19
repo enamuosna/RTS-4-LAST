@@ -155,8 +155,11 @@ public final class PrintRecu {
             }
             root.getChildren().add(node);
 
-            // Le double séparateur (gros trait) apparaît après l'en-tête.
-            if ("header".equals(s.id)) {
+            // Le double separateur (gros trait) apparait apres la derniere
+            // rubrique d'en-tete (NINEA par defaut). Si l'admin reorganise,
+            // le trait suit logiquement la rubrique NINEA ou disparait si
+            // celle-ci est masquee.
+            if ("ninea".equals(s.id)) {
                 separateurDouble = true;
             }
         }
@@ -170,18 +173,71 @@ public final class PrintRecu {
      */
     private static Node rendreSection(String id, Ctx ctx) {
         return switch (id) {
-            case "header"     -> sectionHeader(ctx);
-            case "titre"      -> sectionTitre(ctx);
-            case "numero"     -> sectionNumero(ctx);
-            case "details"    -> sectionDetails(ctx);
-            case "client"     -> ctx.aDesInfosClient() ? sectionClient(ctx) : null;
-            case "montant"    -> sectionMontant(ctx);
-            case "motif"      -> ctx.aDuMotif()        ? sectionMotif(ctx)  : null;
-            case "annulation" -> ctx.op != null && ctx.op.annulee
-                                                       ? sectionAnnulation(ctx) : null;
-            case "signature"  -> sectionSignature(ctx);
-            case "footer"     -> sectionFooter(ctx);
-            default           -> {
+            // -------- En-tete societe (8 rubriques granulaires) --------
+            case "logo"              -> sectionLogo(ctx);
+            case "raison_sociale"    -> ligneCentree(ctx, ctx.params != null ? ctx.params.raisonSociale : null,
+                                                     11, FontWeight.BOLD, ctx.primaire);
+            case "ligne_legale"      -> ligneCentree(ctx, ctx.params != null ? ctx.params.ligneLegale   : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "capital"           -> ligneCentree(ctx, ctx.params != null ? ctx.params.capital       : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "adresse_societe"   -> ligneCentree(ctx, ctx.params != null ? ctx.params.adresse       : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "telephone_societe" -> ligneCentree(ctx, ctx.params != null ? ctx.params.telephone     : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "boite_postale"     -> ligneCentree(ctx, ctx.params != null ? ctx.params.boitePostale  : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "ninea"             -> ligneCentree(ctx, ctx.params != null ? ctx.params.ninea         : null,
+                                                     9,  FontWeight.BOLD, ctx.texte);
+            // -------- Titre + numero --------
+            case "titre_recu"        -> sectionTitre(ctx);
+            case "numero_recu"       -> sectionNumero(ctx);
+            // -------- Details operation (8 rubriques granulaires) --------
+            case "date_operation"    -> ligneCleValeur(ctx, "Date",
+                                            ctx.op != null && ctx.op.dateOperation != null
+                                                ? ctx.op.dateOperation.format(DATE_HEURE_FR)
+                                                : "—");
+            case "caisse"            -> ligneCleValeur(ctx, "Caisse",
+                                            ctx.op != null ? ctx.op.caisseLibelle : "—");
+            case "agent"             -> ligneCleValeur(ctx, "Agent",
+                                            ctx.op != null ? ctx.op.caissierNomComplet : "—");
+            case "type_operation"    -> ligneCleValeur(ctx, "Type",
+                                            ctx.op != null && ctx.op.typeOperation != null
+                                                ? ctx.op.typeOperation.getLibelle() : "—");
+            case "categorie"         -> ligneCleValeur(ctx, "Catégorie",
+                                            ctx.op != null ? ctx.op.categorieLibelle : "—");
+            case "mode_paiement"     -> ligneCleValeur(ctx, "Mode régl.",
+                                            ctx.op != null && ctx.op.modePaiement != null
+                                                ? ctx.op.modePaiement.getLibelle() : "—");
+            case "reference"         -> (ctx.op != null && ctx.op.reference != null && !ctx.op.reference.isBlank())
+                                            ? ligneCleValeur(ctx, "Référence", ctx.op.reference) : null;
+            case "diffusion"         -> ligneCleValeur(ctx, "Diffusion",
+                                            ctx.op != null && ctx.op.dateDiffusion != null
+                                                ? ctx.op.dateDiffusion.format(DATE_HEURE_FR)
+                                                : "—");
+            // -------- Banque (bloc unitaire) --------
+            case "banque"            -> aDesInfosBanque(ctx.op) ? blocBanque(ctx) : null;
+            // -------- Client (4 rubriques granulaires) --------
+            case "client_raison"     -> sectionClientChamp(ctx, "M.",        c -> c != null ? c.raisonSociale     : null);
+            case "client_telephone"  -> sectionClientChamp(ctx, "Téléphone", c -> c != null ? c.telephone         : null);
+            case "client_adresse"    -> sectionClientChamp(ctx, "Adresse",   c -> c != null ? c.adresse           : null);
+            case "client_ninea"      -> sectionClientChamp(ctx, "NINEA/RCCM",c -> c != null ? c.identifiantFiscal : null);
+            // -------- Montant (bloc visuel unitaire) --------
+            case "montant"           -> sectionMontant(ctx);
+            // -------- Motif, annulation, signature --------
+            case "motif"             -> ctx.aDuMotif() ? sectionMotif(ctx) : null;
+            case "annulation"        -> ctx.op != null && ctx.op.annulee ? sectionAnnulation(ctx) : null;
+            case "signature"         -> sectionSignature(ctx);
+            // -------- Footer (2 rubriques granulaires) --------
+            case "footer_ligne1"     -> ligneCentree(ctx,
+                                            blankIfNull(ctx.params != null ? ctx.params.footerLigne1 : null,
+                                                    "Merci de votre passage."),
+                                            8, FontWeight.NORMAL, ctx.texte);
+            case "footer_ligne2"     -> ligneCentree(ctx,
+                                            blankIfNull(ctx.params != null ? ctx.params.footerLigne2 : null,
+                                                    "RTS - Conservez ce recu."),
+                                            7, FontWeight.NORMAL, ctx.texte2);
+            default                  -> {
                 log.warn("Section inconnue ignorée : {}", id);
                 yield null;
             }
@@ -630,6 +686,88 @@ public final class PrintRecu {
 
     private static String orDefault(String value, String fallback) {
         return (value == null || value.isBlank()) ? fallback : value;
+    }
+
+    /** Remplace null/blanc par {@code fallback}, retourne value sinon. */
+    private static String blankIfNull(String value, String fallback) {
+        return (value == null || value.isBlank()) ? fallback : value;
+    }
+
+    // ==================================================================
+    //  Helpers granulaires (rubrique unitaires de l'en-tete et du footer)
+    // ==================================================================
+
+    /** Logo standalone centre — utilise par la rubrique "logo". */
+    private static Node sectionLogo(Ctx ctx) {
+        VBox box = new VBox();
+        box.setAlignment(Pos.CENTER);
+        ImageView logo = chargerLogo(ctx);
+        if (logo != null) {
+            box.getChildren().add(logo);
+        } else {
+            box.getChildren().add(logoTexteFallback(ctx));
+        }
+        return box;
+    }
+
+    /**
+     * Ligne de texte centree (utilisee pour chaque info societe granulaire
+     * et pour les deux lignes de pied de page). Retourne null si texte vide
+     * pour ne pas afficher de ligne creuse.
+     */
+    private static Node ligneCentree(Ctx ctx, String texte, double tailleFont,
+                                      FontWeight weight,
+                                      javafx.scene.paint.Color couleur) {
+        if (texte == null || texte.isBlank()) return null;
+        Label label = new Label(texte);
+        label.setFont(Font.font("Arial", weight, tailleFont));
+        label.setTextFill(couleur);
+        label.setWrapText(true);
+        HBox box = new HBox(label);
+        box.setAlignment(Pos.CENTER);
+        return box;
+    }
+
+    /**
+     * Une rubrique client granulaire : "M. : <raison sociale>",
+     * "Telephone : <tel>", etc. Retourne null si l'op n'a pas de client
+     * ou si le champ est vide (rubrique conditionnelle silencieuse).
+     */
+    private static Node sectionClientChamp(Ctx ctx, String label,
+            java.util.function.Function<sn.rts.caisse.guichet.model.Dto.ClientDTO, String> getter) {
+        if (ctx.op == null) {
+            // apercu : on affiche un exemple
+            return ligneCleValeur(ctx, label, "Client exemple");
+        }
+        // Le DTO de reponse expose les champs client a plat (pas d'objet
+        // Client embarque). On utilise un mini-DTO synthetique.
+        sn.rts.caisse.guichet.model.Dto.ClientDTO c =
+                synthClientFromOp(ctx.op);
+        if (c == null) return null;
+        String valeur = getter.apply(c);
+        if (valeur == null || valeur.isBlank()) return null;
+        return ligneCleValeur(ctx, label, valeur);
+    }
+
+    /**
+     * Construit un objet {@link sn.rts.caisse.guichet.model.Dto.ClientDTO}
+     * a partir des champs a plat de l'OperationCaisseResponse, ou retourne
+     * null si aucun client n'est associe a l'operation.
+     */
+    private static sn.rts.caisse.guichet.model.Dto.ClientDTO synthClientFromOp(
+            OperationCaisseResponse op) {
+        if (op.clientId == null && (op.clientRaisonSociale == null
+                || op.clientRaisonSociale.isBlank())) {
+            return null;
+        }
+        sn.rts.caisse.guichet.model.Dto.ClientDTO c =
+                new sn.rts.caisse.guichet.model.Dto.ClientDTO();
+        c.id = op.clientId;
+        c.raisonSociale     = op.clientRaisonSociale;
+        c.telephone         = op.clientTelephone;
+        c.adresse           = op.clientAdresse;
+        c.identifiantFiscal = op.clientIdentifiantFiscal;
+        return c;
     }
 
     // ==================================================================

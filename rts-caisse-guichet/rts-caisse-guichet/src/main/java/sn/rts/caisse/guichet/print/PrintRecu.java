@@ -204,19 +204,19 @@ public final class PrintRecu {
         return switch (id) {
             // -------- En-tete societe (8 rubriques granulaires) --------
             case "logo"              -> sectionLogo(ctx);
-            case "raison_sociale"    -> ligneCentree(ctx, ctx.params != null ? ctx.params.raisonSociale : null,
+            case "raison_sociale"    -> ligneAGauche(ctx, ctx.params != null ? ctx.params.raisonSociale : null,
                                                      11, FontWeight.BOLD, ctx.primaire);
-            case "ligne_legale"      -> ligneCentree(ctx, ctx.params != null ? ctx.params.ligneLegale   : null,
+            case "ligne_legale"      -> ligneAGauche(ctx, ctx.params != null ? ctx.params.ligneLegale   : null,
                                                      9,  FontWeight.NORMAL, ctx.texte2);
-            case "capital"           -> ligneCentree(ctx, ctx.params != null ? ctx.params.capital       : null,
+            case "capital"           -> ligneAGauche(ctx, ctx.params != null ? ctx.params.capital       : null,
                                                      9,  FontWeight.NORMAL, ctx.texte2);
-            case "adresse_societe"   -> ligneCentree(ctx, ctx.params != null ? ctx.params.adresse       : null,
+            case "adresse_societe"   -> ligneAGauche(ctx, ctx.params != null ? ctx.params.adresse       : null,
                                                      9,  FontWeight.NORMAL, ctx.texte2);
-            case "telephone_societe" -> ligneCentree(ctx, ctx.params != null ? ctx.params.telephone     : null,
+            case "telephone_societe" -> ligneAGauche(ctx, ctx.params != null ? ctx.params.telephone     : null,
                                                      9,  FontWeight.NORMAL, ctx.texte2);
-            case "boite_postale"     -> ligneCentree(ctx, ctx.params != null ? ctx.params.boitePostale  : null,
+            case "boite_postale"     -> ligneAGauche(ctx, ctx.params != null ? ctx.params.boitePostale  : null,
                                                      9,  FontWeight.NORMAL, ctx.texte2);
-            case "ninea"             -> ligneCentree(ctx, ctx.params != null ? ctx.params.ninea         : null,
+            case "ninea"             -> ligneAGauche(ctx, ctx.params != null ? ctx.params.ninea         : null,
                                                      9,  FontWeight.BOLD, ctx.texte);
             // -------- Titre + numero --------
             case "titre_recu"        -> sectionTitre(ctx);
@@ -757,6 +757,23 @@ public final class PrintRecu {
         label.setWrapText(true);
         HBox box = new HBox(label);
         box.setAlignment(Pos.CENTER);
+        return box;
+    }
+
+    /** Ligne alignee a GAUCHE, utilisee pour les infos d'en-tete societe
+     *  sous le logo (qui est lui-meme aligne a gauche). Le bandeau forme
+     *  ainsi un bloc compact aligne sur le bord gauche du recu, comme
+     *  sur un en-tete officiel classique. */
+    private static Node ligneAGauche(Ctx ctx, String texte, double tailleFont,
+                                      FontWeight weight,
+                                      javafx.scene.paint.Color couleur) {
+        if (texte == null || texte.isBlank()) return null;
+        Label label = new Label(texte);
+        label.setFont(Font.font("Arial", weight, tailleFont));
+        label.setTextFill(couleur);
+        label.setWrapText(true);
+        HBox box = new HBox(label);
+        box.setAlignment(Pos.CENTER_LEFT);
         return box;
     }
 

@@ -148,13 +148,13 @@ public class RecuPdfService {
                 switch (s.id()) {
                     // -------- En-tete / societe (8 rubriques granulaires) --------
                     case "logo"              -> ecrireLogo(document, params, cPrimaire, tEntete);
-                    case "raison_sociale"    -> ecrireLigneCentree(document, params.getRaisonSociale(), font(8.5f, Font.BOLD, cPrimaire));
-                    case "ligne_legale"      -> ecrireLigneCentree(document, params.getLigneLegale(),   font(7, Font.NORMAL, cTexteSec));
-                    case "capital"           -> ecrireLigneCentree(document, params.getCapital(),       font(7, Font.NORMAL, cTexteSec));
-                    case "adresse_societe"   -> ecrireLigneCentree(document, params.getAdresse(),       font(7, Font.NORMAL, cTexteSec));
-                    case "telephone_societe" -> ecrireLigneCentree(document, params.getTelephone(),     font(7, Font.NORMAL, cTexteSec));
-                    case "boite_postale"     -> ecrireLigneCentree(document, params.getBoitePostale(),  font(7, Font.NORMAL, cTexteSec));
-                    case "ninea"             -> ecrireLigneCentree(document, params.getNinea(),         font(7, Font.BOLD, cTexte));
+                    case "raison_sociale"    -> ecrireLigneAGauche(document, params.getRaisonSociale(), font(8.5f, Font.BOLD, cPrimaire));
+                    case "ligne_legale"      -> ecrireLigneAGauche(document, params.getLigneLegale(),   font(7, Font.NORMAL, cTexteSec));
+                    case "capital"           -> ecrireLigneAGauche(document, params.getCapital(),       font(7, Font.NORMAL, cTexteSec));
+                    case "adresse_societe"   -> ecrireLigneAGauche(document, params.getAdresse(),       font(7, Font.NORMAL, cTexteSec));
+                    case "telephone_societe" -> ecrireLigneAGauche(document, params.getTelephone(),     font(7, Font.NORMAL, cTexteSec));
+                    case "boite_postale"     -> ecrireLigneAGauche(document, params.getBoitePostale(),  font(7, Font.NORMAL, cTexteSec));
+                    case "ninea"             -> ecrireLigneAGauche(document, params.getNinea(),         font(7, Font.BOLD, cTexte));
 
                     // -------- Titre + numero --------
                     case "titre_recu"        -> ecrireTitreRecu(document, op, cPrimaire, tTitre);
@@ -624,12 +624,22 @@ public class RecuPdfService {
         document.add(logo);
     }
 
-    /** Ligne centree (utilisee pour chaque info societe et pied de page). */
+    /** Ligne centree (utilisee pour le pied de page). */
     private void ecrireLigneCentree(Document document, String texte, Font f)
             throws Exception {
         if (texte == null || texte.isBlank()) return;
         Paragraph p = new Paragraph(texte, f);
         p.setAlignment(Element.ALIGN_CENTER);
+        document.add(p);
+    }
+
+    /** Ligne alignee a GAUCHE (utilisee pour les infos societe d'en-tete,
+     *  sous le logo qui est lui-meme aligne a gauche). */
+    private void ecrireLigneAGauche(Document document, String texte, Font f)
+            throws Exception {
+        if (texte == null || texte.isBlank()) return;
+        Paragraph p = new Paragraph(texte, f);
+        p.setAlignment(Element.ALIGN_LEFT);
         document.add(p);
     }
 

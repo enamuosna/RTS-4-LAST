@@ -183,14 +183,20 @@ export class ModifierOperationDialogComponent {
 
   /**
    * Recalcule le timbre fiscal en local (meme regle que le backend) :
-   *   - montant >= 20 000 FCFA -> timbre = 1% du montant, arrondi au FCFA
-   *   - montant <  20 000 FCFA -> timbre = 0
-   * Le backend recalcule TOUJOURS de toute facon, mais on affiche le bon
-   * montant tout de suite a l'utilisateur.
+   *   - mode ESPECES + montant >= 20 000 FCFA -> timbre = 1%, arrondi
+   *   - tout autre mode (cheque, virement, mobile money, carte) -> timbre = 0
+   *   - mode ESPECES + montant < 20 000 -> timbre = 0
+   * Le backend recalcule TOUJOURS de toute facon (autoritatif). Ici le
+   * dialog de modification ne permet pas de changer le mode (verrouille
+   * sur celui de l'operation d'origine), donc on regarde simplement la
+   * valeur de l'operation existante.
    */
   recalculer(): void {
     const montantNum = Number(this.montant) || 0;
-    this.timbre = montantNum >= 20000 ? Math.round(montantNum * 0.01) : 0;
+    const especes = this.data.operation.modePaiement === 'ESPECES';
+    this.timbre = (especes && montantNum >= 20000)
+        ? Math.round(montantNum * 0.01)
+        : 0;
     this.montantSig.set(montantNum);
     this.timbreSig.set(this.timbre);
   }

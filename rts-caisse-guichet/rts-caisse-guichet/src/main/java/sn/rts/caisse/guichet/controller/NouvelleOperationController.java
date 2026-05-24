@@ -160,6 +160,9 @@ public class NouvelleOperationController {
         timbreField.getStyleClass().add("timbre-calcule");
 
         // Recalcul live du timbre + montant TTC quand le montant HT change.
+        // Le changement de mode de paiement declenche aussi recalculerTtc
+        // via appliquerModePaiement() ci-dessus (ESPECES -> timbre
+        // potentiellement applicable, autres modes -> timbre = 0 force).
         montantField.textProperty().addListener((o, a, b) -> recalculerTtc());
         recalculerTtc();
     }
@@ -170,13 +173,18 @@ public class NouvelleOperationController {
     private static final BigDecimal TIMBRE_TAUX  = new BigDecimal("0.01");
 
     /**
-     * Calcule le timbre selon la regle RTS : 1% du montant si montant
-     * &ge; 20 000 FCFA, sinon 0. Met a jour les champs Timbre + TTC.
-     * Doit reproduire EXACTEMENT le calcul backend (autoritatif).
+     * Calcule le timbre selon la regle RTS : 1% du montant si paiement
+     * ESPECES ET montant &ge; 20 000 FCFA, sinon 0. Met a jour les champs
+     * Timbre + TTC. Doit reproduire EXACTEMENT le calcul backend
+     * (autoritatif). Les autres modes (cheque, virement, mobile money,
+     * carte) sont exoneres du timbre fiscal.
      */
     private void recalculerTtc() {
         BigDecimal montant = parseOuZero(montantField.getText());
-        BigDecimal timbre = montant.compareTo(TIMBRE_SEUIL) >= 0
+        ModePaiement mode = modePaiementCombo != null
+                ? modePaiementCombo.getValue() : null;
+        boolean especes = mode == ModePaiement.ESPECES;
+        BigDecimal timbre = (especes && montant.compareTo(TIMBRE_SEUIL) >= 0)
                 ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
         timbreField.setText(timbre.signum() == 0 ? "" : Ui.formatMontant(timbre));
@@ -511,6 +519,9 @@ public class NouvelleOperationController {
                 default -> referenceField.setPromptText("Référence (optionnel)");
             }
         }
+        // Le timbre depend du mode : recalcul a chaque changement.
+        // ESPECES + montant >= 20 000 -> timbre 1% ; sinon -> 0.
+        recalculerTtc();
     }
 
     // ==================================================================
@@ -589,10 +600,13 @@ public class NouvelleOperationController {
             return null;
         }
 
-        // Timbre calcule automatiquement a partir du montant HT, identique
-        // a la regle backend (1% si montant >= 20 000, sinon 0). On l'envoie
-        // pour information mais le backend recalcule de toute facon.
-        BigDecimal timbre = montant.compareTo(TIMBRE_SEUIL) >= 0
+        // Timbre calcule automatiquement a partir du montant HT + mode,
+        // identique a la regle backend : 1% UNIQUEMENT pour ESPECES a partir
+        // de 20 000 FCFA, 0 pour tous les autres modes (cheque, virement,
+        // mobile money, carte). On l'envoie pour information mais le backend
+        // recalcule de toute facon (autoritatif).
+        boolean especes = mode == ModePaiement.ESPECES;
+        BigDecimal timbre = (especes && montant.compareTo(TIMBRE_SEUIL) >= 0)
                 ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
 

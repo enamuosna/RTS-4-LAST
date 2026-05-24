@@ -115,11 +115,13 @@ public class OperationCaisseService {
             }
 
             // ---------- 3. Calcul automatique du timbre + montant TTC ----------
-            // Regle metier RTS : si montant HT >= 20 000 FCFA, le timbre est
-            // de 1% du montant ; sinon, pas de timbre. On IGNORE la valeur
-            // envoyee par le client (request.timbre()) pour eviter toute
-            // manipulation : seul le calcul backend fait foi.
-            BigDecimal timbre = timbreCalculator.calculer(request.montant());
+            // Regle metier RTS : timbre 1% UNIQUEMENT pour les ESPECES
+            // a partir de 20 000 FCFA. Tous les autres modes (cheque,
+            // virement, mobile money, carte) sont exoneres. On IGNORE la
+            // valeur envoyee par le client (request.timbre()) : seul le
+            // calcul backend fait foi.
+            BigDecimal timbre = timbreCalculator.calculer(
+                    request.montant(), request.modePaiement());
             BigDecimal montantTtc = request.montant().add(timbre);
 
             // Solde suffisant pour les sorties (sur le TTC)
@@ -393,10 +395,13 @@ public class OperationCaisseService {
                     : null;
 
             // ---------- Recalcul automatique du timbre + TTC ----------
-            // On recalcule aussi sur la modification : si le nouveau montant
-            // passe au-dessus ou sous le seuil de 20 000 FCFA, le timbre suit
-            // automatiquement. On ignore request.timbre() (autoritatif backend).
-            BigDecimal nouveauTimbre = timbreCalculator.calculer(request.montant());
+            // On recalcule aussi sur la modification, en tenant compte du
+            // mode de paiement (potentiellement modifie) : timbre 1% si
+            // ESPECES + montant >= 20 000 FCFA, 0 sinon. Si le mode passe
+            // d'ESPECES a CHEQUE/VIREMENT/Wave/OM, le timbre disparait
+            // automatiquement.
+            BigDecimal nouveauTimbre = timbreCalculator.calculer(
+                    request.montant(), request.modePaiement());
             BigDecimal nouveauTtc = request.montant().add(nouveauTimbre);
 
             // ---------- Recalcul du solde caisse ----------

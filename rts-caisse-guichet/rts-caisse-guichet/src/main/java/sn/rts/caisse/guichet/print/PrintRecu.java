@@ -139,7 +139,12 @@ public final class PrintRecu {
         root.setPadding(new Insets(16, 18, 16, 18));
 
         List<SectionRecu> sections = ctx.sections();
-        boolean separateurDouble = false; // après le header
+        // Rendu compact "old style" : on ne met PAS de separateur entre
+        // chaque rubrique individuelle. Un separateur fin n'apparait qu'au
+        // passage d'un groupe logique a un autre (ex: fin du bloc header,
+        // entre bloc client et bloc operation, etc.). Le gros trait double
+        // apparait apres le groupe header.
+        String previousGroup = null;
         for (int i = 0; i < sections.size(); i++) {
             SectionRecu s = sections.get(i);
             if (!s.visible) continue;
@@ -147,24 +152,48 @@ public final class PrintRecu {
             Node node = rendreSection(s.id, ctx);
             if (node == null) continue; // section conditionnelle absente
 
-            // Séparateurs entre sections (visuels)
-            if (root.getChildren().size() > 0) {
+            String currentGroup = groupePour(s.id);
+            if (previousGroup != null && !previousGroup.equals(currentGroup)) {
+                // Changement de groupe : separateur. Si on quitte le groupe
+                // "header", on met le gros trait double (signature visuelle
+                // de fin d'en-tete societe). Sinon, un fin trait gris.
+                boolean sortDuHeader = "header".equals(previousGroup);
                 root.getChildren().add(
-                        separateurDouble ? separateurDouble(ctx) : separateur(ctx));
-                separateurDouble = false;
+                        sortDuHeader ? separateurDouble(ctx) : separateur(ctx));
             }
             root.getChildren().add(node);
-
-            // Le double separateur (gros trait) apparait apres la derniere
-            // rubrique d'en-tete (NINEA par defaut). Si l'admin reorganise,
-            // le trait suit logiquement la rubrique NINEA ou disparait si
-            // celle-ci est masquee.
-            if ("ninea".equals(s.id)) {
-                separateurDouble = true;
-            }
+            previousGroup = currentGroup;
         }
 
         return root;
+    }
+
+    /**
+     * Mappe un ID de rubrique granulaire vers son groupe visuel logique.
+     * Les rubriques du meme groupe sont rendues sans separateur entre elles
+     * (rendu compact "old style") ; un separateur apparait au changement
+     * de groupe. Si l'admin reorganise les rubriques, les separateurs
+     * suivent automatiquement les frontieres de groupes.
+     */
+    private static String groupePour(String id) {
+        return switch (id) {
+            case "logo", "raison_sociale", "ligne_legale", "capital",
+                 "adresse_societe", "telephone_societe", "boite_postale",
+                 "ninea"                                        -> "header";
+            case "titre_recu", "numero_recu",
+                 "date_operation", "caisse", "agent",
+                 "type_operation", "categorie", "mode_paiement",
+                 "reference", "diffusion"                       -> "details";
+            case "banque"                                       -> "banque";
+            case "client_raison", "client_telephone",
+                 "client_adresse", "client_ninea"               -> "client";
+            case "montant"                                      -> "montant";
+            case "motif"                                        -> "motif";
+            case "annulation"                                   -> "annulation";
+            case "signature"                                    -> "signature";
+            case "footer_ligne1", "footer_ligne2"               -> "footer";
+            default                                             -> id;
+        };
     }
 
     /**

@@ -12,7 +12,8 @@ import {
   OuvertureCaisseRequest,
   Page,
   ParametresRecu,
-  SupervisionSnapshot
+  SupervisionSnapshot,
+  Versement
 } from '../models/models';
 
 // ======================================================
@@ -298,5 +299,76 @@ export class BackupService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<RapportImportBackup>(`${this.base}/import`, formData);
+  }
+}
+
+// ======================================================
+//  VERSEMENTS BANCAIRES
+// ======================================================
+@Injectable({ providedIn: 'root' })
+export class VersementService {
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/versements`;
+
+  /** Tous les versements (admin/superviseur, pagine). */
+  listerTous(page = 0, size = 20): Observable<Page<Versement>> {
+    const params = new HttpParams().set('page', page).set('size', size)
+      .set('sort', 'dateVersement,desc');
+    return this.http.get<Page<Versement>>(this.base, { params });
+  }
+
+  /** Versements d'une caisse, filtrable par dates (YYYY-MM-DD). */
+  listerParCaisse(caisseId: number, opts?: {
+    dateDebut?: string; dateFin?: string; page?: number; size?: number;
+  }): Observable<Page<Versement>> {
+    let params = new HttpParams()
+      .set('page', opts?.page ?? 0)
+      .set('size', opts?.size ?? 20)
+      .set('sort', 'dateVersement,desc');
+    if (opts?.dateDebut) params = params.set('dateDebut', opts.dateDebut);
+    if (opts?.dateFin)   params = params.set('dateFin',   opts.dateFin);
+    return this.http.get<Page<Versement>>(`${this.base}/caisse/${caisseId}`, { params });
+  }
+
+  /** Détail d'un versement (sans le contenu binaire). */
+  obtenir(id: number): Observable<Versement> {
+    return this.http.get<Versement>(`${this.base}/${id}`);
+  }
+
+  /** Téléchargement du fichier bordereau (PDF ou image). */
+  telechargerFichier(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/${id}/fichier`, { responseType: 'blob' });
+  }
+
+  /**
+   * Crée un versement avec upload du bordereau bancaire (multipart).
+   * Le fichier doit être PDF, JPG ou PNG, max 5 Mo.
+   */
+  creer(req: {
+    caisseId: number;
+    banqueId: number;
+    journalId?: number;
+    montant: number;
+    numeroBordereau: string;
+    /** ISO 8601 datetime (optionnel ; backend met now() par défaut). */
+    dateVersement?: string;
+    notes?: string;
+    fichier: File;
+  }): Observable<Versement> {
+    const params = new HttpParams()
+      .set('caisseId',        req.caisseId)
+      .set('banqueId',        req.banqueId)
+      .set('montant',         req.montant)
+      .set('numeroBordereau', req.numeroBordereau)
+      .set('journalId',       req.journalId ?? '')
+      .set('dateVersement',   req.dateVersement ?? '')
+      .set('notes',           req.notes ?? '');
+    const formData = new FormData();
+    formData.append('fichier', req.fichier);
+    return this.http.post<Versement>(this.base, formData, { params });
+  }
+
+  supprimer(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
   }
 }

@@ -90,6 +90,12 @@
                     </graphic>
                 </Button>
 
+                <Button fx:id="versementButton" onAction="#onNouveauVersement" styleClass="button, button-secondary" text="Versement bancaire">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-university" iconSize="14" iconColor="#B30510" />
+                    </graphic>
+                </Button>
+
                 <Button fx:id="cloturerButton" onAction="#onCloturerCaisse" styleClass="button, button-danger" text="Clôturer la caisse">
                     <graphic>
                         <FontIcon iconLiteral="fas-lock" iconSize="14" iconColor="white" />

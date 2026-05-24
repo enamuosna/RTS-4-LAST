@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<!--
+    Modal "Versement bancaire" - upload d'un bordereau (PDF/JPG/PNG) +
+    informations du versement (banque, montant, n° bordereau, date, notes).
+-->
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="sn.rts.caisse.guichet.controller.VersementController"
+      styleClass="modal-root"
+      prefWidth="640" minWidth="560" maxWidth="720"
+      prefHeight="600" minHeight="500" maxHeight="780">
+
+    <!-- ====================== HEADER ====================== -->
+    <HBox styleClass="modal-header" alignment="CENTER_LEFT" spacing="14">
+        <padding><Insets top="20" right="22" bottom="20" left="26"/></padding>
+
+        <FontIcon iconLiteral="fas-university" iconSize="22" iconColor="white" />
+
+        <VBox spacing="2" HBox.hgrow="ALWAYS">
+            <Label styleClass="modal-title" text="Versement bancaire"/>
+            <Label fx:id="caisseLabel" styleClass="modal-subtitle"
+                   text="Caisse selectionnee"/>
+        </VBox>
+
+        <Button fx:id="fermerButton" styleClass="button-close"
+                onAction="#onAnnuler" prefWidth="36" prefHeight="36">
+            <graphic>
+                <FontIcon iconLiteral="fas-times" iconSize="16" iconColor="white"/>
+            </graphic>
+        </Button>
+    </HBox>
+
+    <!-- ====================== CORPS ====================== -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                styleClass="modal-scroll-pane" VBox.vgrow="ALWAYS">
+
+        <VBox spacing="16" styleClass="modal-body">
+            <padding><Insets top="22" right="26" bottom="22" left="26"/></padding>
+
+            <!-- Banque + Montant -->
+            <GridPane hgap="14" vgap="6">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="60"/>
+                    <ColumnConstraints percentWidth="40"/>
+                </columnConstraints>
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="BANQUE DESTINATAIRE *"/>
+                    <ComboBox fx:id="banqueCombo" maxWidth="Infinity"
+                              promptText="Selectionner la banque"/>
+                </VBox>
+                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="MONTANT VERSE (FCFA) *"/>
+                    <TextField fx:id="montantField" promptText="ex: 500 000"/>
+                </VBox>
+            </GridPane>
+
+            <!-- N° bordereau + Date -->
+            <GridPane hgap="14" vgap="6">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="55"/>
+                    <ColumnConstraints percentWidth="45"/>
+                </columnConstraints>
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="N° BORDEREAU BANCAIRE *"/>
+                    <TextField fx:id="bordereauField" promptText="ex: BORD-2026-00457"/>
+                </VBox>
+                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="DATE DU VERSEMENT"/>
+                    <DatePicker fx:id="datePicker" maxWidth="Infinity"
+                                promptText="JJ/MM/AAAA"/>
+                </VBox>
+            </GridPane>
+
+            <!-- Notes (optionnel) -->
+            <VBox spacing="6">
+                <Label styleClass="field-label" text="NOTES (OPTIONNEL)"/>
+                <TextArea fx:id="notesArea" prefRowCount="2"
+                          promptText="Commentaire libre"/>
+            </VBox>
+
+            <!-- Upload bordereau -->
+            <VBox spacing="8" styleClass="upload-zone">
+                <Label styleClass="field-label" text="BORDEREAU BANCAIRE (PDF, JPG, PNG - 5 Mo max) *"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button fx:id="choisirFichierButton" text="Choisir le fichier"
+                            onAction="#onChoisirFichier" styleClass="button, button-secondary">
+                        <graphic>
+                            <FontIcon iconLiteral="fas-upload" iconSize="14"
+                                      iconColor="#B30510"/>
+                        </graphic>
+                    </Button>
+                    <Label fx:id="fichierLabel" text="Aucun fichier selectionne"
+                           styleClass="login-subtitle"/>
+                </HBox>
+            </VBox>
+
+        </VBox>
+    </ScrollPane>
+
+    <!-- ====================== FOOTER ====================== -->
+    <HBox styleClass="modal-footer" alignment="CENTER_LEFT" spacing="12">
+        <padding><Insets top="16" right="26" bottom="20" left="26"/></padding>
+
+        <Region HBox.hgrow="ALWAYS"/>
+
+        <Button text="Annuler" styleClass="button, button-secondary"
+                onAction="#onAnnuler"/>
+
+        <Button fx:id="enregistrerButton"
+                text="Enregistrer le versement"
+                styleClass="button, button-primary"
+                onAction="#onEnregistrer"
+                defaultButton="true">
+            <graphic>
+                <FontIcon iconLiteral="fas-save" iconSize="14" iconColor="white"/>
+            </graphic>
+        </Button>
+    </HBox>
+</VBox>

@@ -756,6 +756,57 @@ public class CaissierController {
         }
     }
 
+    /**
+     * Ouvre le modal de saisie d'un versement bancaire. Le versement est
+     * rattache au journal de la session en cours s'il existe (le caissier
+     * a deja ouvert la caisse). Sinon (versement avant ouverture, apres
+     * cloture, etc.) le versement reste rattache a la caisse seule.
+     */
+    @FXML
+    public void onNouveauVersement() {
+        CaisseDTO caisse = Session.getInstance().getCaisseActive();
+        if (caisse == null) {
+            Ui.erreur("Aucune caisse", "Selectionnez d'abord une caisse.");
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    GuichetApplication.class.getResource("/fxml/versement.fxml"));
+            Parent root = loader.load();
+            VersementController controller = loader.getController();
+
+            Stage modal = new Stage();
+            modal.initOwner(getCurrentWindow());
+            modal.initModality(Modality.APPLICATION_MODAL);
+            modal.initStyle(StageStyle.UTILITY);
+            modal.setTitle("Versement bancaire");
+            modal.setResizable(false);
+
+            Scene scene = new Scene(root);
+            ThemeManager.getInstance().register(scene);
+            modal.setOnHidden(e -> ThemeManager.getInstance().unregister(scene));
+            modal.setScene(scene);
+
+            // Journal optionnel : non rattache automatiquement cote guichet
+            // pour l'instant (versement peut etre avant/pendant/apres
+            // cloture). L'admin pourra rattacher manuellement via le web
+            // si necessaire. Le backend met dateVersement=now() si null.
+            Long journalId = null;
+            controller.initialiser(caisse, journalId, v -> {
+                // Pas de rafraichissement de la table operations : le
+                // versement n'impacte pas les operations affichees.
+                log.info("Versement enregistre via le guichet : bord={} montant={}",
+                        v.numeroBordereau, v.montant);
+            });
+
+            modal.showAndWait();
+        } catch (Exception e) {
+            log.error("Echec ouverture du modal Versement : {}", e.getMessage(), e);
+            Ui.erreur("Erreur",
+                    "Impossible d'ouvrir le formulaire de versement : " + e.getMessage());
+        }
+    }
+
     /** Récupère la fenêtre courante (parent du modal) à partir d'un nœud connu. */
     private Window getCurrentWindow() {
         if (operationsTable != null && operationsTable.getScene() != null) {

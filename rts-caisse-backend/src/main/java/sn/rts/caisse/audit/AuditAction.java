@@ -63,6 +63,19 @@ public enum AuditAction {
     ANNULER_OPERATION,
 
     // ==================================================================
+    //  Versements bancaires
+    // ==================================================================
+
+    /** Enregistrement d'un versement bancaire depuis une caisse. */
+    CREER_VERSEMENT,
+
+    /** Suppression d'un versement (ADMIN ou auteur tant que journal ouvert). */
+    SUPPRIMER_VERSEMENT,
+
+    /** Telechargement du bordereau bancaire d'un versement. */
+    TELECHARGER_BORDEREAU,
+
+    // ==================================================================
     //  Reçu / Documents
     // ==================================================================
 

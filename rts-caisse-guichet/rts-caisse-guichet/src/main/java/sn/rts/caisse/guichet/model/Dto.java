@@ -366,4 +366,29 @@ public final class Dto {
 
         public OperationCaisseResponse() {}
     }
+
+    // ================================================================
+    //  VersementResponse - retour API apres POST /api/versements
+    // ================================================================
+    public static class VersementResponse {
+        public Long          id;
+        public Long          caisseId;
+        public String        caisseLibelle;
+        public Long          journalId;
+        public Long          banqueId;
+        public String        banqueCode;
+        public String        banqueLibelle;
+        public BigDecimal    montant;
+        public String        numeroBordereau;
+        public LocalDateTime dateVersement;
+        public String        nomFichier;
+        public String        typeMime;
+        public Long          tailleFichier;
+        public Long          createdById;
+        public String        createdByNom;
+        public LocalDateTime createdAt;
+        public String        notes;
+
+        public VersementResponse() {}
+    }
 }

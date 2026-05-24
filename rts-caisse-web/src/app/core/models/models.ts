@@ -155,6 +155,29 @@ export interface OperationCaisse {
   motifAnnulation?: string;
 }
 
+// ---------- Versements bancaires ----------
+export interface Versement {
+  id: number;
+  caisseId: number;
+  caisseLibelle: string;
+  journalId?: number;
+  banqueId: number;
+  banqueCode: string;
+  banqueLibelle: string;
+  montant: number;
+  numeroBordereau: string;
+  /** ISO 8601 datetime. */
+  dateVersement: string;
+  nomFichier: string;
+  typeMime: string;
+  tailleFichier: number;
+  createdById: number;
+  createdByNom: string;
+  /** ISO 8601 datetime. */
+  createdAt: string;
+  notes?: string;
+}
+
 // ---------- Journal ----------
 export interface OuvertureCaisseRequest {
   fondOuverture: number;

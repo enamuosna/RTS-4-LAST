@@ -61,6 +61,7 @@ public class NouvelleOperationController {
     @FXML private ComboBox<CategorieDTO> categorieCombo;
     @FXML private ComboBox<ModePaiement> modePaiementCombo;
     @FXML private TextField montantField;
+    @FXML private VBox      timbreBox;       // masque si mode != ESPECES
     @FXML private TextField timbreField;
     @FXML private TextField montantTtcField;
     @FXML private TextField referenceField;
@@ -519,8 +520,15 @@ public class NouvelleOperationController {
                 default -> referenceField.setPromptText("Référence (optionnel)");
             }
         }
-        // Le timbre depend du mode : recalcul a chaque changement.
-        // ESPECES + montant >= 20 000 -> timbre 1% ; sinon -> 0.
+        // Le timbre ne concerne QUE les ESPECES : on cache le bloc entier
+        // pour les autres modes pour ne pas afficher un champ "Timbre 0"
+        // qui pretend etre saisissable. Le calcul reste fait par
+        // recalculerTtc() (montant TTC = montant HT quand timbre cache).
+        boolean afficheTimbre = (mode == ModePaiement.ESPECES);
+        if (timbreBox != null) {
+            timbreBox.setVisible(afficheTimbre);
+            timbreBox.setManaged(afficheTimbre);
+        }
         recalculerTtc();
     }
 

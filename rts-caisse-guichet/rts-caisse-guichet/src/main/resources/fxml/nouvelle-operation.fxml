@@ -121,14 +121,19 @@
                 </VBox>
             </GridPane>
 
-            <!-- ========== Timbre + Montant TTC (calculé) ========== -->
+            <!-- ========== Timbre + Montant TTC (calculé) ==========
+                 Le bloc Timbre n'est visible QUE si le mode de paiement
+                 est ESPECES (regle metier RTS : timbre fiscal physique
+                 colle sur le recu cash uniquement). Le bloc Montant TTC
+                 prend toute la largeur quand Timbre est masque. -->
             <GridPane hgap="14" vgap="6">
                 <columnConstraints>
                     <ColumnConstraints percentWidth="50"/>
                     <ColumnConstraints percentWidth="50"/>
                 </columnConstraints>
-                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Label styleClass="field-label" text="TIMBRE FISCAL (FCFA)"/>
+                <VBox fx:id="timbreBox" spacing="6"
+                      GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="TIMBRE (FCFA)"/>
                     <TextField fx:id="timbreField" promptText="0"/>
                 </VBox>
 

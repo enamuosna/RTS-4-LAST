@@ -224,13 +224,13 @@ public class JournalExcelService {
                 j.getFondOuverture(), s.montantRecap);
         row = ecrireLigneMontant(sheet, row, "Total entrées HT",
                 j.getTotalEntrees(), s.montantVert);
-        row = ecrireLigneMontant(sheet, row, "  • Timbre fiscal entrées",
+        row = ecrireLigneMontant(sheet, row, "  • Timbre entrées",
                 timbreEntrees, s.montantRecap);
         row = ecrireLigneMontant(sheet, row, "Total entrées TTC",
                 ttcEntrees, s.montantVertImportant);
         row = ecrireLigneMontant(sheet, row, "Total sorties HT",
                 j.getTotalSorties(), s.montantRouge);
-        row = ecrireLigneMontant(sheet, row, "  • Timbre fiscal sorties",
+        row = ecrireLigneMontant(sheet, row, "  • Timbre sorties",
                 timbreSorties, s.montantRecap);
         row = ecrireLigneMontant(sheet, row, "Total sorties TTC",
                 ttcSorties, s.montantRougeImportant);

@@ -62,15 +62,18 @@ import { OperationService } from '../../core/services/caisse.services';
           <input matInput type="number" min="1" [(ngModel)]="montant" (ngModelChange)="recalculer()" />
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Timbre fiscal (FCFA, calculé)</mat-label>
-          <input matInput type="text" readonly
-                 [value]="timbre"
-                 style="font-weight: 600;" />
-          <mat-hint>1% si montant &ge; 20 000 FCFA, sinon 0</mat-hint>
-        </mat-form-field>
+        @if (estEspeces()) {
+          <mat-form-field appearance="outline">
+            <mat-label>Timbre (FCFA, calculé)</mat-label>
+            <input matInput type="text" readonly
+                   [value]="timbre"
+                   style="font-weight: 600;" />
+            <mat-hint>1% si montant &ge; 20 000 FCFA, sinon 0</mat-hint>
+          </mat-form-field>
+        }
 
-        <mat-form-field appearance="outline" class="full">
+        <mat-form-field appearance="outline" [class.full]="!estEspeces()"
+                        [class]="estEspeces() ? '' : 'full'">
           <mat-label>Montant TTC (calculé)</mat-label>
           <input matInput type="text" readonly
                  [value]="ttcAffiche()"
@@ -205,6 +208,15 @@ export class ModifierOperationDialogComponent {
     // Le montant doit etre positif ET la date de diffusion est desormais
     // obligatoire (regle metier RTS : toute operation = un creneau d'antenne).
     return this.montant > 0 && !!this.dateDiffusion;
+  }
+
+  /**
+   * Le timbre fiscal ne concerne que les paiements en ESPECES. Pour tous
+   * les autres modes (cheque, virement, mobile money, carte), le champ
+   * Timbre est masque (et la valeur reste a 0).
+   */
+  estEspeces(): boolean {
+    return this.data.operation.modePaiement === 'ESPECES';
   }
 
   enregistrer(): void {

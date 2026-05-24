@@ -726,10 +726,13 @@ public final class PrintRecu {
     //  Helpers granulaires (rubrique unitaires de l'en-tete et du footer)
     // ==================================================================
 
-    /** Logo standalone centre — utilise par la rubrique "logo". */
+    /** Logo standalone aligne en haut a GAUCHE - utilise par la rubrique "logo".
+     *  L'admin ayant demande un logo en haut a gauche (et non centre comme
+     *  par defaut sur les autres rubriques d'en-tete), on force ici
+     *  l'alignement CENTER_LEFT plutot que de subir l'alignement parent. */
     private static Node sectionLogo(Ctx ctx) {
-        VBox box = new VBox();
-        box.setAlignment(Pos.CENTER);
+        HBox box = new HBox();
+        box.setAlignment(Pos.CENTER_LEFT);
         ImageView logo = chargerLogo(ctx);
         if (logo != null) {
             box.getChildren().add(logo);

@@ -600,14 +600,16 @@ public class RecuPdfService {
     //  Helpers granulaires
     // ==================================================================
 
-    /** Logo (image ou texte de fallback) — version standalone, sans grille 2-col. */
+    /** Logo (image ou texte de fallback) - aligne en haut a GAUCHE.
+     *  Demande explicite admin : le logo doit etre en haut a gauche du
+     *  recu et non centre comme les autres rubriques d'en-tete. */
     private void ecrireLogo(Document document, ParametresRecu p,
                              Color cPrim, int tEntete) throws Exception {
         if (p.getLogoImage() != null && p.getLogoImage().length > 0) {
             try {
                 Image img = Image.getInstance(p.getLogoImage());
                 img.scaleToFit(60, 60);
-                img.setAlignment(Image.ALIGN_CENTER);
+                img.setAlignment(Image.ALIGN_LEFT);
                 document.add(img);
                 return;
             } catch (Exception ex) {
@@ -615,10 +617,10 @@ public class RecuPdfService {
                         ex.getMessage());
             }
         }
-        // Fallback : pastille texte centree
+        // Fallback : pastille texte alignee a gauche
         Paragraph logo = new Paragraph(blankIfNull(p.getLogoTexte(), "RTS"),
                 font(tEntete + 4, Font.BOLD, cPrim));
-        logo.setAlignment(Element.ALIGN_CENTER);
+        logo.setAlignment(Element.ALIGN_LEFT);
         document.add(logo);
     }
 

@@ -95,13 +95,14 @@ public class VersementController {
         return service.obtenir(id);
     }
 
-    // NOTE : le chemin "/bordereau" plutot que "/fichier" est volontaire :
-    // les extensions de blocage de tracking (Edge Tracking Prevention,
-    // uBlock, etc.) bloquent souvent les URLs contenant "/fichier",
-    // "/file" ou "/download" sur des domaines DuckDNS, ce qui provoque
-    // ERR_BLOCKED_BY_CLIENT cote navigateur. "/bordereau" est metier-
-    // specifique et passe a travers les filtres standards.
-    @GetMapping({"/{id}/bordereau", "/{id}/fichier"})
+    // NOTE : on calque exactement le pattern qui fonctionne pour les recus
+    // (/api/operations/{id}/pdf) : URL avec /pdf en suffixe.
+    // Les filtres de Tracking Prevention (Edge) et bloqueurs (uBlock...)
+    // sur DuckDNS bloquent "/fichier", "/bordereau", "/file", "/download"
+    // mais laissent passer "/pdf" qui leur signale un document statique.
+    // Le real Content-Type reste celui du fichier (peut etre image/jpeg
+    // pour une photo de bordereau scannee au telephone).
+    @GetMapping({"/{id}/pdf", "/{id}/bordereau", "/{id}/fichier"})
     @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(summary = "Telecharge le bordereau bancaire (PDF ou image)")
     public ResponseEntity<byte[]> telechargerBordereau(@PathVariable Long id,

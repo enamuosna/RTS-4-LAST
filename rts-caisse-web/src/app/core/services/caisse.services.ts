@@ -337,12 +337,13 @@ export class VersementService {
 
   /**
    * Téléchargement du bordereau bancaire (PDF ou image).
-   * NB : on utilise le chemin /bordereau (et non /fichier) pour
-   * contourner les bloqueurs/Tracking Prevention qui bloquent les
-   * URLs trop generiques sur DuckDNS (ERR_BLOCKED_BY_CLIENT).
+   * NB : on utilise le chemin /pdf (et non /fichier ou /bordereau) pour
+   * contourner les bloqueurs/Tracking Prevention qui bloquent les URLs
+   * generiques sur DuckDNS (ERR_BLOCKED_BY_CLIENT). C'est le meme
+   * pattern qui marche deja pour les recus operations.
    */
   telechargerFichier(id: number): Observable<Blob> {
-    return this.http.get(`${this.base}/${id}/bordereau`, { responseType: 'blob' });
+    return this.http.get(`${this.base}/${id}/pdf`, { responseType: 'blob' });
   }
 
   /**

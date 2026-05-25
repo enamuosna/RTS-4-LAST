@@ -90,6 +90,21 @@ export class BanqueService {
     return this.http.get<Banque[]>(this.url, { params });
   }
 
+  /** Variante paginee pour la page admin. */
+  listerPaginee(opts?: {
+    q?: string; uniquementActives?: boolean;
+    page?: number; size?: number;
+  }): Observable<import('../models/models').Page<Banque>> {
+    let params = new HttpParams()
+      .set('page', opts?.page ?? 0)
+      .set('size', opts?.size ?? 20)
+      .set('sort', 'code,asc')
+      .set('actives', String(opts?.uniquementActives ?? false));
+    if (opts?.q) params = params.set('q', opts.q);
+    return this.http.get<import('../models/models').Page<Banque>>(
+      `${this.url}/page`, { params });
+  }
+
   obtenir(id: number): Observable<Banque> {
     return this.http.get<Banque>(`${this.url}/${id}`);
   }

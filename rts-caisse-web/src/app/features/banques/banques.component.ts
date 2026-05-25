@@ -6,10 +6,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { Banque } from '../../core/models/models';
 import { BanqueService } from '../../core/services/admin.services';
 import { BanqueDialogComponent } from './dialogs/banque-dialog.component';
@@ -26,7 +28,8 @@ import { BanqueDialogComponent } from './dialogs/banque-dialog.component';
         MatMenuModule,
         MatFormFieldModule,
         MatInputModule,
-        MatTooltipModule
+        MatTooltipModule,
+        MatPaginatorModule
     ],
     changeDetection: ChangeDetectionStrategy.OnPush,
     templateUrl: './banques.component.html',
@@ -38,20 +41,50 @@ export class BanquesComponent implements OnInit {
     private readonly snackBar = inject(MatSnackBar);
 
     readonly banques = signal<Banque[]>([]);
-    readonly filtre = signal('');
+    readonly totalElements = signal(0);
     readonly chargement = signal(false);
+    readonly recherche$ = new Subject<string>();
+
+    terme = '';
+    pageIndex = 0;
+    pageSize  = 20;
 
     readonly colonnes = ['code', 'libelle', 'pays', 'codeEtablissement', 'siteInternet', 'actif', 'actions'];
 
     ngOnInit(): void {
         this.charger();
+        // Recherche : reset a la page 0 + debounce 300ms
+        this.recherche$
+          .pipe(
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap((q) => {
+              this.pageIndex = 0;
+              return this.service.listerPaginee({
+                q: q || undefined,
+                uniquementActives: false,
+                page: 0,
+                size: this.pageSize
+              });
+            })
+          )
+          .subscribe((page) => {
+            this.banques.set(page.content);
+            this.totalElements.set(page.totalElements);
+          });
     }
 
     charger(): void {
         this.chargement.set(true);
-        this.service.lister(false).subscribe({
-            next: (data) => {
-                this.banques.set(data);
+        this.service.listerPaginee({
+            q: this.terme || undefined,
+            uniquementActives: false,
+            page: this.pageIndex,
+            size: this.pageSize
+        }).subscribe({
+            next: (page) => {
+                this.banques.set(page.content);
+                this.totalElements.set(page.totalElements);
                 this.chargement.set(false);
             },
             error: () => {
@@ -63,15 +96,20 @@ export class BanquesComponent implements OnInit {
         });
     }
 
+    changerPage(event: PageEvent): void {
+        this.pageIndex = event.pageIndex;
+        this.pageSize  = event.pageSize;
+        this.charger();
+    }
+
+    /**
+     * Filtre desormais delegue au backend (via le terme recherche).
+     * La methode reste exposee pour le template qui itere sur banquesFiltrees().
+     * Avec la pagination, on rend simplement la page courante (deja filtree
+     * par le backend).
+     */
     banquesFiltrees(): Banque[] {
-        const q = this.filtre().toLowerCase().trim();
-        if (!q) return this.banques();
-        return this.banques().filter(b =>
-            b.code.toLowerCase().includes(q) ||
-            b.libelle.toLowerCase().includes(q) ||
-            (b.codeEtablissement ?? '').toLowerCase().includes(q) ||
-            (b.pays ?? '').toLowerCase().includes(q)
-        );
+        return this.banques();
     }
 
     ouvrirDialog(banque?: Banque): void {

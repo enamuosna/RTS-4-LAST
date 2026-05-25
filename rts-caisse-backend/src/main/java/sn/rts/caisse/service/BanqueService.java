@@ -70,6 +70,28 @@ public class BanqueService {
         return items.stream().map(BanqueDTO::from).toList();
     }
 
+    /**
+     * Variante paginee : applique un filtre texte sur code/libelle si fourni,
+     * et un filtre "actives uniquement" optionnel.
+     */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<BanqueDTO> listerPaginee(
+            String terme, boolean uniquementActives,
+            org.springframework.data.domain.Pageable pageable) {
+        boolean hasTerme = terme != null && !terme.isBlank();
+        org.springframework.data.domain.Page<Banque> page;
+        if (hasTerme && uniquementActives) {
+            page = repository.rechercherActives(terme.trim(), pageable);
+        } else if (hasTerme) {
+            page = repository.rechercher(terme.trim(), pageable);
+        } else if (uniquementActives) {
+            page = repository.findAllByActifTrue(pageable);
+        } else {
+            page = repository.findAll(pageable);
+        }
+        return page.map(BanqueDTO::from);
+    }
+
     @Transactional(readOnly = true)
     public BanqueDTO obtenir(Long id) {
         return BanqueDTO.from(trouver(id));

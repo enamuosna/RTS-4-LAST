@@ -24,6 +24,19 @@ public class BanqueController {
         return ResponseEntity.ok(service.lister(uniquementActives));
     }
 
+    /**
+     * Variante paginee pour la page admin web. Le selecteur de banque
+     * sur le formulaire d'operation continue d'utiliser l'endpoint non
+     * pagine ci-dessus.
+     */
+    @GetMapping("/page")
+    public ResponseEntity<org.springframework.data.domain.Page<BanqueDTO>> listerPaginee(
+            @RequestParam(required = false) String q,
+            @RequestParam(name = "actives", defaultValue = "false") boolean uniquementActives,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(service.listerPaginee(q, uniquementActives, pageable));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<BanqueDTO> obtenir(@PathVariable Long id) {
         return ResponseEntity.ok(service.obtenir(id));

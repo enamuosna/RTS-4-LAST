@@ -14,6 +14,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -42,7 +43,8 @@ import { JournalService } from '../../core/services/caisse.services';
     MatNativeDateModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
-    MatSelectModule
+    MatSelectModule,
+    MatPaginatorModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './journaux.component.html',
@@ -55,7 +57,11 @@ export class JournauxComponent implements OnInit {
   private readonly snackBar     = inject(MatSnackBar);
 
   readonly journaux = signal<JournalCaisse[]>([]);
+  readonly totalElements = signal(0);
   readonly exportEnCours = signal<number | null>(null);
+
+  pageIndex = 0;
+  pageSize  = 20;
 
   /** Liste des caisses pour le selecteur. Filtree pour AGENT_RECETTE. */
   readonly caisses = signal<Caisse[]>([]);
@@ -113,18 +119,31 @@ export class JournauxComponent implements OnInit {
   charger(): void {
     let debut = this.dateDebut, fin = this.dateFin;
     if (debut && fin && fin < debut) [debut, fin] = [fin, debut];
-    this.service.lister(this.toIso(debut), this.toIso(fin),
-                        this.caisseSelectionneeId ?? undefined)
-      .subscribe((list) => {
-        // Defense en profondeur : restreint aussi cote front pour AGENT_RECETTE.
-        if (this.mesCaisseIds.size > 0) {
-          list = list.filter(j => this.mesCaisseIds.has(j.caisseId));
-        }
-        this.journaux.set(list);
-      });
+    this.service.listerPaginee({
+      dateDebut: this.toIso(debut),
+      dateFin:   this.toIso(fin),
+      caisseId:  this.caisseSelectionneeId ?? undefined,
+      page:      this.pageIndex,
+      size:      this.pageSize
+    }).subscribe((page) => {
+      let list = page.content;
+      // Defense en profondeur : restreint aussi cote front pour AGENT_RECETTE.
+      if (this.mesCaisseIds.size > 0) {
+        list = list.filter(j => this.mesCaisseIds.has(j.caisseId));
+      }
+      this.journaux.set(list);
+      this.totalElements.set(page.totalElements);
+    });
   }
 
   appliquerFiltre(): void {
+    this.pageIndex = 0;
+    this.charger();
+  }
+
+  changerPage(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize  = event.pageSize;
     this.charger();
   }
 

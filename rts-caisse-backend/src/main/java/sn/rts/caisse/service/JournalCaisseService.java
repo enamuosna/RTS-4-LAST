@@ -325,6 +325,28 @@ public class JournalCaisseService {
         return list.stream().map(JournalCaisseResponse::from).toList();
     }
 
+    /**
+     * Variante paginee de {@link #journaux(LocalDate, LocalDate, Long)}.
+     * Si aucune date n'est specifiee on prend une plage glissante de 1 an,
+     * pour ne pas exiger des dates obligatoires cote front.
+     */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<JournalCaisseResponse> journauxPagine(
+            LocalDate dateDebut, LocalDate dateFin, Long caisseId,
+            org.springframework.data.domain.Pageable pageable) {
+        LocalDate aujourdhui = LocalDate.now();
+        LocalDate d1 = dateDebut != null ? dateDebut
+                : (dateFin != null ? dateFin : aujourdhui.minusYears(1));
+        LocalDate d2 = dateFin   != null ? dateFin
+                : (dateDebut != null ? dateDebut : aujourdhui);
+        if (d2.isBefore(d1)) { LocalDate tmp = d1; d1 = d2; d2 = tmp; }
+        org.springframework.data.domain.Page<JournalCaisse> page = caisseId != null
+                ? journalRepository.findByCaisseIdAndDateJournalBetween(
+                        caisseId, d1, d2, pageable)
+                : journalRepository.findByDateJournalBetween(d1, d2, pageable);
+        return page.map(JournalCaisseResponse::from);
+    }
+
     @Transactional(readOnly = true)
     public List<JournalCaisseResponse> journauxDuJour(LocalDate date) {
         LocalDate target = date != null ? date : LocalDate.now();

@@ -156,6 +156,24 @@ export class JournalService {
   }
 
   /**
+   * Variante paginee : meme criteres mais avec pagination admin web.
+   * Si dateDebut/Fin sont absents, le backend prend une fenetre d'1 an.
+   */
+  listerPaginee(opts?: {
+    dateDebut?: string; dateFin?: string; caisseId?: number;
+    page?: number; size?: number;
+  }): Observable<Page<JournalCaisse>> {
+    let params = new HttpParams()
+      .set('page', opts?.page ?? 0)
+      .set('size', opts?.size ?? 20)
+      .set('sort', 'dateJournal,desc');
+    if (opts?.dateDebut) params = params.set('dateDebut', opts.dateDebut);
+    if (opts?.dateFin)   params = params.set('dateFin',   opts.dateFin);
+    if (opts?.caisseId)  params = params.set('caisseId',  opts.caisseId);
+    return this.http.get<Page<JournalCaisse>>(`${this.base}/page`, { params });
+  }
+
+  /**
    * Exporte un journal au format Excel.
    *
    * Problème Angular : quand `responseType: 'blob'` est actif, les réponses

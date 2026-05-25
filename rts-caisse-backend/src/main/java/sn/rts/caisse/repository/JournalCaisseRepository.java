@@ -1,5 +1,7 @@
 package sn.rts.caisse.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import sn.rts.caisse.model.JournalCaisse;
@@ -28,4 +30,12 @@ public interface JournalCaisseRepository extends JpaRepository<JournalCaisse, Lo
     /** Tous les journaux sur une plage [dateDebut, dateFin] inclusives, ordre desc. */
     List<JournalCaisse> findByDateJournalBetweenOrderByDateJournalDesc(
             LocalDate dateDebut, LocalDate dateFin);
+
+    /** Variantes paginees (page admin web Journaux). Le tri est passe via
+     *  Pageable.getSort() pour permettre date_journal,desc / asc. */
+    Page<JournalCaisse> findByCaisseIdAndDateJournalBetween(
+            Long caisseId, LocalDate dateDebut, LocalDate dateFin, Pageable pageable);
+
+    Page<JournalCaisse> findByDateJournalBetween(
+            LocalDate dateDebut, LocalDate dateFin, Pageable pageable);
 }

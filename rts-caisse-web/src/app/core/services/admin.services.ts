@@ -192,6 +192,19 @@ export class ClientService {
     return this.http.get<Client[]>(this.base, { params });
   }
 
+  /** Variante paginee pour la page admin web (filtre + paginator). */
+  listerPaginee(opts?: {
+    q?: string; page?: number; size?: number;
+  }): Observable<import('../models/models').Page<Client>> {
+    let params = new HttpParams()
+      .set('page', opts?.page ?? 0)
+      .set('size', opts?.size ?? 20)
+      .set('sort', 'raisonSociale,asc');
+    if (opts?.q) params = params.set('q', opts.q);
+    return this.http.get<import('../models/models').Page<Client>>(
+      `${this.base}/page`, { params });
+  }
+
   obtenir(id: number): Observable<Client> {
     return this.http.get<Client>(`${this.base}/${id}`);
   }

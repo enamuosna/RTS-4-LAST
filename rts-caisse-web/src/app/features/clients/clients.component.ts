@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { Client } from '../../core/models/models';
@@ -22,7 +23,8 @@ import { ClientDialogComponent } from './dialogs/client-dialog.component';
     MatButtonModule,
     MatIconModule,
     MatFormFieldModule,
-    MatInputModule
+    MatInputModule,
+    MatPaginatorModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './clients.component.html',
@@ -33,9 +35,13 @@ export class ClientsComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
 
   readonly clients = signal<Client[]>([]);
+  readonly totalElements = signal(0);
   readonly colonnes = ['raisonSociale', 'ninea', 'telephone', 'email', 'actif', 'actions'];
   readonly recherche$ = new Subject<string>();
+
   terme = '';
+  pageIndex = 0;
+  pageSize = 20;
 
   ngOnInit(): void {
     this.charger();
@@ -43,13 +49,36 @@ export class ClientsComponent implements OnInit {
       .pipe(
         debounceTime(300),
         distinctUntilChanged(),
-        switchMap((q) => this.service.lister(q || undefined))
+        switchMap((q) => {
+          this.pageIndex = 0;
+          return this.service.listerPaginee({
+            q: q || undefined,
+            page: 0,
+            size: this.pageSize
+          });
+        })
       )
-      .subscribe((list) => this.clients.set(list));
+      .subscribe((page) => {
+        this.clients.set(page.content);
+        this.totalElements.set(page.totalElements);
+      });
   }
 
   charger(): void {
-    this.service.lister().subscribe((list) => this.clients.set(list));
+    this.service.listerPaginee({
+      q: this.terme || undefined,
+      page: this.pageIndex,
+      size: this.pageSize
+    }).subscribe((page) => {
+      this.clients.set(page.content);
+      this.totalElements.set(page.totalElements);
+    });
+  }
+
+  changerPage(event: PageEvent): void {
+    this.pageIndex = event.pageIndex;
+    this.pageSize  = event.pageSize;
+    this.charger();
   }
 
   creer(): void {

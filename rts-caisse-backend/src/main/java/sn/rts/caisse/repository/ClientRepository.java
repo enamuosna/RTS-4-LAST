@@ -1,5 +1,7 @@
 package sn.rts.caisse.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,4 +22,18 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
                OR LOWER(COALESCE(c.telephone, '')) LIKE LOWER(CONCAT('%', :terme, '%'))
             """)
     List<Client> rechercher(@Param("terme") String terme);
+
+    /** Variante paginee de findByActifTrue, pour la page admin web. */
+    Page<Client> findByActifTrue(Pageable pageable);
+
+    /** Variante paginee de rechercher, applique le filtre sur raison sociale,
+     *  NINEA et telephone (case-insensitive). */
+    @Query("""
+            SELECT c FROM Client c
+            WHERE LOWER(c.raisonSociale) LIKE LOWER(CONCAT('%', :terme, '%'))
+               OR LOWER(COALESCE(c.identifiantFiscal, '')) LIKE LOWER(CONCAT('%', :terme, '%'))
+               OR LOWER(COALESCE(c.telephone, '')) LIKE LOWER(CONCAT('%', :terme, '%'))
+               OR LOWER(COALESCE(c.email, '')) LIKE LOWER(CONCAT('%', :terme, '%'))
+            """)
+    Page<Client> rechercher(@Param("terme") String terme, Pageable pageable);
 }

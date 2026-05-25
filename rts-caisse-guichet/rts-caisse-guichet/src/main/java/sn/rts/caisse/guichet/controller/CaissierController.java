@@ -99,6 +99,7 @@ public class CaissierController {
     @FXML private Label soldeLabel;
     @FXML private Button ouvrirButton;
     @FXML private Button cloturerButton;
+    @FXML private Button versementButton;
 
     // ================ Zone opérations ================
     @FXML private Button nouvelleOperationButton;
@@ -563,6 +564,15 @@ public class CaissierController {
         nouvelleOperationButton.setVisible(peutOperer);
         nouvelleOperationButton.setManaged(peutOperer);
         nouvelleOperationButton.setDisable(!ouverte);
+
+        // Bouton "Versement bancaire" : visible des qu'on est CAISSIER ou
+        // AGENT_RECETTE affecte, peu importe l'etat de la caisse (le
+        // versement peut etre fait AVANT l'ouverture, PENDANT la journee
+        // ou APRES la cloture). Toujours actif (pas de setDisable).
+        if (versementButton != null) {
+            versementButton.setVisible(peutOperer);
+            versementButton.setManaged(peutOperer);
+        }
 
         if (ouverte) {
             chargerOperationsDuJour();

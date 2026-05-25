@@ -13,6 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Caisse, Versement } from '../../core/models/models';
+import { AuthService } from '../../core/services/auth.service';
 import { CaisseService } from '../../core/services/admin.services';
 import { VersementService } from '../../core/services/caisse.services';
 import { VersementDialogComponent } from './versement-dialog.component';
@@ -49,8 +50,12 @@ import { VersementDialogComponent } from './versement-dialog.component';
     <div class="filtres">
       <mat-form-field appearance="outline">
         <mat-label>Caisse</mat-label>
-        <mat-select [(ngModel)]="caisseFiltre" (selectionChange)="recharger()">
-          <mat-option [value]="null">Toutes les caisses</mat-option>
+        <mat-select [(ngModel)]="caisseFiltre"
+                    [disabled]="caisseLocked()"
+                    (selectionChange)="recharger()">
+          @if (peutVoirToutesCaisses()) {
+            <mat-option [value]="null">Toutes les caisses</mat-option>
+          }
           @for (c of caisses(); track c.id) {
             <mat-option [value]="c.id">{{ c.code }} — {{ c.libelle }}</mat-option>
           }
@@ -171,6 +176,7 @@ import { VersementDialogComponent } from './versement-dialog.component';
 export class VersementsComponent implements OnInit {
   private readonly service = inject(VersementService);
   private readonly caisseService = inject(CaisseService);
+  private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
 
@@ -181,6 +187,18 @@ export class VersementsComponent implements OnInit {
   readonly totalAffiche = computed(() =>
     this.versements().reduce((acc, v) => acc + (v.montant || 0), 0));
 
+  /** ADMIN / SUPERVISEUR voient toutes les caisses ;
+   *  CAISSIER / AGENT_RECETTE sont restreints a leur(s) caisse(s) affectee(s). */
+  readonly peutVoirToutesCaisses = computed(() => {
+    const r = this.authService.currentRole();
+    return r === 'ADMIN' || r === 'SUPERVISEUR';
+  });
+
+  /** Si l'utilisateur n'a qu'une seule caisse, on l'auto-selectionne et
+   *  on verrouille le dropdown : il ne peut pas voir les autres caisses. */
+  readonly caisseLocked = computed(() =>
+    !this.peutVoirToutesCaisses() && this.caisses().length <= 1);
+
   readonly colonnes = ['date', 'caisse', 'banque', 'bordereau', 'montant', 'par', 'actions'];
 
   caisseFiltre: number | null = null;
@@ -190,8 +208,27 @@ export class VersementsComponent implements OnInit {
   pageSize = 20;
 
   ngOnInit(): void {
-    this.caisseService.lister().subscribe((cs) => this.caisses.set(cs));
-    this.recharger();
+    this.caisseService.lister().subscribe((cs) => {
+      // Restriction par role : CAISSIER ne voit que sa caisse affectee,
+      // AGENT_RECETTE que celles dont il est l'agent de recette affecte.
+      const me = this.authService.currentUser();
+      const role = me?.role;
+      const moi = me?.utilisateurId;
+      let visibles = cs;
+      if (role === 'CAISSIER' && moi != null) {
+        visibles = cs.filter(c => c.caissierId === moi);
+      } else if (role === 'AGENT_RECETTE' && moi != null) {
+        visibles = cs.filter(c => c.agentRecetteId === moi);
+      }
+      this.caisses.set(visibles);
+
+      // Si une seule caisse accessible (cas habituel des roles operationnels),
+      // on l'auto-selectionne pour eviter l'appel listerTous() refuse (403).
+      if (!this.peutVoirToutesCaisses() && visibles.length >= 1) {
+        this.caisseFiltre = visibles[0].id!;
+      }
+      this.recharger();
+    });
   }
 
   recharger(): void {
@@ -219,7 +256,14 @@ export class VersementsComponent implements OnInit {
   }
 
   reset(): void {
-    this.caisseFiltre = null;
+    // Pour ADMIN/SUPERVISEUR : on retire le filtre caisse (vue globale).
+    // Pour CAISSIER/AGENT_RECETTE : on garde la caisse imposee, on ne peut
+    // pas la deselectionner (ils n'ont pas le droit listerTous()).
+    if (this.peutVoirToutesCaisses()) {
+      this.caisseFiltre = null;
+    } else if (this.caisses().length >= 1) {
+      this.caisseFiltre = this.caisses()[0].id!;
+    }
     this.dateDebut = '';
     this.dateFin = '';
     this.pageIndex = 0;

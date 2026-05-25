@@ -38,7 +38,8 @@ import { VersementService } from '../../core/services/caisse.services';
       <div class="grille">
         <mat-form-field appearance="outline">
           <mat-label>Caisse *</mat-label>
-          <mat-select [(ngModel)]="caisseId" required>
+          <mat-select [(ngModel)]="caisseId" required
+                      [disabled]="data.caisses.length <= 1">
             @for (c of data.caisses; track c.id) {
               <mat-option [value]="c.id">{{ c.code }} — {{ c.libelle }}</mat-option>
             }
@@ -153,7 +154,14 @@ export class VersementDialogComponent implements OnInit {
   notes = '';
   fichier: File | null = null;
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: { caisses: Caisse[] }) {}
+  constructor(@Inject(MAT_DIALOG_DATA) public data: { caisses: Caisse[] }) {
+    // Si une seule caisse est accessible (cas CAISSIER / AGENT_RECETTE),
+    // on l'auto-selectionne pour eviter une saisie inutile et empecher
+    // toute confusion avec une autre caisse.
+    if (data.caisses && data.caisses.length === 1) {
+      this.caisseId = data.caisses[0].id!;
+    }
+  }
 
   ngOnInit(): void {
     this.banqueService.lister().subscribe((bs) => this.banques.set(bs.filter(b => b.actif)));

@@ -134,9 +134,26 @@ public class JournalCaisseService {
                     .orElseThrow(() -> new BusinessException(
                             "Aucun journal ouvert pour cette caisse."));
 
-            if (!journal.getCaissier().getLogin().equals(loginCaissier)) {
+            // Regle metier elargie : peuvent cloturer
+            //  - le CAISSIER qui a ouvert le journal (regle d'origine)
+            //  - l'AGENT_RECETTE affecte a la caisse (verification du solde
+            //    en fin de journee)
+            //  - SUPERVISEUR / ADMIN (intervention exceptionnelle :
+            //    caissier absent, oubli, etc.)
+            Utilisateur acteur = utilisateurRepository.findByLogin(loginCaissier)
+                    .orElseThrow(() -> new BusinessException(
+                            "Utilisateur introuvable : " + loginCaissier));
+            Caisse caisse = journal.getCaisse();
+            boolean estOuvreur = journal.getCaissier().getLogin().equals(loginCaissier);
+            boolean estAgentRecette = caisse.getAgentRecette() != null
+                    && acteur.getId().equals(caisse.getAgentRecette().getId());
+            boolean estSuperviseur = acteur.getRole() == Role.ADMIN
+                    || acteur.getRole() == Role.SUPERVISEUR;
+            if (!estOuvreur && !estAgentRecette && !estSuperviseur) {
                 throw new BusinessException(
-                        "Seul le caissier qui a ouvert la caisse peut la clôturer.");
+                        "Vous n'etes pas autorise a cloturer cette caisse. "
+                        + "Reserve au caissier qui a ouvert, a l'agent de recette "
+                        + "affecte, ou a un superviseur / administrateur.");
             }
 
             LocalDateTime debut = journal.getDateJournal().atStartOfDay();
@@ -173,8 +190,8 @@ public class JournalCaisseService {
                 }
             }
 
-            // Fermeture physique de la caisse
-            Caisse caisse = journal.getCaisse();
+            // Fermeture physique de la caisse (reutilise la variable caisse
+            // deja recuperee plus haut pour la verification des droits)
             caisse.setStatut(StatutCaisse.FERMEE);
             caisse.setSoldeCourant(BigDecimal.ZERO);
 

@@ -550,14 +550,18 @@ public class CaissierController {
         ouvrirButton.setVisible(!ouverte && !suspendue && peutOperer);
         ouvrirButton.setManaged(!ouverte && !suspendue && peutOperer);
 
-        // Cloture : reservee a celui qui detient actuellement la caisse
-        // (caissierId du DTO = utilisateur qui a ouvert la journee). Le
-        // backend rejette deja toute autre tentative ("Seul le caissier qui
-        // a ouvert la caisse peut la cloturer."). On masque le bouton ici
-        // pour eviter le frottement UX.
-        boolean estDetenteur = estDetenteurDeCetteCaisse(caisse);
-        cloturerButton.setVisible(ouverte && estDetenteur);
-        cloturerButton.setManaged(ouverte && estDetenteur);
+        // Cloture : depuis l'elargissement de la regle backend, peuvent
+        // cloturer :
+        //  - le CAISSIER qui a ouvert le journal (detenteur)
+        //  - l'AGENT_RECETTE affecte a la caisse
+        //  - tout SUPERVISEUR / ADMIN
+        // On rend donc le bouton visible des qu'on est CAISSIER detenteur
+        // OU AGENT_RECETTE affecte (peutOperer couvre ces 2 cas grace a
+        // peutFaireOperation). Pour SUPERVISEUR / ADMIN on n'a pas
+        // l'ecran caissier - ils utilisent l'admin web.
+        boolean peutCloturer = peutOperer; // CAISSIER affecte OU AGENT_RECETTE affecte
+        cloturerButton.setVisible(ouverte && peutCloturer);
+        cloturerButton.setManaged(ouverte && peutCloturer);
 
         // Bouton "Nouvelle opération" : visible pour CAISSIER ou AGENT_RECETTE
         // affectes. Desactive tant que la caisse est fermee.

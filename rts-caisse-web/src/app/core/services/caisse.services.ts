@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   ClotureCaisseRequest,
@@ -337,13 +337,30 @@ export class VersementService {
 
   /**
    * Téléchargement du bordereau bancaire (PDF ou image).
-   * NB : on utilise le chemin /pdf (et non /fichier ou /bordereau) pour
-   * contourner les bloqueurs/Tracking Prevention qui bloquent les URLs
-   * generiques sur DuckDNS (ERR_BLOCKED_BY_CLIENT). C'est le meme
-   * pattern qui marche deja pour les recus operations.
+   *
+   * Edge Tracking Prevention bloque les telechargements binaires directs
+   * sur DuckDNS (ERR_BLOCKED_BY_CLIENT), meme avec un Bearer token.
+   * Solution : passer par un endpoint JSON qui renvoie le fichier en
+   * base64. JSON n'est jamais bloque. On reconstruit le Blob cote client.
    */
-  telechargerFichier(id: number): Observable<Blob> {
-    return this.http.get(`${this.base}/${id}/pdf`, { responseType: 'blob' });
+  telechargerFichier(id: number): Observable<{ nomFichier: string; typeMime: string; blob: Blob }> {
+    return this.http.get<{
+      nomFichier: string;
+      typeMime: string;
+      tailleFichier: number;
+      contenuBase64: string;
+    }>(`${this.base}/${id}/donnees`).pipe(
+      map(payload => {
+        const bin = atob(payload.contenuBase64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return {
+          nomFichier: payload.nomFichier,
+          typeMime:   payload.typeMime,
+          blob:       new Blob([bytes], { type: payload.typeMime })
+        };
+      })
+    );
   }
 
   /**

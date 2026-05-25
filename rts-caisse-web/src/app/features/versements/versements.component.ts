@@ -287,11 +287,13 @@ export class VersementsComponent implements OnInit {
 
   telecharger(v: Versement): void {
     this.service.telechargerFichier(v.id).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
+      next: (res) => {
+        // Le Blob est reconstruit cote client a partir du JSON+base64
+        // pour contourner les bloqueurs Edge sur DuckDNS.
+        const url = URL.createObjectURL(res.blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = v.nomFichier;
+        a.download = res.nomFichier || v.nomFichier;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

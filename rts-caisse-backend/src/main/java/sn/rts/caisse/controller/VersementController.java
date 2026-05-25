@@ -95,13 +95,10 @@ public class VersementController {
         return service.obtenir(id);
     }
 
-    // NOTE : on calque exactement le pattern qui fonctionne pour les recus
-    // (/api/operations/{id}/pdf) : URL avec /pdf en suffixe.
-    // Les filtres de Tracking Prevention (Edge) et bloqueurs (uBlock...)
-    // sur DuckDNS bloquent "/fichier", "/bordereau", "/file", "/download"
-    // mais laissent passer "/pdf" qui leur signale un document statique.
-    // Le real Content-Type reste celui du fichier (peut etre image/jpeg
-    // pour une photo de bordereau scannee au telephone).
+    // Telechargement binaire classique. Bloque par Edge Tracking
+    // Prevention sur les domaines DuckDNS pour certaines combinaisons
+    // d'URL ; on garde les alias pour les contextes ou ca marche
+    // (intranet, navigateurs sans protection agressive).
     @GetMapping({"/{id}/pdf", "/{id}/bordereau", "/{id}/fichier"})
     @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(summary = "Telecharge le bordereau bancaire (PDF ou image)")
@@ -110,13 +107,37 @@ public class VersementController {
         Versement v = service.telechargerFichier(id, auth.getName());
         String nomEncode = URLEncoder.encode(
                 v.getNomFichier(), StandardCharsets.UTF_8);
-        // inline pour que le navigateur ouvre l'image/PDF en preview
-        // (et fallback download via attribut HTML download=...).
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, v.getTypeMime())
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "inline; filename*=UTF-8''" + nomEncode)
                 .body(v.getFichierBordereau());
+    }
+
+    /**
+     * Variante JSON+base64 du bordereau : utilisee par defaut depuis le
+     * frontend web pour contourner Edge Tracking Prevention qui bloque
+     * les telechargements binaires sur DuckDNS. Le client reconstitue le
+     * Blob a partir du base64 et declenche le telechargement localement.
+     *
+     * <p>Pas de surcout reseau notable : base64 augmente de ~33%, mais
+     * un bordereau scanne fait typiquement 500 Ko -&gt; 670 Ko en base64,
+     * negligeable sur un reseau interne.</p>
+     */
+    @GetMapping("/{id}/donnees")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
+    @Operation(summary = "Recupere le bordereau en base64 dans un JSON "
+            + "(fallback navigateurs avec Tracking Prevention agressif)")
+    public java.util.Map<String, Object> telechargerBase64(@PathVariable Long id,
+                                                            Authentication auth) {
+        Versement v = service.telechargerFichier(id, auth.getName());
+        return java.util.Map.of(
+                "nomFichier",    v.getNomFichier(),
+                "typeMime",      v.getTypeMime(),
+                "tailleFichier", v.getTailleFichier(),
+                "contenuBase64", java.util.Base64.getEncoder()
+                        .encodeToString(v.getFichierBordereau())
+        );
     }
 
     // ==================================================================

@@ -48,8 +48,16 @@ public class CategorieOperation extends Auditable {
      *
      * <p>Le fichier reste optionnel meme quand le flag est actif :
      * l'agent peut enregistrer sans piece jointe.</p>
+     *
+     * <p><b>@ColumnDefault("false")</b> est essentiel : sans ca, Hibernate
+     * tente ALTER TABLE ADD COLUMN ... NOT NULL sans DEFAULT, ce que
+     * PostgreSQL refuse sur une table contenant deja des lignes. Avec
+     * le default, l'ALTER passe et les categories existantes recoivent
+     * false (la zone d'upload n'apparait que sur celles ou l'admin
+     * activera explicitement le flag).</p>
      */
     @Column(name = "accepte_justificatif", nullable = false)
+    @org.hibernate.annotations.ColumnDefault("false")
     @Builder.Default
     private boolean accepteJustificatif = false;
 }

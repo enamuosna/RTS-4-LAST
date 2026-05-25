@@ -11,6 +11,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Caisse, Versement } from '../../core/models/models';
 import { CaisseService } from '../../core/services/admin.services';
 import { VersementService } from '../../core/services/caisse.services';
@@ -31,7 +32,8 @@ import { VersementDialogComponent } from './versement-dialog.component';
     CommonModule, FormsModule, DatePipe,
     MatTableModule, MatButtonModule, MatIconModule,
     MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatPaginatorModule, MatProgressSpinnerModule, MatDialogModule
+    MatPaginatorModule, MatProgressSpinnerModule, MatDialogModule,
+    MatTooltipModule
   ],
   template: `
     <div class="page-header">

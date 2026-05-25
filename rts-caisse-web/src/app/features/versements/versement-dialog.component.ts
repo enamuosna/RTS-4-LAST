@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Banque, Caisse, Versement } from '../../core/models/models';
 import { BanqueService } from '../../core/services/admin.services';
 import { VersementService } from '../../core/services/caisse.services';
@@ -25,7 +26,7 @@ import { VersementService } from '../../core/services/caisse.services';
     CommonModule, FormsModule,
     MatDialogModule, MatButtonModule, MatIconModule,
     MatFormFieldModule, MatInputModule, MatSelectModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule, MatTooltipModule
   ],
   template: `
     <h2 mat-dialog-title>

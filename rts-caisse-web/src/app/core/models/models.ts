@@ -80,6 +80,9 @@ export interface CategorieOperation {
   libelle: string;
   typeOperation: TypeOperation;
   actif: boolean;
+  /** True si les opérations de cette catégorie peuvent porter un
+   *  justificatif (PDF/JPG/PNG) joint par le caissier. */
+  accepteJustificatif: boolean;
 }
 
 // ---------- Client ----------
@@ -153,6 +156,11 @@ export interface OperationCaisse {
   banqueLibelle?: string;
   annulee: boolean;
   motifAnnulation?: string;
+  /** Indique qu'un justificatif (PDF/image) est attache a l'operation. */
+  justificatifPresent?: boolean;
+  justificatifNomFichier?: string;
+  justificatifTypeMime?: string;
+  justificatifTailleFichier?: number;
 }
 
 // ---------- Versements bancaires ----------

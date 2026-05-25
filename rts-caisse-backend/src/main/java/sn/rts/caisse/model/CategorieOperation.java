@@ -38,4 +38,18 @@ public class CategorieOperation extends Auditable {
     @Column(nullable = false)
     @Builder.Default
     private boolean actif = true;
+
+    /**
+     * Indique si l'agent peut joindre un justificatif (PDF/JPG/PNG) lors
+     * de la saisie d'une operation de cette categorie. Par defaut false :
+     * la zone d'upload n'apparait pas. ADMIN active ce flag depuis la
+     * page Categories pour les categories qui en ont besoin (typique :
+     * AVIS ET COMMUNIQUES, APPEL, ...).
+     *
+     * <p>Le fichier reste optionnel meme quand le flag est actif :
+     * l'agent peut enregistrer sans piece jointe.</p>
+     */
+    @Column(name = "accepte_justificatif", nullable = false)
+    @Builder.Default
+    private boolean accepteJustificatif = false;
 }

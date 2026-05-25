@@ -34,6 +34,7 @@ import sn.rts.caisse.guichet.print.RecuExporter;
 import sn.rts.caisse.guichet.util.AsyncRunner;
 import sn.rts.caisse.guichet.util.Ui;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -72,6 +73,15 @@ public class NouvelleOperationController {
     // (HH:mm) pour ne pas dependre de saisie texte libre.
     @FXML private DatePicker dateDiffusionPicker;
     @FXML private TextField  heureDiffusionField;
+
+    // ---------------- Justificatif (conditionnel) ----------------
+    // Visible uniquement si la categorie selectionnee a
+    // accepteJustificatif=true. PDF/JPG/PNG, max 5 Mo.
+    @FXML private VBox       justificatifBox;
+    @FXML private Button     choisirJustifButton;
+    @FXML private Label      justificatifLabel;
+    private File justificatifSelectionne;
+    private String justificatifTypeMime;
 
     // ---------------- Banque (conditionnel) ----------------
     @FXML private VBox banqueBox;
@@ -153,6 +163,11 @@ public class NouvelleOperationController {
 
         appliquerModeClient(false);
         appliquerModePaiement(ModePaiement.ESPECES);
+
+        // Affiche / cache la zone d'upload du justificatif selon la
+        // categorie selectionnee (flag accepteJustificatif).
+        categorieCombo.valueProperty().addListener(
+                (obs, ancienne, nouvelle) -> appliquerVisibiliteJustificatif(nouvelle));
 
         // Le timbre est CALCULE automatiquement a partir du montant HT.
         // L'utilisateur ne le saisit plus : le champ est readonly.
@@ -365,6 +380,66 @@ public class NouvelleOperationController {
         }
     }
 
+    /**
+     * Affiche ou cache le bloc d'upload selon le flag accepteJustificatif
+     * de la categorie. Reset egalement le fichier deja choisi si l'on
+     * passe sur une categorie sans justificatif.
+     */
+    private void appliquerVisibiliteJustificatif(CategorieDTO categorie) {
+        boolean visible = categorie != null && categorie.accepteJustificatif;
+        if (justificatifBox != null) {
+            justificatifBox.setVisible(visible);
+            justificatifBox.setManaged(visible);
+        }
+        if (!visible) {
+            justificatifSelectionne = null;
+            justificatifTypeMime = null;
+            if (justificatifLabel != null) {
+                justificatifLabel.setText("Aucun fichier selectionne");
+            }
+        }
+    }
+
+    /** Ouvre le FileChooser pour selectionner un PDF / JPG / PNG. */
+    @FXML
+    public void onChoisirJustificatif() {
+        javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+        chooser.setTitle("Selectionner le justificatif");
+        chooser.getExtensionFilters().addAll(
+                new javafx.stage.FileChooser.ExtensionFilter(
+                        "Documents (PDF, JPG, PNG)", "*.pdf", "*.jpg", "*.jpeg", "*.png"),
+                new javafx.stage.FileChooser.ExtensionFilter("PDF", "*.pdf"),
+                new javafx.stage.FileChooser.ExtensionFilter("Images", "*.jpg", "*.jpeg", "*.png"));
+        javafx.stage.Stage stage = (javafx.stage.Stage)
+                choisirJustifButton.getScene().getWindow();
+        java.io.File file = chooser.showOpenDialog(stage);
+        if (file == null) return;
+
+        if (file.length() > 5L * 1024 * 1024) {
+            Ui.erreur("Fichier trop volumineux",
+                    "Le fichier fait " + (file.length() / 1024) + " Ko, max 5 Mo.");
+            return;
+        }
+        String mime = deduireMimeJustif(file.getName());
+        if (mime == null) {
+            Ui.erreur("Format non supporte",
+                    "Seuls les fichiers PDF, JPG et PNG sont acceptes.");
+            return;
+        }
+        justificatifSelectionne = file;
+        justificatifTypeMime = mime;
+        justificatifLabel.setText(file.getName() + "  ("
+                + (file.length() / 1024) + " Ko)");
+    }
+
+    private static String deduireMimeJustif(String nom) {
+        String n = nom.toLowerCase();
+        if (n.endsWith(".pdf"))                       return "application/pdf";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+        if (n.endsWith(".png"))                       return "image/png";
+        return null;
+    }
+
     // ==================================================================
     //  Handlers FXML
     // ==================================================================
@@ -410,6 +485,30 @@ public class NouvelleOperationController {
         enregistrerButton.setDisable(true);
         final ClientCreateRequest nouveauClientFinal = nouveauClientRequest;
         final boolean modeModification = (operationEnModification != null);
+        // Snapshot du justificatif eventuel (lecture du fichier en bytes
+        // dans la thread UI pour eviter de tenir une reference File pendant
+        // l'execution asynchrone).
+        final byte[] justifBytes;
+        final String justifNom;
+        final String justifMime;
+        if (justificatifSelectionne != null) {
+            try {
+                justifBytes = java.nio.file.Files.readAllBytes(
+                        justificatifSelectionne.toPath());
+                justifNom = justificatifSelectionne.getName();
+                justifMime = justificatifTypeMime;
+            } catch (Exception ex) {
+                enregistrerButton.setDisable(false);
+                Ui.erreur("Lecture du justificatif",
+                        "Impossible de lire le fichier : " + ex.getMessage());
+                return;
+            }
+        } else {
+            justifBytes = null;
+            justifNom = null;
+            justifMime = null;
+        }
+
         AsyncRunner.run(
                 () -> {
                     ClientDTO clientCree = null;
@@ -420,6 +519,18 @@ public class NouvelleOperationController {
                     OperationCaisseResponse op = modeModification
                             ? api.modifierOperation(operationEnModification.id, req)
                             : api.enregistrerOperation(req);
+                    // Upload du justificatif si selectionne. On capture les
+                    // exceptions pour ne pas perdre l'operation deja creee :
+                    // le caissier peut reuploader plus tard via le web.
+                    if (justifBytes != null && op != null && op.id != null) {
+                        try {
+                            op = api.uploaderJustificatif(op.id,
+                                    justifNom, justifMime, justifBytes);
+                        } catch (Exception ex) {
+                            log.warn("Operation {} creee mais upload justificatif "
+                                    + "echoue : {}", op.numeroRecu, ex.getMessage());
+                        }
+                    }
                     return new ResultatEnregistrement(clientCree, op);
                 },
                 resultat -> {
@@ -458,6 +569,12 @@ public class NouvelleOperationController {
         }
         if (heureDiffusionField != null) {
             heureDiffusionField.clear();
+        }
+        // Reset du justificatif (visibilite suit la categorie par defaut)
+        justificatifSelectionne = null;
+        justificatifTypeMime = null;
+        if (justificatifLabel != null) {
+            justificatifLabel.setText("Aucun fichier selectionne");
         }
 
         clientCombo.getSelectionModel().clearSelection();

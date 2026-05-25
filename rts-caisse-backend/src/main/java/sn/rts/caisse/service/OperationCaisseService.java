@@ -680,6 +680,97 @@ public class OperationCaisseService {
     }
 
     // ==================================================================
+    //  JUSTIFICATIF (PDF/image attache a une operation)
+    // ==================================================================
+
+    /** Taille max du justificatif : 5 Mo. */
+    public static final long JUSTIF_TAILLE_MAX = 5L * 1024 * 1024;
+
+    /** Types MIME autorises pour le justificatif. */
+    public static final java.util.Set<String> JUSTIF_TYPES_MIME = java.util.Set.of(
+            "application/pdf", "image/jpeg", "image/jpg", "image/png");
+
+    /**
+     * Upload (ou remplacement) du justificatif d'une operation. La
+     * categorie de l'operation doit avoir {@code accepteJustificatif=true}.
+     * Validation : 5 Mo max, PDF/JPG/PNG. Permissions identiques a la
+     * modification (CAISSIER/AGENT_RECETTE de la caisse, ou ADMIN/SUPERVISEUR).
+     */
+    public OperationCaisseResponse uploaderJustificatif(Long operationId,
+                                                         org.springframework.web.multipart.MultipartFile fichier,
+                                                         String loginAuteur) {
+        OperationCaisse op = trouver(operationId);
+        verifierDroitModifierOuReactiver(op, loginAuteur);
+
+        if (fichier == null || fichier.isEmpty()) {
+            throw new BusinessException("Aucun fichier n'a ete fourni.");
+        }
+        if (fichier.getSize() > JUSTIF_TAILLE_MAX) {
+            throw new BusinessException(
+                    "Fichier trop volumineux : " + (fichier.getSize() / 1024)
+                            + " Ko. Max " + (JUSTIF_TAILLE_MAX / 1024 / 1024) + " Mo.");
+        }
+        String type = fichier.getContentType();
+        if (type == null || !JUSTIF_TYPES_MIME.contains(type.toLowerCase())) {
+            throw new BusinessException(
+                    "Format non supporte : " + type
+                            + ". Formats acceptes : PDF, JPG, PNG.");
+        }
+        if (!op.getCategorie().isAccepteJustificatif()) {
+            throw new BusinessException(
+                    "La categorie '" + op.getCategorie().getLibelle()
+                            + "' n'accepte pas de justificatif. Activez le "
+                            + "flag accepteJustificatif sur la categorie cote admin.");
+        }
+        if (op.isAnnulee()) {
+            throw new BusinessException(
+                    "Impossible d'attacher un justificatif a une operation annulee.");
+        }
+
+        try {
+            op.setJustificatifFichier(fichier.getBytes());
+        } catch (java.io.IOException e) {
+            throw new BusinessException(
+                    "Impossible de lire le fichier : " + e.getMessage());
+        }
+        op.setJustificatifNomFichier(fichier.getOriginalFilename());
+        op.setJustificatifTypeMime(type);
+        op.setJustificatifTailleFichier(fichier.getSize());
+
+        log.info("Justificatif attache a operation {} : fichier={} ({} octets) par {}",
+                op.getNumeroRecu(), fichier.getOriginalFilename(),
+                fichier.getSize(), loginAuteur);
+        return OperationCaisseResponse.from(op);
+    }
+
+    /** Charge le contenu binaire du justificatif (LAZY). */
+    @Transactional(readOnly = true)
+    public OperationCaisse chargerJustificatif(Long operationId) {
+        OperationCaisse op = trouver(operationId);
+        if (op.getJustificatifFichier() == null
+                || op.getJustificatifFichier().length == 0) {
+            throw new ResourceNotFoundException(
+                    "Aucun justificatif attache a l'operation " + operationId);
+        }
+        // Force le chargement du LOB avant retour
+        op.getJustificatifFichier();
+        return op;
+    }
+
+    /** Supprime le justificatif d'une operation (les autres champs sont
+     *  inchanges). Memes droits que la modification. */
+    public void supprimerJustificatif(Long operationId, String loginAuteur) {
+        OperationCaisse op = trouver(operationId);
+        verifierDroitModifierOuReactiver(op, loginAuteur);
+        op.setJustificatifFichier(null);
+        op.setJustificatifNomFichier(null);
+        op.setJustificatifTypeMime(null);
+        op.setJustificatifTailleFichier(null);
+        log.info("Justificatif supprime de operation {} par {}",
+                op.getNumeroRecu(), loginAuteur);
+    }
+
+    // ==================================================================
     //  HELPERS
     // ==================================================================
 

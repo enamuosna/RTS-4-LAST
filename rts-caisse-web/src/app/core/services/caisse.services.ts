@@ -67,6 +67,43 @@ export class OperationService {
   historiqueDuJour(caisseId: number): Observable<OperationCaisse[]> {
     return this.http.get<OperationCaisse[]>(`${this.base}/caisse/${caisseId}/jour`);
   }
+
+  // ---------- Justificatif (PDF/JPG/PNG) ----------
+
+  /** Attache (ou remplace) le justificatif d'une opération. */
+  uploaderJustificatif(operationId: number, fichier: File): Observable<OperationCaisse> {
+    const formData = new FormData();
+    formData.append('fichier', fichier);
+    return this.http.post<OperationCaisse>(
+      `${this.base}/${operationId}/justificatif`, formData);
+  }
+
+  /** Telecharge le justificatif via JSON+base64 (bypass tracking blockers). */
+  telechargerJustificatif(operationId: number): Observable<{
+    nomFichier: string; typeMime: string; blob: Blob;
+  }> {
+    return this.http.get<{
+      nomFichier: string;
+      typeMime: string;
+      tailleFichier: number;
+      contenuBase64: string;
+    }>(`${this.base}/${operationId}/justificatif-donnees`).pipe(
+      map(payload => {
+        const bin = atob(payload.contenuBase64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return {
+          nomFichier: payload.nomFichier,
+          typeMime:   payload.typeMime,
+          blob:       new Blob([bytes], { type: payload.typeMime })
+        };
+      })
+    );
+  }
+
+  supprimerJustificatif(operationId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${operationId}/justificatif`);
+  }
 }
 
 // ======================================================

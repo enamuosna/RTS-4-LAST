@@ -184,6 +184,29 @@ export class OperationsComponent implements OnInit {
     });
   }
 
+  /**
+   * Telecharge le justificatif PDF/image attache a l'operation. Utilise
+   * l'endpoint JSON+base64 pour contourner les bloqueurs Tracking
+   * Prevention sur DuckDNS.
+   */
+  telechargerJustificatif(op: OperationCaisse): void {
+    this.operationService.telechargerJustificatif(op.id).subscribe({
+      next: (res) => {
+        const url = URL.createObjectURL(res.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = res.nomFichier || op.justificatifNomFichier || 'justificatif';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      },
+      error: () => this.snackBar.open('Téléchargement impossible.', 'OK', {
+        duration: 3000, panelClass: ['snackbar-error']
+      })
+    });
+  }
+
   /** Réactive une opération annulée par erreur (annule la contre-passation). */
   reactiver(operation: OperationCaisse): void {
     if (!confirm(`Réactiver l'opération ${operation.numeroRecu} ?\n\n`

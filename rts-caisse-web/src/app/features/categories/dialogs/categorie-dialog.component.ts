@@ -41,7 +41,8 @@ export class CategorieDialogComponent {
     code: [this.data?.code ?? '', Validators.required],
     libelle: [this.data?.libelle ?? '', Validators.required],
     typeOperation: [(this.data?.typeOperation ?? 'ENTREE') as TypeOperation, Validators.required],
-    actif: [this.data?.actif ?? true]
+    actif: [this.data?.actif ?? true],
+    accepteJustificatif: [this.data?.accepteJustificatif ?? false]
   });
 
   valider(): void {

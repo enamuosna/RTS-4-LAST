@@ -197,6 +197,20 @@ public class CaisseApi {
                 null, OperationCaisseResponse.class);
     }
 
+    /**
+     * Attache un justificatif (PDF/JPG/PNG, max 5 Mo) a une operation.
+     * La categorie de l'operation doit avoir accepteJustificatif=true,
+     * sinon le backend rejette avec une BusinessException.
+     */
+    public OperationCaisseResponse uploaderJustificatif(
+            Long operationId, String nomFichier, String typeMime, byte[] fichier) {
+        return client.postMultipart(
+                "/operations/" + operationId + "/justificatif",
+                java.util.Map.of(),
+                "fichier", nomFichier, typeMime, fichier,
+                OperationCaisseResponse.class);
+    }
+
     // ====================================================================
     //  VERSEMENTS BANCAIRES
     // ====================================================================

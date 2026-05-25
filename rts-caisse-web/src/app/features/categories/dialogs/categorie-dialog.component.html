@@ -23,6 +23,15 @@
     @if (data) {
       <mat-slide-toggle formControlName="actif">Active</mat-slide-toggle>
     }
+
+    <mat-slide-toggle formControlName="accepteJustificatif">
+      Accepte un justificatif (PDF/JPG/PNG, optionnel)
+    </mat-slide-toggle>
+    <p class="hint-toggle">
+      Quand activé, le caissier ou l'agent de recette peut joindre un fichier
+      lors de la saisie d'une opération de cette catégorie (typique : AVIS ET
+      COMMUNIQUES, APPEL).
+    </p>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">

@@ -13,6 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { OperationCaisse, OperationCaisseRequest } from '../../core/models/models';
+import { CategorieService } from '../../core/services/admin.services';
 import { OperationService } from '../../core/services/caisse.services';
 
 /**
@@ -98,6 +99,48 @@ import { OperationService } from '../../core/services/caisse.services';
             <mat-error>La date et l'heure de diffusion sont obligatoires.</mat-error>
           }
         </mat-form-field>
+
+        @if (accepteJustificatif()) {
+          <div class="upload-zone full" [class.has-file]="!!fichier || justificatifExistant()">
+            <input #fileInput type="file"
+                   accept="application/pdf,image/jpeg,image/jpg,image/png"
+                   (change)="onJustificatifSelected($event)" hidden />
+            @if (fichier) {
+              <div class="file-info">
+                <mat-icon class="file-icon">{{ iconePourFichier(fichier.type) }}</mat-icon>
+                <div>
+                  <div class="file-name">{{ fichier.name }}</div>
+                  <div class="file-meta">{{ tailleLisible(fichier.size) }} - nouveau</div>
+                </div>
+                <button mat-icon-button (click)="fichier = null"
+                        matTooltip="Retirer le nouveau fichier">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            } @else if (justificatifExistant()) {
+              <div class="file-info">
+                <mat-icon class="file-icon">{{ iconePourFichier(data.operation.justificatifTypeMime) }}</mat-icon>
+                <div>
+                  <div class="file-name">{{ data.operation.justificatifNomFichier }}</div>
+                  <div class="file-meta">{{ tailleLisible(data.operation.justificatifTailleFichier ?? 0) }} - deja attache</div>
+                </div>
+                <button mat-icon-button color="primary"
+                        (click)="telechargerJustificatif()"
+                        matTooltip="Telecharger le justificatif">
+                  <mat-icon>download</mat-icon>
+                </button>
+                <button mat-stroked-button type="button" (click)="fileInput.click()">
+                  <mat-icon>upload_file</mat-icon> Remplacer
+                </button>
+              </div>
+            } @else {
+              <button mat-stroked-button type="button" (click)="fileInput.click()">
+                <mat-icon>upload_file</mat-icon> Joindre un justificatif (PDF/JPG/PNG)
+              </button>
+              <p class="hint">Optionnel - taille max : 5 Mo</p>
+            }
+          </div>
+        }
       </div>
     </mat-dialog-content>
 
@@ -145,14 +188,28 @@ import { OperationService } from '../../core/services/caisse.services';
     }
     .form-grid .full { grid-column: 1 / -1; }
     .inline-spinner { display: inline-block; margin-right: 6px; vertical-align: middle; }
+    .upload-zone { border: 2px dashed var(--rts-gray-300); border-radius: 8px;
+                   padding: 18px; text-align: center; background: var(--rts-gray-50); }
+    .upload-zone.has-file { border-style: solid; background: white; padding: 12px; }
+    .upload-zone .hint { font-size: 12px; color: var(--rts-text-muted);
+                         margin: 6px 0 0; }
+    .file-info { display: flex; align-items: center; gap: 14px; text-align: left;
+                 flex-wrap: wrap; }
+    .file-icon { font-size: 32px; width: 32px; height: 32px; color: var(--rts-red); }
+    .file-name { font-weight: 600; word-break: break-all; }
+    .file-meta { font-size: 12px; color: var(--rts-text-muted); }
+    .file-info > :nth-child(2) { flex-grow: 1; min-width: 150px; }
   `]
 })
 export class ModifierOperationDialogComponent {
   private readonly api = inject(OperationService);
+  private readonly categorieService = inject(CategorieService);
   private readonly snack = inject(MatSnackBar);
   private readonly dialogRef = inject(MatDialogRef<ModifierOperationDialogComponent, OperationCaisse>);
 
   readonly saving = signal(false);
+  /** True si la catégorie de l'opération accepte un justificatif. */
+  readonly accepteJustificatif = signal(false);
 
   // Signaux pour le calcul réactif du TTC
   private readonly montantSig = signal<number>(0);
@@ -164,6 +221,8 @@ export class ModifierOperationDialogComponent {
   reference = '';
   /** Au format "YYYY-MM-DDTHH:mm" attendu par <input type="datetime-local">. */
   dateDiffusion = '';
+  /** Nouveau fichier sélectionné par l'utilisateur (sera uploadé après update). */
+  fichier: File | null = null;
 
   readonly ttcAffiche = computed(() =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 })
@@ -182,6 +241,66 @@ export class ModifierOperationDialogComponent {
       ? op.dateDiffusion.substring(0, 16)
       : '';
     this.recalculer();
+    // Charge la catégorie pour savoir si on doit afficher la zone d'upload.
+    this.categorieService.lister().subscribe((cats) => {
+      const cat = cats.find(c => c.id === op.categorieId);
+      this.accepteJustificatif.set(cat?.accepteJustificatif === true);
+    });
+  }
+
+  /** True si un justificatif est deja attache cote backend. */
+  justificatifExistant(): boolean {
+    return !!this.data.operation.justificatifPresent;
+  }
+
+  onJustificatifSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (!file) return;
+    const types = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!types.includes(file.type)) {
+      this.snack.open('Format non supporte. PDF, JPG ou PNG uniquement.', 'OK',
+        { duration: 4000, panelClass: 'snackbar-error' });
+      input.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.snack.open('Fichier trop volumineux (max 5 Mo).', 'OK',
+        { duration: 4000, panelClass: 'snackbar-error' });
+      input.value = '';
+      return;
+    }
+    this.fichier = file;
+  }
+
+  iconePourFichier(typeMime?: string): string {
+    if (!typeMime) return 'description';
+    return typeMime === 'application/pdf' ? 'picture_as_pdf' : 'image';
+  }
+
+  tailleLisible(octets: number): string {
+    const ko = octets / 1024;
+    return ko > 1024
+      ? (ko / 1024).toFixed(2) + ' Mo'
+      : ko.toFixed(0) + ' Ko';
+  }
+
+  telechargerJustificatif(): void {
+    const op = this.data.operation;
+    this.api.telechargerJustificatif(op.id).subscribe({
+      next: (res) => {
+        const url = URL.createObjectURL(res.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = res.nomFichier || op.justificatifNomFichier || 'justificatif';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      },
+      error: () => this.snack.open('Telechargement impossible.', 'OK',
+        { duration: 3000, panelClass: 'snackbar-error' })
+    });
   }
 
   /**
@@ -239,10 +358,31 @@ export class ModifierOperationDialogComponent {
     this.saving.set(true);
     this.api.modifier(op.id, req).subscribe({
       next: (updated) => {
-        this.saving.set(false);
-        this.snack.open('Opération modifiée. Solde caisse recalculé.', 'OK',
-          { duration: 3000, panelClass: 'snackbar-success' });
-        this.dialogRef.close(updated);
+        // Si l'utilisateur a selectionne un nouveau justificatif, on l'envoie
+        // dans la foulee (POST multipart). Sinon, on termine immediatement.
+        if (this.fichier) {
+          this.api.uploaderJustificatif(updated.id, this.fichier).subscribe({
+            next: (avecFichier) => {
+              this.saving.set(false);
+              this.snack.open('Opération modifiée et justificatif joint.', 'OK',
+                { duration: 3000, panelClass: 'snackbar-success' });
+              this.dialogRef.close(avecFichier);
+            },
+            error: (err) => {
+              this.saving.set(false);
+              const msg = err?.error?.message ?? 'Operation modifiee mais upload du justificatif refuse.';
+              this.snack.open(msg, 'OK',
+                { duration: 5000, panelClass: 'snackbar-error' });
+              // L'operation a ete sauvee, on retourne le resultat partiel
+              this.dialogRef.close(updated);
+            }
+          });
+        } else {
+          this.saving.set(false);
+          this.snack.open('Opération modifiée. Solde caisse recalculé.', 'OK',
+            { duration: 3000, panelClass: 'snackbar-success' });
+          this.dialogRef.close(updated);
+        }
       },
       error: (err) => {
         this.saving.set(false);

@@ -117,4 +117,24 @@ public class OperationCaisse extends Auditable {
 
     @Column(length = 255)
     private String motifAnnulation;
+
+    // ==================================================================
+    //  Justificatif (PDF/JPG/PNG) - optionnel, n'est uploade que pour
+    //  les categories ayant accepteJustificatif=true. Stocke en base
+    //  (bytea) avec son nom, type MIME et taille pour le download.
+    // ==================================================================
+
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "justificatif_fichier")
+    private byte[] justificatifFichier;
+
+    @Column(name = "justificatif_nom_fichier", length = 255)
+    private String justificatifNomFichier;
+
+    @Column(name = "justificatif_type_mime", length = 100)
+    private String justificatifTypeMime;
+
+    @Column(name = "justificatif_taille_fichier")
+    private Long justificatifTailleFichier;
 }

@@ -64,6 +64,8 @@ public final class Dto {
         public String libelle;
         public TypeOperation typeOperation;
         public boolean actif;
+        /** Permet de joindre un PDF/JPG/PNG a une operation de cette categorie. */
+        public boolean accepteJustificatif;
 
         @Override public String toString() { return libelle; }
     }

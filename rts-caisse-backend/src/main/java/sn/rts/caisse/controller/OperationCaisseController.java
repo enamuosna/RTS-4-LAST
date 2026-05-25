@@ -125,6 +125,57 @@ public class OperationCaisseController {
     public ResponseEntity<List<OperationCaisseResponse>> historiqueSession(@PathVariable Long caisseId) {
         return ResponseEntity.ok(service.historiqueSessionCourante(caisseId));
     }
+
+    // ==================================================================
+    //  JUSTIFICATIF (PDF/JPG/PNG joint a une operation)
+    // ==================================================================
+
+    @PostMapping(value = "/{id}/justificatif",
+            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @org.springframework.security.access.prepost.PreAuthorize(
+            "hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
+    @Operation(summary = "Attache (ou remplace) le justificatif d'une operation "
+            + "(PDF/JPG/PNG, max 5 Mo). La categorie doit avoir "
+            + "accepteJustificatif=true.")
+    public ResponseEntity<OperationCaisseResponse> uploaderJustificatif(
+            @PathVariable Long id,
+            @RequestParam("fichier") org.springframework.web.multipart.MultipartFile fichier,
+            Authentication auth) {
+        return ResponseEntity.ok(
+                service.uploaderJustificatif(id, fichier, auth.getName()));
+    }
+
+    /**
+     * Endpoint JSON+base64 pour le telechargement du justificatif.
+     * Meme pattern que /api/versements/{id}/donnees : on encode le binaire
+     * en base64 dans une reponse JSON pour contourner Edge Tracking
+     * Prevention qui bloque les telechargements directs sur DuckDNS.
+     */
+    @GetMapping("/{id}/justificatif-donnees")
+    @org.springframework.security.access.prepost.PreAuthorize(
+            "hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
+    @Operation(summary = "Recupere le justificatif en base64 dans un JSON")
+    public java.util.Map<String, Object> telechargerJustificatif(@PathVariable Long id) {
+        sn.rts.caisse.model.OperationCaisse op = service.chargerJustificatif(id);
+        return java.util.Map.of(
+                "nomFichier",    op.getJustificatifNomFichier(),
+                "typeMime",      op.getJustificatifTypeMime(),
+                "tailleFichier", op.getJustificatifTailleFichier(),
+                "contenuBase64", java.util.Base64.getEncoder()
+                        .encodeToString(op.getJustificatifFichier())
+        );
+    }
+
+    @DeleteMapping("/{id}/justificatif")
+    @org.springframework.security.access.prepost.PreAuthorize(
+            "hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
+    @Operation(summary = "Detache le justificatif d'une operation (sans annuler l'operation).")
+    public ResponseEntity<Void> supprimerJustificatif(@PathVariable Long id,
+                                                      Authentication auth) {
+        service.supprimerJustificatif(id, auth.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/whatsapp")
     @Operation(
             summary = "Envoie le reçu PDF d'une opération par WhatsApp",

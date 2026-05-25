@@ -11,7 +11,12 @@ public record CategorieOperationDTO(
         @NotBlank @Size(max = 20) String code,
         @NotBlank @Size(max = 120) String libelle,
         @NotNull TypeOperation typeOperation,
-        boolean actif
+        boolean actif,
+        /**
+         * Active la zone d'upload d'un justificatif (PDF/JPG/PNG) lors
+         * de la saisie d'une operation. Default false : pas d'upload.
+         */
+        boolean accepteJustificatif
 ) {
     public static CategorieOperationDTO from(CategorieOperation c) {
         return new CategorieOperationDTO(
@@ -19,7 +24,8 @@ public record CategorieOperationDTO(
                 c.getCode(),
                 c.getLibelle(),
                 c.getTypeOperation(),
-                c.isActif()
+                c.isActif(),
+                c.isAccepteJustificatif()
         );
     }
 }

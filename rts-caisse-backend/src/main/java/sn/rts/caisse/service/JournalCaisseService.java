@@ -134,27 +134,14 @@ public class JournalCaisseService {
                     .orElseThrow(() -> new BusinessException(
                             "Aucun journal ouvert pour cette caisse."));
 
-            // Regle metier elargie : peuvent cloturer
-            //  - le CAISSIER qui a ouvert le journal (regle d'origine)
-            //  - l'AGENT_RECETTE affecte a la caisse (verification du solde
-            //    en fin de journee)
-            //  - SUPERVISEUR / ADMIN (intervention exceptionnelle :
-            //    caissier absent, oubli, etc.)
-            Utilisateur acteur = utilisateurRepository.findByLogin(loginCaissier)
-                    .orElseThrow(() -> new BusinessException(
-                            "Utilisateur introuvable : " + loginCaissier));
-            Caisse caisse = journal.getCaisse();
-            boolean estOuvreur = journal.getCaissier().getLogin().equals(loginCaissier);
-            boolean estAgentRecette = caisse.getAgentRecette() != null
-                    && acteur.getId().equals(caisse.getAgentRecette().getId());
-            boolean estSuperviseur = acteur.getRole() == Role.ADMIN
-                    || acteur.getRole() == Role.SUPERVISEUR;
-            if (!estOuvreur && !estAgentRecette && !estSuperviseur) {
+            // Regle metier stricte : seul le caissier qui a ouvert le
+            // journal peut le cloturer. Cela garantit la tracabilite
+            // du detenteur du fond physique de la caisse.
+            if (!journal.getCaissier().getLogin().equals(loginCaissier)) {
                 throw new BusinessException(
-                        "Vous n'etes pas autorise a cloturer cette caisse. "
-                        + "Reserve au caissier qui a ouvert, a l'agent de recette "
-                        + "affecte, ou a un superviseur / administrateur.");
+                        "Seul le caissier qui a ouvert la caisse peut la clôturer.");
             }
+            Caisse caisse = journal.getCaisse();
 
             LocalDateTime debut = journal.getDateJournal().atStartOfDay();
             LocalDateTime fin = debut.plusDays(1);

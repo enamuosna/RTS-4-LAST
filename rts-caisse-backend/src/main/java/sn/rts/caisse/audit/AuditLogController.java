@@ -128,6 +128,126 @@ public class AuditLogController {
         return ResponseEntity.ok(AuditLogResponse.from(entry));
     }
 
+    /**
+     * Export CSV du journal d'audit. Respecte les memes filtres que la
+     * consultation paginee. Encodage UTF-8 avec BOM pour qu'Excel ouvre
+     * correctement les caracteres accentues sans manipulation manuelle.
+     *
+     * <p>Volontairement non pagine : on stream tout ce qui matche les
+     * filtres. C'est l'admin qui est responsable de filtrer assez
+     * etroitement (par exemple sur 1 mois) pour ne pas exporter 100k
+     * lignes inutilement.</p>
+     */
+    @GetMapping(value = "/export.csv",
+            produces = "text/csv; charset=UTF-8")
+    @Operation(summary = "Exporte le journal d'audit filtre au format CSV")
+    public ResponseEntity<byte[]> exporterCsv(
+            @RequestParam(required = false) AuditAction action,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String entityType,
+            @RequestParam(required = false) Long entityId,
+            @RequestParam(required = false) Boolean success,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTo) {
+
+        Specification<AuditLog> spec = AuditLogSpecifications.withFilters(
+                action, userId, entityType, entityId, success, dateFrom, dateTo);
+        // Tri descendant par date pour avoir les plus recents en haut.
+        java.util.List<AuditLog> logs = repository.findAll(spec,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        StringBuilder csv = new StringBuilder();
+        // BOM UTF-8 pour Excel
+        csv.append('﻿');
+        csv.append("Date;Action;UserId;Login;Matricule;NomComplet;Role;");
+        csv.append("EntityType;EntityId;EntityLabel;Success;IP;UserAgent;");
+        csv.append("HttpMethod;HttpPath;ErrorMessage;Details\n");
+        java.time.format.DateTimeFormatter fmt =
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        for (AuditLog l : logs) {
+            csv.append(l.getCreatedAt() != null ? l.getCreatedAt().format(fmt) : "");
+            csv.append(';').append(escape(l.getAction()));
+            csv.append(';').append(escape(l.getUserId()));
+            csv.append(';').append(escape(l.getUserLogin()));
+            csv.append(';').append(escape(l.getUserMatricule()));
+            csv.append(';').append(escape(l.getUserNomComplet()));
+            csv.append(';').append(escape(l.getUserRole()));
+            csv.append(';').append(escape(l.getEntityType()));
+            csv.append(';').append(escape(l.getEntityId()));
+            csv.append(';').append(escape(l.getEntityLabel()));
+            csv.append(';').append(l.isSuccess() ? "OUI" : "NON");
+            csv.append(';').append(escape(l.getIpAddress()));
+            csv.append(';').append(escape(l.getUserAgent()));
+            csv.append(';').append(escape(l.getHttpMethod()));
+            csv.append(';').append(escape(l.getHttpPath()));
+            csv.append(';').append(escape(l.getErrorMessage()));
+            csv.append(';').append(escape(l.getDetails()));
+            csv.append('\n');
+        }
+        byte[] body = csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        String filename = "journal-audit-"
+                + java.time.LocalDate.now() + ".csv";
+
+        auditService.logSuccess(
+                AuditAction.EXPORTER_AUDIT_LOG,
+                "AuditLog", null, null,
+                "lignes=" + logs.size() + " filename=" + filename);
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE,
+                        "text/csv; charset=UTF-8")
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + filename + "\"")
+                .body(body);
+    }
+
+    /**
+     * Purge les logs d'audit anterieurs a N jours (defaut 90). Reservee aux
+     * ADMIN. L'action de purge elle-meme est tracee dans le journal pour
+     * conserver une trace de qui a vide quoi et quand.
+     *
+     * @param joursConservation nombre de jours d'historique a conserver (min 7)
+     */
+    @org.springframework.web.bind.annotation.DeleteMapping("/purge")
+    @Operation(summary = "Purge les logs anterieurs a N jours (defaut 90)")
+    public ResponseEntity<java.util.Map<String, Object>> purger(
+            @RequestParam(defaultValue = "90") int joursConservation) {
+        // Garde minimum 7 jours pour eviter une purge totale accidentelle.
+        int joursSafe = Math.max(joursConservation, 7);
+        LocalDateTime seuil = LocalDateTime.now().minusDays(joursSafe);
+
+        int supprimees = repository.deleteOlderThan(seuil);
+
+        log.warn("Purge audit log : {} entrees supprimees (anterieures a {})",
+                supprimees, seuil);
+        auditService.logSuccess(
+                AuditAction.PURGER_AUDIT_LOG,
+                "AuditLog", null, null,
+                "joursConservation=" + joursSafe + " seuil=" + seuil
+                        + " supprimees=" + supprimees);
+
+        return ResponseEntity.ok(java.util.Map.of(
+                "supprimees", supprimees,
+                "joursConservation", joursSafe,
+                "seuilDate", seuil.toString()
+        ));
+    }
+
+    /** Echappe un champ pour le format CSV : doubles guillemets pour
+     *  encadrer les valeurs contenant point-virgule, guillemet ou saut
+     *  de ligne. Les guillemets internes sont doubles. */
+    private static String escape(Object value) {
+        if (value == null) return "";
+        String s = value.toString();
+        boolean needsQuotes = s.contains(";") || s.contains("\"")
+                || s.contains("\n") || s.contains("\r");
+        if (!needsQuotes) return s;
+        return "\"" + s.replace("\"", "\"\"") + "\"";
+    }
+
     private static Sort parseSort(String raw) {
         if (raw == null || raw.isBlank()) {
             return Sort.by(Sort.Direction.DESC, "createdAt");

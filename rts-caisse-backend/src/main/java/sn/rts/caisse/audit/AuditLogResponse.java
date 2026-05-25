@@ -111,6 +111,8 @@ public record AuditLogResponse(
             case REINITIALISER_MOT_DE_PASSE -> "Réinitialisation de mot de passe";
             case CHANGER_MOT_DE_PASSE       -> "Changement de mot de passe";
             case CONSULTER_AUDIT_LOG        -> "Consultation des logs d'audit";
+            case EXPORTER_AUDIT_LOG         -> "Export du journal d'audit (CSV)";
+            case PURGER_AUDIT_LOG           -> "Purge des logs d'audit anciens";
             case CONSULTER_REPORTING_GLOBAL -> "Consultation du reporting";
             case ACCES_REFUSE               -> "Accès refusé";
             case ERREUR_METIER              -> "Erreur métier";

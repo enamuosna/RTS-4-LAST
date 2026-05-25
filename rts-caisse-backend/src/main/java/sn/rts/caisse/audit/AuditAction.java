@@ -126,6 +126,8 @@ public enum AuditAction {
     // ==================================================================
 
     CONSULTER_AUDIT_LOG,
+    EXPORTER_AUDIT_LOG,
+    PURGER_AUDIT_LOG,
     CONSULTER_REPORTING_GLOBAL,
 
     // ==================================================================

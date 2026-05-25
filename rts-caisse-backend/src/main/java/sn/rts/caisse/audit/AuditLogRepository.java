@@ -45,4 +45,13 @@ public interface AuditLogRepository
      * Utile pour des stats (ex. nb d'exports Excel sur les 30 derniers jours).
      */
     long countByActionAndCreatedAtAfter(AuditAction action, LocalDateTime since);
+
+    /**
+     * Supprime tous les logs anterieurs a une date donnee. Retourne le nombre
+     * de lignes effectivement supprimees. Utilise par la purge admin.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM AuditLog a WHERE a.createdAt < :seuil")
+    int deleteOlderThan(@Param("seuil") LocalDateTime seuil);
 }

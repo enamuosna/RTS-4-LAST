@@ -178,6 +178,91 @@ export class AuditListComponent implements OnInit {
     this.charger();
   }
 
+  /**
+   * Construit l'objet AuditFiltres a partir de l'etat actuel des filtres
+   * du formulaire. Reutilise pour la consultation paginee, l'export CSV
+   * et la purge (qui n'utilise pas les filtres, juste le nombre de jours).
+   */
+  private filtresCourants(): AuditFiltres {
+    return {
+      action: this.filtreAction || undefined,
+      userId: this.filtreUserId ?? undefined,
+      entityType: this.filtreEntityType?.trim() || undefined,
+      entityId: this.filtreEntityId ?? undefined,
+      success: this.filtreSucces === 'all'
+        ? undefined
+        : this.filtreSucces === 'success',
+      dateFrom: this.filtreDateFrom ?? undefined,
+      dateTo: this.filtreDateTo ?? undefined
+    };
+  }
+
+  /**
+   * Telecharge un export CSV du journal d'audit, en respectant les
+   * filtres actuellement actifs. Le CSV est encode UTF-8 + BOM pour
+   * Excel et utilise le point-virgule comme separateur.
+   */
+  exporterCsv(): void {
+    this.auditService.exporterCsv(this.filtresCourants()).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ymd = new Date().toISOString().slice(0, 10);
+        a.download = `journal-audit-${ymd}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        this.snackBar.open('Export CSV telecharge.', 'OK', {
+          duration: 2500, panelClass: ['snackbar-success']
+        });
+      },
+      error: (err) => this.snackBar.open(
+        'Echec export : ' + (err?.error?.message ?? err.message),
+        'OK', { duration: 4000, panelClass: ['snackbar-error'] }
+      )
+    });
+  }
+
+  /**
+   * Demande confirmation puis purge les logs plus anciens que N jours.
+   * N est saisi par l'admin (defaut 90, minimum cote serveur 7).
+   */
+  purgerLogs(): void {
+    const raw = window.prompt(
+      'Nombre de jours d\'historique a CONSERVER ? '
+      + '(tout ce qui est plus ancien sera supprime definitivement)\n\n'
+      + 'Par defaut : 90 jours. Minimum autorise : 7 jours.',
+      '90'
+    );
+    if (raw === null) return; // annule
+    const jours = parseInt(raw, 10);
+    if (isNaN(jours) || jours < 1) {
+      this.snackBar.open('Saisie invalide (nombre entier > 0 attendu).', 'OK',
+        { duration: 3500, panelClass: ['snackbar-error'] });
+      return;
+    }
+    if (!confirm(
+        `Confirmer la SUPPRESSION DEFINITIVE de tous les logs d'audit `
+        + `plus anciens que ${jours} jours ?\n\nCette action est irreversible.`)) {
+      return;
+    }
+    this.auditService.purger(jours).subscribe({
+      next: (res) => {
+        this.snackBar.open(
+          `Purge effectuee : ${res.supprimees} entrees supprimees `
+          + `(seuil : ${res.joursConservation} jours).`,
+          'OK', { duration: 5000, panelClass: ['snackbar-success'] });
+        this.charger();
+      },
+      error: (err) => this.snackBar.open(
+        'Echec purge : ' + (err?.error?.message ?? err.message),
+        'OK', { duration: 4500, panelClass: ['snackbar-error'] }
+      )
+    });
+  }
+
   // ------------------------------------------------------------------
   //  Détail
   // ------------------------------------------------------------------

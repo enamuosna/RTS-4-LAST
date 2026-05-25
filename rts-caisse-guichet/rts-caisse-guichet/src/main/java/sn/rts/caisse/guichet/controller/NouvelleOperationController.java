@@ -381,12 +381,22 @@ public class NouvelleOperationController {
     }
 
     /**
-     * Affiche ou cache le bloc d'upload selon le flag accepteJustificatif
-     * de la categorie. Reset egalement le fichier deja choisi si l'on
-     * passe sur une categorie sans justificatif.
+     * Affiche ou cache le bloc d'upload selon deux regles cumulatives :
+     *  - la categorie a accepteJustificatif=true (typique AVIS ET
+     *    COMMUNIQUES, APPEL : justificatif metier antenne), OU
+     *  - le mode de paiement n'est pas ESPECES (justificatif de paiement
+     *    electronique : cheque, virement, mobile money, carte bancaire).
+     *
+     * En cas de masquage, on reset le fichier eventuellement deja choisi.
      */
     private void appliquerVisibiliteJustificatif(CategorieDTO categorie) {
-        boolean visible = categorie != null && categorie.accepteJustificatif;
+        ModePaiement mode = modePaiementCombo != null
+                ? modePaiementCombo.getValue() : null;
+        boolean autoriseParCategorie = categorie != null
+                && categorie.accepteJustificatif;
+        boolean autoriseParModePaiement = mode != null
+                && mode != ModePaiement.ESPECES;
+        boolean visible = autoriseParCategorie || autoriseParModePaiement;
         if (justificatifBox != null) {
             justificatifBox.setVisible(visible);
             justificatifBox.setManaged(visible);
@@ -646,6 +656,10 @@ public class NouvelleOperationController {
             timbreBox.setVisible(afficheTimbre);
             timbreBox.setManaged(afficheTimbre);
         }
+        // Le justificatif depend AUSSI du mode de paiement : mode non-especes
+        // = justificatif possible (preuve de paiement electronique).
+        appliquerVisibiliteJustificatif(
+                categorieCombo != null ? categorieCombo.getValue() : null);
         recalculerTtc();
     }
 

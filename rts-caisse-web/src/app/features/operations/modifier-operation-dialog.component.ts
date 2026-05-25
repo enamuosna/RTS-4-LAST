@@ -135,7 +135,7 @@ import { OperationService } from '../../core/services/caisse.services';
               </div>
             } @else {
               <button mat-stroked-button type="button" (click)="fileInput.click()">
-                <mat-icon>upload_file</mat-icon> Joindre un justificatif (PDF/JPG/PNG)
+                <mat-icon>upload_file</mat-icon> Joindre un justificatif de paiement (PDF/JPG/PNG)
               </button>
               <p class="hint">Optionnel - taille max : 5 Mo</p>
             }
@@ -241,11 +241,20 @@ export class ModifierOperationDialogComponent {
       ? op.dateDiffusion.substring(0, 16)
       : '';
     this.recalculer();
-    // Charge la catégorie pour savoir si on doit afficher la zone d'upload.
-    this.categorieService.lister().subscribe((cats) => {
-      const cat = cats.find(c => c.id === op.categorieId);
-      this.accepteJustificatif.set(cat?.accepteJustificatif === true);
-    });
+    // La zone d'upload est visible si :
+    //  - la categorie de l'operation a accepteJustificatif=true, OU
+    //  - le mode de paiement n'est pas ESPECES (justificatif de paiement
+    //    electronique : cheque, virement, wave, orange money, etc.).
+    const modeNonEspeces = op.modePaiement && op.modePaiement !== 'ESPECES';
+    if (modeNonEspeces) {
+      this.accepteJustificatif.set(true);
+    } else {
+      // Pour ESPECES, on regarde le flag categorie.
+      this.categorieService.lister().subscribe((cats) => {
+        const cat = cats.find(c => c.id === op.categorieId);
+        this.accepteJustificatif.set(cat?.accepteJustificatif === true);
+      });
+    }
   }
 
   /** True si un justificatif est deja attache cote backend. */

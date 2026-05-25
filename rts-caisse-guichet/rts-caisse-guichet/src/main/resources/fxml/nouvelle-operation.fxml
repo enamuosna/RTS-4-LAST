@@ -167,13 +167,17 @@
                 </VBox>
             </GridPane>
 
-            <!-- ========== Justificatif (visible si la categorie l'accepte) ==========
-                 Quand la categorie selectionnee a accepteJustificatif=true,
-                 ce bloc apparait pour permettre au caissier d'attacher un
-                 PDF/JPG/PNG (max 5 Mo). Optionnel. -->
+            <!-- ========== Justificatif (visible selon 2 regles) ==========
+                 Le bloc apparait si :
+                  (a) la categorie a accepteJustificatif=true (AVIS ET
+                      COMMUNIQUES, APPEL...) ou
+                  (b) le mode de paiement n'est pas ESPECES (justificatif
+                      de paiement electronique : cheque, virement, mobile
+                      money, carte). Optionnel dans les deux cas. -->
             <VBox fx:id="justificatifBox" spacing="6"
                   visible="false" managed="false">
-                <Label styleClass="field-label" text="JUSTIFICATIF (PDF, JPG ou PNG, 5 Mo max)"/>
+                <Label styleClass="field-label"
+                       text="JUSTIFICATIF DE PAIEMENT (PDF, JPG ou PNG, 5 Mo max)"/>
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <Button fx:id="choisirJustifButton" text="Choisir un fichier"
                             onAction="#onChoisirJustificatif"

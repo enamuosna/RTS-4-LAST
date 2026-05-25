@@ -716,11 +716,23 @@ public class OperationCaisseService {
                     "Format non supporte : " + type
                             + ". Formats acceptes : PDF, JPG, PNG.");
         }
-        if (!op.getCategorie().isAccepteJustificatif()) {
+        // La zone d'upload est autorisee si :
+        //  - la categorie a accepteJustificatif=true (typique AVIS ET
+        //    COMMUNIQUES, APPEL), OU
+        //  - le paiement est par CHEQUE / VIREMENT / WAVE / ORANGE_MONEY /
+        //    FREE_MONEY / CARTE_BANCAIRE (justificatif de paiement
+        //    electronique attendu, peu importe la categorie).
+        // ESPECES sans flag categorie -> pas de justificatif possible.
+        boolean autoriseParCategorie = op.getCategorie().isAccepteJustificatif();
+        boolean autoriseParModePaiement =
+                op.getModePaiement() != null
+                        && op.getModePaiement() != ModePaiement.ESPECES;
+        if (!autoriseParCategorie && !autoriseParModePaiement) {
             throw new BusinessException(
-                    "La categorie '" + op.getCategorie().getLibelle()
-                            + "' n'accepte pas de justificatif. Activez le "
-                            + "flag accepteJustificatif sur la categorie cote admin.");
+                    "Cette operation n'accepte pas de justificatif (paiement "
+                            + "en especes et categorie '"
+                            + op.getCategorie().getLibelle() + "' sans flag "
+                            + "accepteJustificatif).");
         }
         if (op.isAnnulee()) {
             throw new BusinessException(

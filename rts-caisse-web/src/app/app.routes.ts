@@ -108,7 +108,7 @@ export const routes: Routes = [
         path: 'versements',
         loadComponent: () =>
           import('./features/versements/versements.component').then((m) => m.VersementsComponent),
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'])]
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'])]
       },
       // Si un guard refuse un acces, on renvoie sur /dashboard (page accessible
       // a TOUS les roles) plutot que /caisses qui exclut maintenant AGENT_RECETTE.

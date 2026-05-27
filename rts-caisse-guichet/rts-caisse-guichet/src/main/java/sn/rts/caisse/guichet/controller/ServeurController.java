@@ -13,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sn.rts.caisse.guichet.api.ApiClient;
 import sn.rts.caisse.guichet.api.ApiClient.PingResult;
+import sn.rts.caisse.guichet.api.CaisseApi;
 import sn.rts.caisse.guichet.app.GuichetApplication;
+import sn.rts.caisse.guichet.model.Dto;
 import sn.rts.caisse.guichet.util.AsyncRunner;
 import sn.rts.caisse.guichet.util.Config;
 
@@ -192,6 +194,13 @@ public class ServeurController {
             log.warn("Ping KO : {}", result.message());
             showError("Connexion impossible", result.message());
             derniereConnexionOk = false;
+            // Best-effort : signaler l'échec au journal d'audit central
+            // (si le serveur répond entre-temps pour POST /audit/client-events).
+            CaisseApi.getInstance().signalerEvenementAudit(
+                    Dto.AuditActions.ECHEC_CONNEXION_SERVEUR,
+                    false, result.message(),
+                    "url=" + Config.getInstance().getServerBaseUrl(),
+                    null, null, null);
         }
     }
 
@@ -200,6 +209,12 @@ public class ServeurController {
         showError("Erreur inattendue",
                 t.getMessage() == null ? t.toString() : t.getMessage());
         derniereConnexionOk = false;
+        CaisseApi.getInstance().signalerEvenementAudit(
+                Dto.AuditActions.ECHEC_CONNEXION_SERVEUR,
+                false,
+                t.getMessage() == null ? t.toString() : t.getMessage(),
+                "url=" + Config.getInstance().getServerBaseUrl(),
+                null, null, null);
     }
 
     // ==================================================================

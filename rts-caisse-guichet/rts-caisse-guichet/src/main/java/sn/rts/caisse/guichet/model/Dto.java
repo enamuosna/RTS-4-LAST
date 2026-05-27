@@ -357,4 +357,41 @@ public final class Dto {
 
         public OperationCaisseResponse() {}
     }
+
+    // ====================================================
+    //  AUDIT (événements remontés depuis le client lourd)
+    // ====================================================
+
+    /**
+     * Payload pour {@code POST /api/audit/client-events}.
+     * Mirror du DTO backend {@code ClientAuditEventRequest}.
+     * L'identité de l'auteur est extraite côté serveur du JWT,
+     * on ne l'envoie jamais dans le body.
+     */
+    public static class ClientAuditEventRequest {
+        /** Nom de l'action ({@link AuditActions}). */
+        public String action;
+        public boolean success = true;
+        public String errorMessage;
+        public String details;
+        public String entityType;
+        public Long   entityId;
+        public String entityLabel;
+        public String hostname;
+        public String appVersion;
+    }
+
+    /**
+     * Constantes pour les actions remontées par le client lourd.
+     * Doit rester aligné avec la whitelist serveur
+     * {@code ClientAuditEventController.ACTIONS_AUTORISEES}.
+     */
+    public static final class AuditActions {
+        private AuditActions() {}
+        public static final String DEMARRER_APP_GUICHET    = "DEMARRER_APP_GUICHET";
+        public static final String ARRETER_APP_GUICHET     = "ARRETER_APP_GUICHET";
+        public static final String ECHEC_CONNEXION_SERVEUR = "ECHEC_CONNEXION_SERVEUR";
+        public static final String IMPRIMER_RECU           = "IMPRIMER_RECU";
+        public static final String EXPORTER_RECU_FICHIER   = "EXPORTER_RECU_FICHIER";
+    }
 }

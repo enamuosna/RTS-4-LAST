@@ -109,6 +109,10 @@ public record AuditLogResponse(
             case CONSULTER_REPORTING_GLOBAL -> "Consultation du reporting";
             case ACCES_REFUSE               -> "Accès refusé";
             case ERREUR_METIER              -> "Erreur métier";
+            case DEMARRER_APP_GUICHET       -> "Démarrage app desktop";
+            case ARRETER_APP_GUICHET        -> "Arrêt app desktop";
+            case ECHEC_CONNEXION_SERVEUR    -> "Échec connexion serveur";
+            case EXPORTER_RECU_FICHIER      -> "Export reçu (fichier local)";
         };
     }
 }

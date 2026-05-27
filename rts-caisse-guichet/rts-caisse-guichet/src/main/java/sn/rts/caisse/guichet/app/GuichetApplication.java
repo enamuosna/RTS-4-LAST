@@ -14,6 +14,8 @@
     import javafx.util.Duration;
     import org.slf4j.Logger;
     import org.slf4j.LoggerFactory;
+    import sn.rts.caisse.guichet.api.CaisseApi;
+    import sn.rts.caisse.guichet.model.Dto;
     import sn.rts.caisse.guichet.util.AsyncRunner;
     import sn.rts.caisse.guichet.util.Config;
     import sn.rts.caisse.guichet.util.ThemeManager;
@@ -80,6 +82,12 @@
             stage.show();
 
             log.info("Guichet RTS démarré. API cible : {}", Config.getInstance().getApiUrl());
+
+            // Trace de démarrage dans le journal d'audit central (fire-and-forget).
+            // Le serveur peut être inaccessible : l'événement est simplement perdu.
+            CaisseApi.getInstance().signalerEvenementAudit(
+                    Dto.AuditActions.DEMARRER_APP_GUICHET, true,
+                    "API cible : " + Config.getInstance().getApiUrl());
         }
 
         /**
@@ -171,6 +179,14 @@
 
         @Override
         public void stop() {
+            // Trace d'arrêt avant la coupure du pool : AsyncRunner.shutdown()
+            // accorde jusqu'à 2 s aux tâches en cours pour terminer leur POST.
+            try {
+                CaisseApi.getInstance().signalerEvenementAudit(
+                        Dto.AuditActions.ARRETER_APP_GUICHET, true, null);
+            } catch (Exception ignored) {
+                // Ne jamais bloquer la fermeture pour un événement d'audit.
+            }
             AsyncRunner.shutdown();
         }
     }

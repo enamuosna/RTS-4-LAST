@@ -75,9 +75,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
 
-                        // Audit : consultation réservée aux ADMIN
-                        // (le @PreAuthorize("hasRole('ADMIN')") sur AuditLogController
-                        //  fait déjà le travail, mais on double ici pour défense en profondeur)
+                        // Audit : la remontée d'événements depuis le client lourd
+                        // (POST /api/audit/client-events) est ouverte car certains
+                        // événements (démarrage, échec ping) n'ont pas encore de JWT.
+                        // L'identité de l'auteur est extraite du JWT si présent,
+                        // jamais du payload ; et les actions autorisées sont
+                        // whitelistées dans ClientAuditEventController.
+                        .requestMatchers(HttpMethod.POST, "/api/audit/client-events")
+                            .permitAll()
+                        // Toute autre route /api/audit/** : consultation réservée aux
+                        // ADMIN (le @PreAuthorize("hasRole('ADMIN')") sur
+                        // AuditLogController fait déjà le travail, mais on double
+                        // ici pour défense en profondeur).
                         .requestMatchers("/api/audit/**").hasRole("ADMIN")
 
                         // Reporting : tous les rôles authentifiés peuvent accéder ;

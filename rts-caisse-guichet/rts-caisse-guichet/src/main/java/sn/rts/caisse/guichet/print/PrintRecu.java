@@ -26,6 +26,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sn.rts.caisse.guichet.api.CaisseApi;
+import sn.rts.caisse.guichet.model.Dto;
 import sn.rts.caisse.guichet.model.Dto.OperationCaisseResponse;
 import sn.rts.caisse.guichet.model.Dto.ParametresRecuDto;
 import sn.rts.caisse.guichet.model.Dto.SectionRecu;
@@ -103,7 +105,30 @@ public final class PrintRecu {
         if (printed) {
             job.endJob();
         }
+
+        // Trace centralisée : qui a imprimé quel reçu, sur quel poste,
+        // avec quel résultat. Le backend trace déjà la génération du PDF
+        // depuis l'app web ; ici on capture spécifiquement l'envoi sur
+        // l'imprimante physique côté caissier.
+        if (op != null) {
+            String details = "imprimante=" + safeName(job.getPrinter())
+                    + (op.numeroRecu != null ? " recu=" + op.numeroRecu : "");
+            CaisseApi.getInstance().signalerEvenementAudit(
+                    Dto.AuditActions.IMPRIMER_RECU,
+                    printed,
+                    printed ? null : "Impression refusée par le pilote",
+                    details,
+                    "OperationCaisse", op.id, op.numeroRecu);
+        }
         return printed;
+    }
+
+    private static String safeName(Printer printer) {
+        try {
+            return printer == null ? "?" : printer.getName();
+        } catch (Exception e) {
+            return "?";
+        }
     }
 
     public static void listerImprimantes() {

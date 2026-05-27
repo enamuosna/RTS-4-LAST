@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sn.rts.caisse.guichet.api.ApiException;
 import sn.rts.caisse.guichet.api.CaisseApi;
+import sn.rts.caisse.guichet.model.Dto;
 import sn.rts.caisse.guichet.model.Dto.EnvoiWhatsAppResponse;
 import sn.rts.caisse.guichet.model.Dto.OperationCaisseResponse;
 import sn.rts.caisse.guichet.util.AsyncRunner;
@@ -88,10 +89,21 @@ public final class RecuExporter {
             Path destination = RECUS_DIR.resolve("recu-" + sanitize(op.numeroRecu) + ".png");
             ImageIO.write(swingImage, "png", destination.toFile());
             log.info("Reçu PNG exporté : {}", destination);
+            CaisseApi.getInstance().signalerEvenementAudit(
+                    Dto.AuditActions.EXPORTER_RECU_FICHIER,
+                    true, null,
+                    "format=PNG chemin=" + destination,
+                    "OperationCaisse", op.id, op.numeroRecu);
             return destination;
         } catch (Exception e) {
             log.error("Échec export PNG du reçu n° {} : {}",
                     op.numeroRecu, e.getMessage(), e);
+            CaisseApi.getInstance().signalerEvenementAudit(
+                    Dto.AuditActions.EXPORTER_RECU_FICHIER,
+                    false, e.getMessage(),
+                    "format=PNG",
+                    "OperationCaisse", op == null ? null : op.id,
+                    op == null ? null : op.numeroRecu);
             return null;
         }
     }

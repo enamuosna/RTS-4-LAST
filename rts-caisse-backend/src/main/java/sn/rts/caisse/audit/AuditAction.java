@@ -119,5 +119,21 @@ public enum AuditAction {
     ACCES_REFUSE,
 
     /** Erreur métier (BusinessException) capturée explicitement par un service. */
-    ERREUR_METIER
+    ERREUR_METIER,
+
+    // ==================================================================
+    //  Événements émis par le client lourd (guichet JavaFX)
+    // ==================================================================
+
+    /** Démarrage de l'application desktop sur un poste. */
+    DEMARRER_APP_GUICHET,
+
+    /** Arrêt de l'application desktop. */
+    ARRETER_APP_GUICHET,
+
+    /** Échec du ping serveur depuis le poste desktop (mode dégradé). */
+    ECHEC_CONNEXION_SERVEUR,
+
+    /** Export local du reçu en fichier (PNG/PDF) sur le poste caissier. */
+    EXPORTER_RECU_FICHIER
 }

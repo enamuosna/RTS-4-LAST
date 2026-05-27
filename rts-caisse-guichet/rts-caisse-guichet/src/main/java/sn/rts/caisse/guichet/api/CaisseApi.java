@@ -1,7 +1,13 @@
 package sn.rts.caisse.guichet.api;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sn.rts.caisse.guichet.model.Dto.AuthResponse;
+import sn.rts.caisse.guichet.model.Dto.ClientAuditEventRequest;
+import sn.rts.caisse.guichet.util.AsyncRunner;
+import sn.rts.caisse.guichet.util.Config;
+import java.net.InetAddress;
 import sn.rts.caisse.guichet.model.Dto.CaisseDTO;
 import sn.rts.caisse.guichet.model.Dto.CategorieDTO;
 import sn.rts.caisse.guichet.model.Dto.ClientCreateRequest;
@@ -38,6 +44,8 @@ import sn.rts.caisse.guichet.model.Dto.BanqueDTO;
  */
 public class CaisseApi {
 
+    private static final Logger log = LoggerFactory.getLogger(CaisseApi.class);
+
     private static final CaisseApi INSTANCE = new CaisseApi();
 
     public static CaisseApi getInstance() {
@@ -45,6 +53,18 @@ public class CaisseApi {
     }
 
     private final ApiClient client = ApiClient.getInstance();
+
+    /** Nom du poste (cache statique, calculé une fois). */
+    private static final String HOSTNAME = resolveHostname();
+
+    private static String resolveHostname() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (Exception e) {
+            String env = System.getenv("COMPUTERNAME");
+            return env != null ? env : "unknown";
+        }
+    }
 
     // ====================================================================
     //  AUTH
@@ -237,5 +257,58 @@ public class CaisseApi {
             // 404 si pas de logo
             return null;
         }
+    }
+
+    // ====================================================
+    //  AUDIT (événements émis par le client lourd)
+    // ====================================================
+
+    /**
+     * Remonte un événement émis par le poste desktop au journal d'audit
+     * central, en <b>fire-and-forget</b> (jamais bloquant, jamais d'exception
+     * propagée à l'appelant) :
+     * <ul>
+     *   <li>l'appel HTTP est exécuté sur le pool {@link AsyncRunner}
+     *       pour ne pas figer le thread FX,</li>
+     *   <li>toute erreur réseau est avalée (loggée localement uniquement) :
+     *       le serveur peut être hors ligne (cas typique d'un
+     *       {@code ECHEC_CONNEXION_SERVEUR}…) sans casser l'UI.</li>
+     * </ul>
+     *
+     * @param action  nom de l'action (constantes
+     *                {@link sn.rts.caisse.guichet.model.Dto.AuditActions})
+     * @param success vrai si l'événement représente un succès
+     * @param details texte libre (mode, chemin du fichier, motif…)
+     */
+    public void signalerEvenementAudit(String action, boolean success, String details) {
+        signalerEvenementAudit(action, success, null, details, null, null, null);
+    }
+
+    /** Variante avec entité affectée et message d'erreur explicite. */
+    public void signalerEvenementAudit(String action,
+                                       boolean success,
+                                       String errorMessage,
+                                       String details,
+                                       String entityType,
+                                       Long entityId,
+                                       String entityLabel) {
+        if (action == null || action.isBlank()) return;
+
+        ClientAuditEventRequest req = new ClientAuditEventRequest();
+        req.action       = action;
+        req.success      = success;
+        req.errorMessage = errorMessage;
+        req.details      = details;
+        req.entityType   = entityType;
+        req.entityId     = entityId;
+        req.entityLabel  = entityLabel;
+        req.hostname     = HOSTNAME;
+        req.appVersion   = Config.APP_VERSION;
+
+        AsyncRunner.run(
+                () -> { client.post("/audit/client-events", req, Void.class); return null; },
+                ok  -> { /* fire-and-forget */ },
+                err -> log.debug("Audit client-event ignoré (réseau KO ?) action={} : {}",
+                        action, err.getMessage()));
     }
 }

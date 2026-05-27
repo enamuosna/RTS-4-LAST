@@ -5,6 +5,7 @@ import javafx.concurrent.Task;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -39,7 +40,20 @@ public final class AsyncRunner {
         EXECUTOR.submit(task);
     }
 
+    /**
+     * Arrêt gracieux : laisse jusqu'à 2 secondes aux tâches en cours
+     * (notamment l'événement d'audit ARRETER_APP_GUICHET) pour terminer
+     * avant d'interrompre brutalement le pool.
+     */
     public static void shutdown() {
-        EXECUTOR.shutdownNow();
+        EXECUTOR.shutdown();
+        try {
+            if (!EXECUTOR.awaitTermination(2, TimeUnit.SECONDS)) {
+                EXECUTOR.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            EXECUTOR.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }

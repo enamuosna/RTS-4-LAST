@@ -62,6 +62,14 @@ public enum AuditAction {
     /** Annulation d'une opération existante (contre-passation du solde). */
     ANNULER_OPERATION,
 
+    /**
+     * Suppression définitive d'une opération de la base (ADMIN uniquement).
+     * Si l'op n'était pas annulée, le solde caisse est contre-passé avant
+     * suppression (sauf si le journal est clôturé, auquel cas le snapshot
+     * historique est conservé tel quel).
+     */
+    SUPPRIMER_OPERATION_DEFINITIVEMENT,
+
     // ==================================================================
     //  Versements bancaires
     // ==================================================================

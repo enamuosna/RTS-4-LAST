@@ -73,6 +73,9 @@ export class OperationsComponent implements OnInit {
    * - CAISSIER : oui uniquement si caissier affecté à cette caisse
    *   (correction d'erreur de saisie sur sa propre journée)
    */
+  /** Seul l'ADMIN peut supprimer définitivement une opération (purge BDD). */
+  readonly isAdmin = computed(() => this.auth.currentRole() === 'ADMIN');
+
   readonly peutCorriger = computed<boolean>(() => {
     const role = this.auth.currentRole();
     if (role === 'ADMIN' || role === 'SUPERVISEUR') return true;
@@ -204,6 +207,42 @@ export class OperationsComponent implements OnInit {
       error: () => this.snackBar.open('Téléchargement impossible.', 'OK', {
         duration: 3000, panelClass: ['snackbar-error']
       })
+    });
+  }
+
+  /**
+   * Supprime DÉFINITIVEMENT une opération (ADMIN uniquement).
+   * Si l'op n'est pas annulée et son journal n'est pas clôturé,
+   * le backend contre-passe automatiquement le solde caisse.
+   */
+  supprimerDefinitivement(operation: OperationCaisse): void {
+    const ttc = operation.montantTtc ?? operation.montant;
+    const msg = `SUPPRESSION DÉFINITIVE de l'opération ${operation.numeroRecu}\n\n`
+      + `Type: ${operation.typeOperation}\n`
+      + `Montant TTC: ${ttc} FCFA\n`
+      + `Statut: ${operation.annulee ? 'déjà annulée' : 'active'}\n\n`
+      + (operation.annulee
+          ? 'Suppression simple (le solde a déjà été contre-passé à l\'annulation).'
+          : 'Le solde de la caisse sera contre-passé automatiquement avant suppression.')
+      + '\n\nCette action est IRRÉVERSIBLE. Continuer ?';
+    if (!confirm(msg)) return;
+
+    this.operationService.supprimerDefinitivement(operation.id).subscribe({
+      next: (res) => {
+        const txt = res.nbContrepassees > 0
+          ? `Opération supprimée. Solde caisse ajusté.`
+          : `Opération supprimée.`;
+        this.snackBar.open(txt, 'OK', {
+          duration: 3500, panelClass: ['snackbar-success']
+        });
+        this.charger();
+      },
+      error: (err) => {
+        const message = err?.error?.message ?? 'Échec de la suppression définitive.';
+        this.snackBar.open(message, 'OK', {
+          duration: 5000, panelClass: ['snackbar-error']
+        });
+      }
     });
   }
 

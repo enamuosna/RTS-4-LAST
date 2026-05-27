@@ -6,17 +6,25 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import sn.rts.caisse.dto.OperationCaisseRequest;
 import sn.rts.caisse.dto.OperationCaisseResponse;
+import sn.rts.caisse.dto.PurgeFilter;
+import sn.rts.caisse.dto.PurgePreviewResponse;
+import sn.rts.caisse.dto.PurgeResult;
 import sn.rts.caisse.service.OperationCaisseService;
+import sn.rts.caisse.service.OperationPurgeService;
 
 import jakarta.validation.Valid;
 import sn.rts.caisse.dto.EnvoiWhatsAppRequest;
 import sn.rts.caisse.dto.EnvoiWhatsAppResponse;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -26,6 +34,7 @@ import java.util.List;
 public class OperationCaisseController {
 
     private final OperationCaisseService service;
+    private final OperationPurgeService  purgeService;
     private final sn.rts.caisse.service.RecuPdfService recuPdfService;
 
     @PostMapping
@@ -191,4 +200,63 @@ public class OperationCaisseController {
         return ResponseEntity.ok(reponse);
     }
 
+    // ==================================================================
+    //  PURGE (suppression définitive) - réservé aux ADMIN
+    //
+    //  Flux UX recommandé :
+    //    1. POST /purger/preview  -> affiche compteur + sommes impactées
+    //    2. POST /purger/csv      -> télécharge un snapshot CSV
+    //    3. POST /purger          -> exécute la purge (réplique exacte du
+    //                                filtre du preview)
+    //  OU pour une suppression unitaire (bouton corbeille admin) :
+    //    DELETE /{id}/definitif
+    // ==================================================================
+
+    @DeleteMapping("/{id}/definitif")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Supprime DÉFINITIVEMENT une opération (ADMIN uniquement)",
+            description = "Si l'opération n'est pas annulée et que son journal n'est "
+                    + "pas clôturé, le solde de la caisse est contre-passé "
+                    + "automatiquement avant suppression. Un audit log "
+                    + "SUPPRIMER_OPERATION_DEFINITIVEMENT est créé.")
+    public ResponseEntity<PurgeResult> supprimerDefinitivement(@PathVariable Long id,
+                                                                Authentication auth) {
+        return ResponseEntity.ok(purgeService.supprimerUneOp(id, auth.getName()));
+    }
+
+    @PostMapping("/purger/preview")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Prévisualise l'impact d'une purge (compteur, sommes, dates)")
+    public ResponseEntity<PurgePreviewResponse> previewPurge(
+            @Valid @RequestBody PurgeFilter filter) {
+        return ResponseEntity.ok(purgeService.previewPurge(filter));
+    }
+
+    @PostMapping(value = "/purger/csv",
+            produces = "text/csv")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Exporte en CSV les opérations qui seraient supprimées par la purge")
+    public ResponseEntity<byte[]> exporterPurgeCsv(@Valid @RequestBody PurgeFilter filter) {
+        byte[] csv = purgeService.exportCsv(filter);
+        String nom = "operations-a-purger-"
+                + java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+                + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nom + "\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv);
+    }
+
+    @PostMapping("/purger")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Exécute la purge en masse selon le filtre",
+            description = "Limite de sécurité : "
+                    + OperationPurgeService.LIMITE_PURGE_BULK
+                    + " opérations max. Chaque suppression est dans sa propre "
+                    + "transaction (un échec sur une op n'annule pas les autres).")
+    public ResponseEntity<PurgeResult> purgerEnMasse(@Valid @RequestBody PurgeFilter filter,
+                                                      Authentication auth) {
+        return ResponseEntity.ok(
+                purgeService.purgerEnMasse(filter, auth.getName()));
+    }
 }

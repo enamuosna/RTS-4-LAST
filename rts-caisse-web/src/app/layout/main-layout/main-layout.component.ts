@@ -118,6 +118,13 @@ export class MainLayoutComponent {
         { label: 'Journal d\'audit', icon: 'fact_check', route: '/audit',  roles: ['ADMIN'] },
         { label: 'Sauvegarde',       icon: 'backup',     route: '/backup', roles: ['ADMIN'] }
       ]
+    },
+    {
+      label: 'Maintenance',
+      items: [
+        { label: 'Purge des opérations', icon: 'delete_sweep',
+          route: '/maintenance/purge-operations', roles: ['ADMIN'] }
+      ]
     }
   ]);
 

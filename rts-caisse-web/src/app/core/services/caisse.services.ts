@@ -104,6 +104,58 @@ export class OperationService {
   supprimerJustificatif(operationId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${operationId}/justificatif`);
   }
+
+  // ---------- Purge (suppression définitive — ADMIN uniquement) ----------
+
+  /** Supprime DÉFINITIVEMENT une opération (contre-pass auto si nécessaire). */
+  supprimerDefinitivement(id: number): Observable<PurgeResult> {
+    return this.http.delete<PurgeResult>(`${this.base}/${id}/definitif`);
+  }
+
+  /** Prévisualise l'impact d'une purge (compteur, sommes, dates). */
+  previewPurge(filter: PurgeFilter): Observable<PurgePreviewResponse> {
+    return this.http.post<PurgePreviewResponse>(`${this.base}/purger/preview`, filter);
+  }
+
+  /** Télécharge le CSV des opérations qui seraient supprimées. */
+  exporterPurgeCsv(filter: PurgeFilter): Observable<Blob> {
+    return this.http.post(`${this.base}/purger/csv`, filter, {
+      responseType: 'blob'
+    });
+  }
+
+  /** Exécute la purge en masse selon le filtre. */
+  purgerEnMasse(filter: PurgeFilter): Observable<PurgeResult> {
+    return this.http.post<PurgeResult>(`${this.base}/purger`, filter);
+  }
+}
+
+// ----- Types liés à la purge (mirror des DTOs backend) -----
+
+export type PurgeStatut = 'TOUS' | 'SEULEMENT_ANNULEES' | 'SEULEMENT_ACTIVES';
+
+export interface PurgeFilter {
+  caisseId?: number | null;
+  avantDate: string;   // ISO LocalDate (yyyy-MM-dd)
+  statut: PurgeStatut;
+}
+
+export interface PurgePreviewResponse {
+  total: number;
+  nbAnnulees: number;
+  nbActives: number;
+  nbDansCloture: number;
+  sommeEntrees: number;
+  sommeSorties: number;
+  plusAncienne: string | null;
+  plusRecente: string | null;
+}
+
+export interface PurgeResult {
+  nbSupprimees: number;
+  nbContrepassees: number;
+  nbEchecs: number;
+  erreurs: string[];
 }
 
 // ======================================================

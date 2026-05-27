@@ -87,4 +87,28 @@ public interface OperationCaisseRepository extends JpaRepository<OperationCaisse
      */
     List<OperationCaisse> findByCaisseIdAndJournalIsNullAndAnnuleeFalseOrderByDateOperationDesc(
             Long caisseId);
+
+    // ==================================================================
+    //  PURGE (ADMIN) - recherche des candidats par critères
+    // ==================================================================
+
+    /**
+     * Recherche les opérations à purger selon les critères de
+     * {@link sn.rts.caisse.dto.PurgeFilter}. Le filtre {@code caisseId} et
+     * {@code annulee} sont optionnels (passer {@code null} pour ne pas filtrer).
+     *
+     * <p>Le résultat est trié par date d'opération ascendante pour avoir un
+     * ordre déterministe (CSV reproductible, purge incrémentale fiable).</p>
+     */
+    @Query("""
+            SELECT o FROM OperationCaisse o
+            WHERE o.dateOperation < :avantDate
+              AND (:caisseId IS NULL OR o.caisse.id = :caisseId)
+              AND (:annulee  IS NULL OR o.annulee  = :annulee)
+            ORDER BY o.dateOperation ASC
+            """)
+    List<OperationCaisse> rechercherCandidatsPurge(
+            @Param("avantDate") LocalDateTime avantDate,
+            @Param("caisseId")  Long caisseId,
+            @Param("annulee")   Boolean annulee);
 }

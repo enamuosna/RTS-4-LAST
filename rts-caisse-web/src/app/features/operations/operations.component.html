@@ -172,6 +172,18 @@
               matTooltip="{{ o.motifAnnulation }}"
             >cancel</mat-icon>
           }
+          <!-- Suppression DÉFINITIVE : ADMIN uniquement, sur toute opération
+               (annulée OU active). Contre-pass auto côté backend si nécessaire. -->
+          @if (isAdmin()) {
+            <button
+              mat-icon-button
+              color="warn"
+              matTooltip="Supprimer définitivement (ADMIN)"
+              (click)="supprimerDefinitivement(o)"
+            >
+              <mat-icon>delete_forever</mat-icon>
+            </button>
+          }
         </td>
       </ng-container>
 

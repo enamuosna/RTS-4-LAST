@@ -88,6 +88,7 @@ public record AuditLogResponse(
             case REACTIVER_OPERATION        -> "Réactivation d'opération";
             case AFFECTER_AGENT_RECETTE     -> "Affectation d'agent de recette";
             case ANNULER_OPERATION          -> "Annulation d'opération";
+            case SUPPRIMER_OPERATION_DEFINITIVEMENT -> "Suppression définitive d'opération";
             case CREER_VERSEMENT            -> "Enregistrement d'un versement";
             case SUPPRIMER_VERSEMENT        -> "Suppression d'un versement";
             case TELECHARGER_BORDEREAU      -> "Téléchargement de bordereau";

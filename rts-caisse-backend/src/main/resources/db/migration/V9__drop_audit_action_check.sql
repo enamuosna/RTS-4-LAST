@@ -1,0 +1,32 @@
+-- =====================================================================
+--  V9 - Drop du CHECK constraint sur audit_logs.action
+--
+--  Contexte
+--  --------
+--  Le profil docker utilise spring.jpa.hibernate.ddl-auto=update.
+--  Hibernate a cree automatiquement, au tout premier demarrage du
+--  backend, un CHECK constraint nomme "audit_logs_action_check" qui
+--  enumere explicitement les valeurs de l'enum AuditAction connues a
+--  ce moment-la.
+--
+--  Probleme : quand on ajoute de nouvelles valeurs a l'enum Java
+--  (CREER_VERSEMENT, SUPPRIMER_OPERATION_DEFINITIVEMENT, ...),
+--  Hibernate NE met PAS a jour ce CHECK existant. Tout INSERT avec une
+--  nouvelle valeur echoue avec :
+--    ERROR: new row for relation "audit_logs" violates check constraint
+--           "audit_logs_action_check"
+--
+--  Solution
+--  --------
+--  On drop le CHECK une bonne fois pour toutes. La validation des
+--  valeurs est deja garantie cote Java par @Enumerated(EnumType.STRING) :
+--  Hibernate refuse d'envoyer en base une valeur qui n'existe pas dans
+--  l'enum. Garder un double-controle SQL imposerait une migration
+--  manuelle a chaque ajout d'enum, ce qui est une dette de maintenance
+--  inutile.
+--
+--  Idempotence : IF EXISTS pour ne pas planter si la contrainte n'a
+--  jamais ete creee (cas d'une instance fraiche en ddl-auto=validate).
+-- =====================================================================
+
+ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_logs_action_check;

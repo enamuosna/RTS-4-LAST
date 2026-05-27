@@ -54,9 +54,21 @@ public class AuditLog {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /** Type d'action effectuée. Voir {@link AuditAction}. */
+    /**
+     * Type d'action effectuée. Voir {@link AuditAction}.
+     *
+     * <p><b>columnDefinition explicite</b> : sans ça, Hibernate génère
+     * automatiquement un CHECK constraint listant les valeurs de l'enum
+     * connues au moment du PREMIER démarrage. Toute valeur ajoutée plus
+     * tard à l'enum Java (versement, purge, événements desktop…) fait
+     * échouer l'INSERT avec :
+     * {@code violates check constraint "audit_logs_action_check"}.
+     * En forçant {@code columnDefinition}, Hibernate ne génère que la
+     * colonne VARCHAR sans CHECK ; la validation reste assurée côté
+     * Java par {@link Enumerated}.</p>
+     */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 40)
+    @Column(nullable = false, columnDefinition = "VARCHAR(40) NOT NULL")
     private AuditAction action;
 
     // ----- Auteur (dénormalisé pour résister aux modifications) -----
@@ -75,8 +87,9 @@ public class AuditLog {
     @Column(name = "user_nom_complet", length = 200)
     private String userNomComplet;
 
+    /** {@code columnDefinition} explicite : meme raison que pour {@link #action}. */
     @Enumerated(EnumType.STRING)
-    @Column(name = "user_role", length = 20)
+    @Column(name = "user_role", columnDefinition = "VARCHAR(20)")
     private Role userRole;
 
     // ----- Entité affectée (dénormalisée) -----

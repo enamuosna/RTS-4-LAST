@@ -64,6 +64,8 @@ public final class Dto {
         public String libelle;
         public TypeOperation typeOperation;
         public boolean actif;
+        /** Permet de joindre un PDF/JPG/PNG a une operation de cette categorie. */
+        public boolean accepteJustificatif;
 
         @Override public String toString() { return libelle; }
     }
@@ -293,6 +295,13 @@ public final class Dto {
         /** Banque émettrice — obligatoire si modePaiement = CHEQUE ou VIREMENT. */
         public Long banqueId;
 
+        /**
+         * Date+heure prevue de diffusion du produit a l'antenne (spot pub,
+         * sponsoring, message). Optionnel : null si pas de diffusion (ex.
+         * vente d'archives, prestation). Affiche sur le recu sous "Reference".
+         */
+        public LocalDateTime dateDiffusion;
+
         public OperationCaisseRequest() {}
     }
 
@@ -324,6 +333,8 @@ public final class Dto {
         public ModePaiement  modePaiement;
         public String        reference;
         public LocalDateTime dateOperation;
+        /** Date+heure de diffusion du produit a l'antenne (optionnel). */
+        public LocalDateTime dateDiffusion;
 
         // ----- Caisse -----
         public Long   caisseId;
@@ -393,5 +404,30 @@ public final class Dto {
         public static final String ECHEC_CONNEXION_SERVEUR = "ECHEC_CONNEXION_SERVEUR";
         public static final String IMPRIMER_RECU           = "IMPRIMER_RECU";
         public static final String EXPORTER_RECU_FICHIER   = "EXPORTER_RECU_FICHIER";
+    }
+
+    // ================================================================
+    //  VersementResponse - retour API apres POST /api/versements
+    // ================================================================
+    public static class VersementResponse {
+        public Long          id;
+        public Long          caisseId;
+        public String        caisseLibelle;
+        public Long          journalId;
+        public Long          banqueId;
+        public String        banqueCode;
+        public String        banqueLibelle;
+        public BigDecimal    montant;
+        public String        numeroBordereau;
+        public LocalDateTime dateVersement;
+        public String        nomFichier;
+        public String        typeMime;
+        public Long          tailleFichier;
+        public Long          createdById;
+        public String        createdByNom;
+        public LocalDateTime createdAt;
+        public String        notes;
+
+        public VersementResponse() {}
     }
 }

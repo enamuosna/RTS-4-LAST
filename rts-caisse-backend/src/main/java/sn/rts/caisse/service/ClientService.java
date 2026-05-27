@@ -49,6 +49,16 @@ public class ClientService {
         return items.stream().map(ClientDTO::from).toList();
     }
 
+    /** Variante paginee (pour la page admin web). */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<ClientDTO> listerPaginee(
+            String terme, org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<Client> items = StringUtils.hasText(terme)
+                ? clientRepository.rechercher(terme, pageable)
+                : clientRepository.findByActifTrue(pageable);
+        return items.map(ClientDTO::from);
+    }
+
     @Transactional(readOnly = true)
     public ClientDTO obtenir(Long id) {
         return ClientDTO.from(trouver(id));

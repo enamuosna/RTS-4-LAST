@@ -28,6 +28,7 @@ public class CategorieOperationService {
                 .libelle(dto.libelle())
                 .typeOperation(dto.typeOperation())
                 .actif(true)
+                .accepteJustificatif(dto.accepteJustificatif())
                 .build();
         return CategorieOperationDTO.from(repository.save(c));
     }
@@ -37,6 +38,7 @@ public class CategorieOperationService {
         c.setLibelle(dto.libelle());
         c.setTypeOperation(dto.typeOperation());
         c.setActif(dto.actif());
+        c.setAccepteJustificatif(dto.accepteJustificatif());
         return CategorieOperationDTO.from(repository.save(c));
     }
 

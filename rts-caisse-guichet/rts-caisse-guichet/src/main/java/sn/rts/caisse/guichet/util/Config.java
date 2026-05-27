@@ -32,7 +32,10 @@ public final class Config {
     private static final Path CONFIG_DIR  = Paths.get(System.getProperty("user.home"), ".rts-caisse");
     private static final Path CONFIG_FILE = CONFIG_DIR.resolve("config.properties");
 
-    public static final String APP_TITLE   = "RTS Caisse — Guichet";
+    /** Titre de la fenetre principale. Vide volontairement : la marque
+     *  RTS est portee par le logo dans la carte de login + l'icone de
+     *  la fenetre, le titre OS-level ajoutait du bruit visuel. */
+    public static final String APP_TITLE   = "";
     public static final String APP_VERSION = "1.0.0";
 
     // ============== Singleton ==============

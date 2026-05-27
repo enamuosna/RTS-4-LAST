@@ -40,6 +40,7 @@ public record OperationCaisseResponse(
         ModePaiement  modePaiement,
         String        reference,
         LocalDateTime dateOperation,
+        LocalDateTime dateDiffusion,
 
         // ---------- Caisse ----------
         Long   caisseId,
@@ -69,7 +70,14 @@ public record OperationCaisseResponse(
 
         // ---------- Annulation ----------
         boolean annulee,
-        String  motifAnnulation
+        String  motifAnnulation,
+
+        // ---------- Justificatif (PDF/image, optionnel) ----------
+        /** True si un justificatif est attache a l'operation. */
+        boolean justificatifPresent,
+        String  justificatifNomFichier,
+        String  justificatifTypeMime,
+        Long    justificatifTailleFichier
 ) {
 
     /**
@@ -92,6 +100,7 @@ public record OperationCaisseResponse(
                 o.getModePaiement(),
                 o.getReference(),
                 o.getDateOperation(),
+                o.getDateDiffusion(),
 
                 // Caisse
                 o.getCaisse().getId(),
@@ -121,7 +130,14 @@ public record OperationCaisseResponse(
 
                 // Annulation
                 o.isAnnulee(),
-                o.getMotifAnnulation()
+                o.getMotifAnnulation(),
+
+                // Justificatif (presence + metadata, pas le contenu binaire)
+                o.getJustificatifTailleFichier() != null
+                        && o.getJustificatifTailleFichier() > 0,
+                o.getJustificatifNomFichier(),
+                o.getJustificatifTypeMime(),
+                o.getJustificatifTailleFichier()
         );
     }
 }

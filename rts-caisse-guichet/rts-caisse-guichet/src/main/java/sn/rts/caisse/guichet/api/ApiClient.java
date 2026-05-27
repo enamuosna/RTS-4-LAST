@@ -262,6 +262,60 @@ public class ApiClient {
     }
 
     /**
+     * POST multipart/form-data : utilise pour uploader un fichier (PDF/image)
+     * en plus de parametres simples. Construit manuellement le corps
+     * multipart (HttpClient JDK ne propose pas d'abstraction native).
+     *
+     * @param path           chemin de l'endpoint (ex: "/versements")
+     * @param queryParams    params positionnels passes en query string
+     * @param fieldName      nom du champ form-data contenant le fichier
+     * @param fileName       nom du fichier (utilise dans Content-Disposition)
+     * @param contentType    type MIME du fichier
+     * @param fileContent    contenu binaire
+     * @param responseType   classe de la reponse JSON desserialisee
+     */
+    public <T> T postMultipart(String path,
+                                java.util.Map<String, String> queryParams,
+                                String fieldName, String fileName,
+                                String contentType, byte[] fileContent,
+                                Class<T> responseType) {
+        String fullPath = path;
+        if (queryParams != null && !queryParams.isEmpty()) {
+            StringBuilder qs = new StringBuilder("?");
+            boolean first = true;
+            for (java.util.Map.Entry<String, String> e : queryParams.entrySet()) {
+                if (e.getValue() == null) continue;
+                if (!first) qs.append("&");
+                qs.append(e.getKey()).append("=").append(encode(e.getValue()));
+                first = false;
+            }
+            fullPath += qs.toString();
+        }
+
+        String boundary = "----RtsCaisseBoundary"
+                + Long.toHexString(System.currentTimeMillis());
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        try {
+            String header = "--" + boundary + "\r\n"
+                    + "Content-Disposition: form-data; name=\"" + fieldName + "\"; "
+                    + "filename=\"" + fileName + "\"\r\n"
+                    + "Content-Type: " + contentType + "\r\n\r\n";
+            out.write(header.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            out.write(fileContent);
+            out.write(("\r\n--" + boundary + "--\r\n")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            throw new ApiException("Echec construction multipart : " + e.getMessage());
+        }
+
+        HttpRequest req = requestBuilder(fullPath)
+                .POST(BodyPublishers.ofByteArray(out.toByteArray()))
+                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                .build();
+        return send(req, responseType, null);
+    }
+
+    /**
      * GET sur un endpoint binaire (image, PDF, etc.). Renvoie les octets
      * bruts. Utilisé pour récupérer le logo image du reçu côté guichet.
      *

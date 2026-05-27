@@ -134,10 +134,14 @@ public class JournalCaisseService {
                     .orElseThrow(() -> new BusinessException(
                             "Aucun journal ouvert pour cette caisse."));
 
+            // Regle metier stricte : seul le caissier qui a ouvert le
+            // journal peut le cloturer. Cela garantit la tracabilite
+            // du detenteur du fond physique de la caisse.
             if (!journal.getCaissier().getLogin().equals(loginCaissier)) {
                 throw new BusinessException(
                         "Seul le caissier qui a ouvert la caisse peut la clôturer.");
             }
+            Caisse caisse = journal.getCaisse();
 
             LocalDateTime debut = journal.getDateJournal().atStartOfDay();
             LocalDateTime fin = debut.plusDays(1);
@@ -173,8 +177,8 @@ public class JournalCaisseService {
                 }
             }
 
-            // Fermeture physique de la caisse
-            Caisse caisse = journal.getCaisse();
+            // Fermeture physique de la caisse (reutilise la variable caisse
+            // deja recuperee plus haut pour la verification des droits)
             caisse.setStatut(StatutCaisse.FERMEE);
             caisse.setSoldeCourant(BigDecimal.ZERO);
 
@@ -323,6 +327,28 @@ public class JournalCaisseService {
                 ? journalRepository.findByCaisseIdAndDateJournalBetweenOrderByDateJournalDesc(caisseId, d1, d2)
                 : journalRepository.findByDateJournalBetweenOrderByDateJournalDesc(d1, d2);
         return list.stream().map(JournalCaisseResponse::from).toList();
+    }
+
+    /**
+     * Variante paginee de {@link #journaux(LocalDate, LocalDate, Long)}.
+     * Si aucune date n'est specifiee on prend une plage glissante de 1 an,
+     * pour ne pas exiger des dates obligatoires cote front.
+     */
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<JournalCaisseResponse> journauxPagine(
+            LocalDate dateDebut, LocalDate dateFin, Long caisseId,
+            org.springframework.data.domain.Pageable pageable) {
+        LocalDate aujourdhui = LocalDate.now();
+        LocalDate d1 = dateDebut != null ? dateDebut
+                : (dateFin != null ? dateFin : aujourdhui.minusYears(1));
+        LocalDate d2 = dateFin   != null ? dateFin
+                : (dateDebut != null ? dateDebut : aujourdhui);
+        if (d2.isBefore(d1)) { LocalDate tmp = d1; d1 = d2; d2 = tmp; }
+        org.springframework.data.domain.Page<JournalCaisse> page = caisseId != null
+                ? journalRepository.findByCaisseIdAndDateJournalBetween(
+                        caisseId, d1, d2, pageable)
+                : journalRepository.findByDateJournalBetween(d1, d2, pageable);
+        return page.map(JournalCaisseResponse::from);
     }
 
     @Transactional(readOnly = true)

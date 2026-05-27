@@ -70,6 +70,33 @@ export class LoginComponent {
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
+        // 429 = rate limit IP (trop d'echecs depuis cette IP).
+        if (err.status === 429) {
+          const retryAfter = err.headers?.get('Retry-After');
+          const seconds = retryAfter ? parseInt(retryAfter, 10) : null;
+          this.errorMessage.set(
+            err.error?.message
+              ?? (seconds
+                ? `Trop de tentatives. Reessayez dans ${seconds} secondes.`
+                : 'Trop de tentatives de connexion. Reessayez plus tard.')
+          );
+          return;
+        }
+        // 423 Locked = compte verrouille apres 5 echecs successifs.
+        // Le verrou dure 30 min ; le message indique le delai restant.
+        if (err.status === 423) {
+          const retryAfter = err.headers?.get('Retry-After');
+          const minutes = retryAfter
+              ? Math.ceil(parseInt(retryAfter, 10) / 60)
+              : null;
+          this.errorMessage.set(
+            err.error?.message
+              ?? (minutes
+                ? `Compte verrouille suite a trop d'echecs. Reessayez dans ${minutes} min ou contactez un administrateur.`
+                : 'Compte verrouille. Contactez un administrateur.')
+          );
+          return;
+        }
         this.errorMessage.set(
           err.status === 401
             ? 'Identifiants invalides.'

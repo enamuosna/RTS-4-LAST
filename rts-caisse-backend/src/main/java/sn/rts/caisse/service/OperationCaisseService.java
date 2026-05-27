@@ -67,6 +67,7 @@ public class OperationCaisseService {
     private final ClientService             clientService;
     private final NumeroRecuGenerator       numeroRecuGenerator;
     private final AuditService              auditService;
+    private final TimbreFiscalCalculator    timbreCalculator;
 
     // ==================================================================
     //  ENREGISTREMENT
@@ -75,6 +76,23 @@ public class OperationCaisseService {
     public OperationCaisseResponse enregistrer(OperationCaisseRequest request,
                                                String loginCaissier) {
         try {
+            // ---------- 0. Diagnostic dateDiffusion ----------
+            log.info("Creation operation : caisse={} categorie={} montant={} "
+                    + "reference={} dateDiffusion={} (par {})",
+                    request.caisseId(), request.categorieId(),
+                    request.montant(), request.reference(),
+                    request.dateDiffusion(), loginCaissier);
+
+            // ---------- 0bis. Date de diffusion obligatoire ----------
+            // Garde-fou : la regle est aussi posee par @NotNull sur le DTO,
+            // mais on remet une verification ici pour fournir un message clair
+            // meme si un client venait a contourner la validation.
+            if (request.dateDiffusion() == null) {
+                throw new BusinessException(
+                        "La date et l'heure de diffusion sont obligatoires "
+                                + "pour toute operation de caisse.");
+            }
+
             // ---------- 1. Caisse ----------
             Caisse caisse = caisseService.trouver(request.caisseId());
             if (caisse.getStatut() != StatutCaisse.OUVERTE) {
@@ -96,8 +114,14 @@ public class OperationCaisseService {
                         "Catégorie désactivée : " + categorie.getLibelle());
             }
 
-            // ---------- 3. Calcul du montant TTC (montant + timbre) ----------
-            BigDecimal timbre = request.timbre() != null ? request.timbre() : BigDecimal.ZERO;
+            // ---------- 3. Calcul automatique du timbre + montant TTC ----------
+            // Regle metier RTS : timbre 1% UNIQUEMENT pour les ESPECES
+            // a partir de 20 000 FCFA. Tous les autres modes (cheque,
+            // virement, mobile money, carte) sont exoneres. On IGNORE la
+            // valeur envoyee par le client (request.timbre()) : seul le
+            // calcul backend fait foi.
+            BigDecimal timbre = timbreCalculator.calculer(
+                    request.montant(), request.modePaiement());
             BigDecimal montantTtc = request.montant().add(timbre);
 
             // Solde suffisant pour les sorties (sur le TTC)
@@ -150,6 +174,7 @@ public class OperationCaisseService {
                     .modePaiement(mode)
                     .reference(request.reference())
                     .dateOperation(LocalDateTime.now())
+                    .dateDiffusion(request.dateDiffusion())
                     .caisse(caisse)
                     .caissier(caissier)
                     .categorie(categorie)
@@ -307,6 +332,21 @@ public class OperationCaisseService {
                                              String loginModificateur) {
         OperationCaisse operation;
         try {
+            // Log diagnostic pour tracer l'envoi de dateDiffusion lors de la
+            // modification (via le dialog web ou via /operations/{id} guichet).
+            log.info("Modification operation id={} : reference={} dateDiffusion={} (par {})",
+                    operationId, request.reference(), request.dateDiffusion(),
+                    loginModificateur);
+
+            // Date de diffusion obligatoire aussi sur la modification :
+            // on ne peut pas re-enregistrer une operation sans la rattacher
+            // a un creneau de diffusion antenne.
+            if (request.dateDiffusion() == null) {
+                throw new BusinessException(
+                        "La date et l'heure de diffusion sont obligatoires "
+                                + "pour modifier une operation.");
+            }
+
             operation = trouver(operationId);
             verifierDroitModifierOuReactiver(operation, loginModificateur);
 
@@ -354,9 +394,14 @@ public class OperationCaisseService {
                     ? clientService.trouver(request.clientId())
                     : null;
 
-            // ---------- Recalcul TTC ----------
-            BigDecimal nouveauTimbre = request.timbre() != null
-                    ? request.timbre() : BigDecimal.ZERO;
+            // ---------- Recalcul automatique du timbre + TTC ----------
+            // On recalcule aussi sur la modification, en tenant compte du
+            // mode de paiement (potentiellement modifie) : timbre 1% si
+            // ESPECES + montant >= 20 000 FCFA, 0 sinon. Si le mode passe
+            // d'ESPECES a CHEQUE/VIREMENT/Wave/OM, le timbre disparait
+            // automatiquement.
+            BigDecimal nouveauTimbre = timbreCalculator.calculer(
+                    request.montant(), request.modePaiement());
             BigDecimal nouveauTtc = request.montant().add(nouveauTimbre);
 
             // ---------- Recalcul du solde caisse ----------
@@ -392,6 +437,7 @@ public class OperationCaisseService {
             operation.setMotif(request.motif());
             operation.setModePaiement(mode);
             operation.setReference(request.reference());
+            operation.setDateDiffusion(request.dateDiffusion());
             operation.setCategorie(categorie);
             operation.setClient(client);
             operation.setBanque(banque);
@@ -442,9 +488,13 @@ public class OperationCaisseService {
      *       les opérations</li>
      *   <li>{@link sn.rts.caisse.model.Role#AGENT_RECETTE} : uniquement
      *       sur les opérations de la caisse à laquelle il est affecté</li>
+     *   <li>{@link sn.rts.caisse.model.Role#CAISSIER} : uniquement sur
+     *       les opérations de la caisse dont il est le caissier affecté
+     *       (correction d'erreur de saisie sur sa propre journée).
+     *       Les autres protections classiques continuent de s'appliquer :
+     *       on ne peut pas modifier une opération annulée ni une journée
+     *       clôturée.</li>
      * </ul>
-     * Les CAISSIERS ne peuvent pas modifier ni réactiver — ils ne peuvent
-     * qu'annuler.
      */
     private void verifierDroitModifierOuReactiver(OperationCaisse operation, String login) {
         Utilisateur user = utilisateurRepository.findByLogin(login)
@@ -456,8 +506,8 @@ public class OperationCaisseService {
                 || role == sn.rts.caisse.model.Role.SUPERVISEUR) {
             return; // OK, accès global
         }
+        Caisse caisse = operation.getCaisse();
         if (role == sn.rts.caisse.model.Role.AGENT_RECETTE) {
-            Caisse caisse = operation.getCaisse();
             Utilisateur agent = caisse.getAgentRecette();
             if (agent != null && user.getId().equals(agent.getId())) {
                 return; // OK, agent affecté à cette caisse
@@ -465,8 +515,16 @@ public class OperationCaisseService {
             throw new BusinessException(
                     "Vous n'êtes pas l'agent de recette affecté à cette caisse.");
         }
+        if (role == sn.rts.caisse.model.Role.CAISSIER) {
+            Utilisateur caissier = caisse.getCaissier();
+            if (caissier != null && user.getId().equals(caissier.getId())) {
+                return; // OK, caissier affecte a cette caisse
+            }
+            throw new BusinessException(
+                    "Vous n'êtes pas le caissier affecté à cette caisse.");
+        }
         throw new BusinessException(
-                "Action réservée aux agents de recette, superviseurs et administrateurs.");
+                "Action réservée au personnel autorisé sur cette caisse.");
     }
 
     // ==================================================================
@@ -619,6 +677,109 @@ public class OperationCaisseService {
     private OperationCaisse trouver(Long id) {
         return operationRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.of("Opération", id));
+    }
+
+    // ==================================================================
+    //  JUSTIFICATIF (PDF/image attache a une operation)
+    // ==================================================================
+
+    /** Taille max du justificatif : 5 Mo. */
+    public static final long JUSTIF_TAILLE_MAX = 5L * 1024 * 1024;
+
+    /** Types MIME autorises pour le justificatif. */
+    public static final java.util.Set<String> JUSTIF_TYPES_MIME = java.util.Set.of(
+            "application/pdf", "image/jpeg", "image/jpg", "image/png");
+
+    /**
+     * Upload (ou remplacement) du justificatif d'une operation. La
+     * categorie de l'operation doit avoir {@code accepteJustificatif=true}.
+     * Validation : 5 Mo max, PDF/JPG/PNG. Permissions identiques a la
+     * modification (CAISSIER/AGENT_RECETTE de la caisse, ou ADMIN/SUPERVISEUR).
+     */
+    public OperationCaisseResponse uploaderJustificatif(Long operationId,
+                                                         org.springframework.web.multipart.MultipartFile fichier,
+                                                         String loginAuteur) {
+        OperationCaisse op = trouver(operationId);
+        verifierDroitModifierOuReactiver(op, loginAuteur);
+
+        if (fichier == null || fichier.isEmpty()) {
+            throw new BusinessException("Aucun fichier n'a ete fourni.");
+        }
+        if (fichier.getSize() > JUSTIF_TAILLE_MAX) {
+            throw new BusinessException(
+                    "Fichier trop volumineux : " + (fichier.getSize() / 1024)
+                            + " Ko. Max " + (JUSTIF_TAILLE_MAX / 1024 / 1024) + " Mo.");
+        }
+        String type = fichier.getContentType();
+        if (type == null || !JUSTIF_TYPES_MIME.contains(type.toLowerCase())) {
+            throw new BusinessException(
+                    "Format non supporte : " + type
+                            + ". Formats acceptes : PDF, JPG, PNG.");
+        }
+        // La zone d'upload est autorisee si :
+        //  - la categorie a accepteJustificatif=true (typique AVIS ET
+        //    COMMUNIQUES, APPEL), OU
+        //  - le paiement est par CHEQUE / VIREMENT / WAVE / ORANGE_MONEY /
+        //    FREE_MONEY / CARTE_BANCAIRE (justificatif de paiement
+        //    electronique attendu, peu importe la categorie).
+        // ESPECES sans flag categorie -> pas de justificatif possible.
+        boolean autoriseParCategorie = op.getCategorie().isAccepteJustificatif();
+        boolean autoriseParModePaiement =
+                op.getModePaiement() != null
+                        && op.getModePaiement() != ModePaiement.ESPECES;
+        if (!autoriseParCategorie && !autoriseParModePaiement) {
+            throw new BusinessException(
+                    "Cette operation n'accepte pas de justificatif (paiement "
+                            + "en especes et categorie '"
+                            + op.getCategorie().getLibelle() + "' sans flag "
+                            + "accepteJustificatif).");
+        }
+        if (op.isAnnulee()) {
+            throw new BusinessException(
+                    "Impossible d'attacher un justificatif a une operation annulee.");
+        }
+
+        try {
+            op.setJustificatifFichier(fichier.getBytes());
+        } catch (java.io.IOException e) {
+            throw new BusinessException(
+                    "Impossible de lire le fichier : " + e.getMessage());
+        }
+        op.setJustificatifNomFichier(fichier.getOriginalFilename());
+        op.setJustificatifTypeMime(type);
+        op.setJustificatifTailleFichier(fichier.getSize());
+
+        log.info("Justificatif attache a operation {} : fichier={} ({} octets) par {}",
+                op.getNumeroRecu(), fichier.getOriginalFilename(),
+                fichier.getSize(), loginAuteur);
+        return OperationCaisseResponse.from(op);
+    }
+
+    /** Charge le contenu binaire du justificatif (LAZY). */
+    @Transactional(readOnly = true)
+    public OperationCaisse chargerJustificatif(Long operationId) {
+        OperationCaisse op = trouver(operationId);
+        if (op.getJustificatifFichier() == null
+                || op.getJustificatifFichier().length == 0) {
+            throw new ResourceNotFoundException(
+                    "Aucun justificatif attache a l'operation " + operationId);
+        }
+        // Force le chargement du LOB avant retour
+        op.getJustificatifFichier();
+        return op;
+    }
+
+    /** Supprime le justificatif d'une operation (les autres champs sont
+     *  inchanges). Memes droits que la modification. */
+    public void supprimerJustificatif(Long operationId, String loginAuteur) {
+        OperationCaisse op = trouver(operationId);
+        verifierDroitModifierOuReactiver(op, loginAuteur);
+        op.setJustificatifFichier(null);
+        op.setJustificatifNomFichier(null);
+        op.setJustificatifTypeMime(null);
+        op.setJustificatifTailleFichier(null);
+        log.info("Justificatif supprime de operation {} par {}",
+                op.getNumeroRecu(), loginAuteur);
     }
 
     // ==================================================================

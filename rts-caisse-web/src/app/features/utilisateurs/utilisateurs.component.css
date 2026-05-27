@@ -3,3 +3,126 @@
   white-space: nowrap; /* empêche le retour à la ligne quand 3 boutons s'affichent */
   text-align: right;
 }
+
+/* ===================== Statistiques ===================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: white;
+  border-radius: var(--rts-radius);
+  box-shadow: var(--rts-shadow);
+  border-left: 4px solid var(--rts-gray-300);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--rts-shadow-md);
+}
+
+.stat-total       { border-left-color: var(--rts-red); }
+.stat-actifs      { border-left-color: var(--rts-success); }
+.stat-inactifs    { border-left-color: var(--rts-gray-500); }
+.stat-admin       { border-left-color: var(--rts-info); }
+.stat-superviseur { border-left-color: var(--rts-warning); }
+.stat-agent       { border-left-color: var(--rts-red-dark); }
+.stat-caissier    { border-left-color: var(--rts-accent); }
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--rts-gray-100);
+  color: var(--rts-gray-700);
+  flex-shrink: 0;
+}
+
+.stat-total       .stat-icon { background: var(--rts-red-soft);    color: var(--rts-red); }
+.stat-actifs      .stat-icon { background: var(--rts-success-soft); color: var(--rts-success); }
+.stat-inactifs    .stat-icon { background: var(--rts-gray-100);    color: var(--rts-gray-500); }
+.stat-admin       .stat-icon { background: var(--rts-info-soft);    color: var(--rts-info); }
+.stat-superviseur .stat-icon { background: var(--rts-warning-soft); color: var(--rts-warning); }
+.stat-agent       .stat-icon { background: var(--rts-red-soft);    color: var(--rts-red-dark); }
+.stat-caissier    .stat-icon { background: var(--rts-gray-100);    color: var(--rts-gray-700); }
+
+.stat-icon mat-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.stat-body {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--rts-gray-900);
+  letter-spacing: -0.4px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--rts-gray-500);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* ===================== Barre de recherche ===================== */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.search-field {
+  flex: 1;
+  max-width: 520px;
+}
+
+.result-count {
+  font-size: 13px;
+  color: var(--rts-gray-500);
+  white-space: nowrap;
+}
+
+.clear-link {
+  color: var(--rts-red);
+  cursor: pointer;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.clear-link:hover {
+  text-decoration: underline;
+}
+
+/* ===================== Etat vide ===================== */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--rts-gray-500);
+  font-size: 14px;
+  font-style: italic;
+  background: var(--rts-gray-50);
+  border-radius: 8px;
+  margin-top: 8px;
+}

@@ -10,6 +10,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Role } from '../../../core/models/models';
 import { UtilisateurService } from '../../../core/services/admin.services';
+import { passwordPolicyValidator } from '../../../core/validators/password-policy.validator';
+import { PasswordChecklistComponent } from '../../../shared/password-checklist/password-checklist.component';
 
 @Component({
   selector: 'rts-utilisateur-dialog',
@@ -22,7 +24,8 @@ import { UtilisateurService } from '../../../core/services/admin.services';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    PasswordChecklistComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './utilisateur-dialog.component.html',
@@ -39,7 +42,7 @@ export class UtilisateurDialogComponent {
   readonly form = this.fb.nonNullable.group({
     matricule: ['', Validators.required],
     login: ['', [Validators.required, Validators.minLength(3)]],
-    motDePasse: ['', [Validators.required, Validators.minLength(8)]],
+    motDePasse: ['', [Validators.required, passwordPolicyValidator()]],
     prenom: ['', Validators.required],
     nom: ['', Validators.required],
     email: [''],

@@ -164,6 +164,44 @@ export class AuditService {
     return this.http.get<AuditLog>(`${this.base}/${id}`);
   }
 
+  /**
+   * Export CSV des logs filtrés. Le serveur applique les mêmes critères
+   * que la recherche paginée mais renvoie l'ensemble (non paginé) sous
+   * forme de blob CSV. Le caller declenche le download via blob URL.
+   */
+  exporterCsv(filtres: AuditFiltres = {}): Observable<Blob> {
+    let params = new HttpParams();
+    if (filtres.action) params = params.set('action', filtres.action);
+    if (filtres.userId != null) params = params.set('userId', String(filtres.userId));
+    if (filtres.entityType) params = params.set('entityType', filtres.entityType);
+    if (filtres.entityId != null) params = params.set('entityId', String(filtres.entityId));
+    if (filtres.success != null) params = params.set('success', String(filtres.success));
+    if (filtres.dateFrom) params = params.set('dateFrom', this.toIso(filtres.dateFrom));
+    if (filtres.dateTo)   params = params.set('dateTo',   this.toIso(filtres.dateTo));
+    return this.http.get(`${this.base}/export.csv`, {
+      params,
+      responseType: 'blob'
+    });
+  }
+
+  /**
+   * Purge les logs anterieurs a {@code joursConservation} jours.
+   * ADMIN uniquement. Minimum côté serveur : 7 jours (clip).
+   * Retourne { supprimees, joursConservation, seuilDate }.
+   */
+  purger(joursConservation: number): Observable<{
+    supprimees: number;
+    joursConservation: number;
+    seuilDate: string;
+  }> {
+    const params = new HttpParams().set('joursConservation', String(joursConservation));
+    return this.http.delete<{
+      supprimees: number;
+      joursConservation: number;
+      seuilDate: string;
+    }>(`${this.base}/purge`, { params });
+  }
+
   // ------------------------------------------------------------------
   //  Construction des HttpParams
   // ------------------------------------------------------------------

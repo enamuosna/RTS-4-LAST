@@ -217,6 +217,58 @@ public class CaisseApi {
                 null, OperationCaisseResponse.class);
     }
 
+    /**
+     * Attache un justificatif (PDF/JPG/PNG, max 5 Mo) a une operation.
+     * La categorie de l'operation doit avoir accepteJustificatif=true,
+     * sinon le backend rejette avec une BusinessException.
+     */
+    public OperationCaisseResponse uploaderJustificatif(
+            Long operationId, String nomFichier, String typeMime, byte[] fichier) {
+        return client.postMultipart(
+                "/operations/" + operationId + "/justificatif",
+                java.util.Map.of(),
+                "fichier", nomFichier, typeMime, fichier,
+                OperationCaisseResponse.class);
+    }
+
+    // ====================================================================
+    //  VERSEMENTS BANCAIRES
+    // ====================================================================
+
+    /**
+     * Enregistre un versement bancaire avec upload du bordereau (multipart).
+     * Le bordereau doit etre PDF / JPG / PNG, max 5 Mo.
+     *
+     * @param caisseId        caisse d'origine (obligatoire)
+     * @param banqueId        banque destinataire (obligatoire)
+     * @param journalId       journal a rattacher (optionnel, peut etre null)
+     * @param montant         montant verse en FCFA
+     * @param numeroBordereau identifiant du bordereau bancaire
+     * @param dateVersement   ISO 8601 (peut etre null, backend met now())
+     * @param notes           commentaire libre (optionnel)
+     * @param nomFichier      nom original du fichier (avec extension)
+     * @param typeMime        application/pdf, image/jpeg ou image/png
+     * @param fichier         contenu binaire du bordereau
+     */
+    public sn.rts.caisse.guichet.model.Dto.VersementResponse enregistrerVersement(
+            Long caisseId, Long banqueId, Long journalId,
+            java.math.BigDecimal montant, String numeroBordereau,
+            String dateVersement, String notes,
+            String nomFichier, String typeMime, byte[] fichier) {
+        java.util.Map<String, String> params = new java.util.LinkedHashMap<>();
+        params.put("caisseId",        String.valueOf(caisseId));
+        params.put("banqueId",        String.valueOf(banqueId));
+        params.put("montant",         montant.toPlainString());
+        params.put("numeroBordereau", numeroBordereau);
+        if (journalId != null)       params.put("journalId",     String.valueOf(journalId));
+        if (dateVersement != null)   params.put("dateVersement", dateVersement);
+        if (notes != null && !notes.isBlank()) params.put("notes", notes);
+        return client.postMultipart(
+                "/versements", params,
+                "fichier", nomFichier, typeMime, fichier,
+                sn.rts.caisse.guichet.model.Dto.VersementResponse.class);
+    }
+
     // ====================================================================
     //  WHATSAPP
     // ====================================================================

@@ -45,6 +45,17 @@ export class UtilisateurService {
   }
 
   /**
+   * Modifie le role d'un utilisateur (ADMIN requis).
+   * Backend : PATCH /api/utilisateurs/{id}/role?nouveau=ROLE
+   * Valeurs : ADMIN | SUPERVISEUR | CAISSIER | AGENT_RECETTE.
+   */
+  modifierRole(id: number, nouveau: import('../models/models').Role): Observable<Utilisateur> {
+    return this.http.patch<Utilisateur>(`${this.base}/${id}/role`, null, {
+      params: new HttpParams().set('nouveau', nouveau)
+    });
+  }
+
+  /**
    * Modifie le login d'un utilisateur (réservé super-admin côté backend).
    * Backend : PATCH /api/utilisateurs/{id}/login?nouveau=xxx
    */
@@ -77,6 +88,21 @@ export class BanqueService {
   lister(uniquementActives = false): Observable<Banque[]> {
     const params = new HttpParams().set('actives', String(uniquementActives));
     return this.http.get<Banque[]>(this.url, { params });
+  }
+
+  /** Variante paginee pour la page admin. */
+  listerPaginee(opts?: {
+    q?: string; uniquementActives?: boolean;
+    page?: number; size?: number;
+  }): Observable<import('../models/models').Page<Banque>> {
+    let params = new HttpParams()
+      .set('page', opts?.page ?? 0)
+      .set('size', opts?.size ?? 20)
+      .set('sort', 'code,asc')
+      .set('actives', String(opts?.uniquementActives ?? false));
+    if (opts?.q) params = params.set('q', opts.q);
+    return this.http.get<import('../models/models').Page<Banque>>(
+      `${this.url}/page`, { params });
   }
 
   obtenir(id: number): Observable<Banque> {
@@ -179,6 +205,19 @@ export class ClientService {
     let params = new HttpParams();
     if (q) params = params.set('q', q);
     return this.http.get<Client[]>(this.base, { params });
+  }
+
+  /** Variante paginee pour la page admin web (filtre + paginator). */
+  listerPaginee(opts?: {
+    q?: string; page?: number; size?: number;
+  }): Observable<import('../models/models').Page<Client>> {
+    let params = new HttpParams()
+      .set('page', opts?.page ?? 0)
+      .set('size', opts?.size ?? 20)
+      .set('sort', 'raisonSociale,asc');
+    if (opts?.q) params = params.set('q', opts.q);
+    return this.http.get<import('../models/models').Page<Client>>(
+      `${this.base}/page`, { params });
   }
 
   obtenir(id: number): Observable<Client> {

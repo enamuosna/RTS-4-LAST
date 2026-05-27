@@ -70,15 +70,20 @@ export class OperationsComponent implements OnInit {
    * de la caisse actuellement affichée ?
    * - ADMIN, SUPERVISEUR : oui sur toutes
    * - AGENT_RECETTE : oui uniquement si affecté à cette caisse
-   * - CAISSIER : non
+   * - CAISSIER : oui uniquement si caissier affecté à cette caisse
+   *   (correction d'erreur de saisie sur sa propre journée)
    */
   readonly peutCorriger = computed<boolean>(() => {
     const role = this.auth.currentRole();
     if (role === 'ADMIN' || role === 'SUPERVISEUR') return true;
+    const caisse = this.caisseCourante();
+    const userId = this.auth.currentUser()?.utilisateurId;
+    if (!caisse || userId == null) return false;
     if (role === 'AGENT_RECETTE') {
-      const caisse = this.caisseCourante();
-      const userId = this.auth.currentUser()?.utilisateurId;
-      return !!caisse && caisse.agentRecetteId === userId;
+      return caisse.agentRecetteId === userId;
+    }
+    if (role === 'CAISSIER') {
+      return caisse.caissierId === userId;
     }
     return false;
   });
@@ -176,6 +181,29 @@ export class OperationsComponent implements OnInit {
     });
     ref.afterClosed().subscribe((result) => {
       if (result) this.charger();
+    });
+  }
+
+  /**
+   * Telecharge le justificatif PDF/image attache a l'operation. Utilise
+   * l'endpoint JSON+base64 pour contourner les bloqueurs Tracking
+   * Prevention sur DuckDNS.
+   */
+  telechargerJustificatif(op: OperationCaisse): void {
+    this.operationService.telechargerJustificatif(op.id).subscribe({
+      next: (res) => {
+        const url = URL.createObjectURL(res.blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = res.nomFichier || op.justificatifNomFichier || 'justificatif';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      },
+      error: () => this.snackBar.open('Téléchargement impossible.', 'OK', {
+        duration: 3000, panelClass: ['snackbar-error']
+      })
     });
   }
 

@@ -8,6 +8,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
@@ -33,7 +34,12 @@ import sn.rts.caisse.guichet.print.RecuExporter;
 import sn.rts.caisse.guichet.util.AsyncRunner;
 import sn.rts.caisse.guichet.util.Ui;
 
+import java.io.File;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -56,9 +62,26 @@ public class NouvelleOperationController {
     @FXML private ComboBox<CategorieDTO> categorieCombo;
     @FXML private ComboBox<ModePaiement> modePaiementCombo;
     @FXML private TextField montantField;
+    @FXML private VBox      timbreBox;       // masque si mode != ESPECES
     @FXML private TextField timbreField;
     @FXML private TextField montantTtcField;
     @FXML private TextField referenceField;
+
+    // ---------------- Heure de diffusion (optionnel) ----------------
+    // RTS est une chaine TV : pour un spot/sponsoring, on imprime sur le
+    // recu la date+heure de diffusion antenne. DatePicker + champ heure
+    // (HH:mm) pour ne pas dependre de saisie texte libre.
+    @FXML private DatePicker dateDiffusionPicker;
+    @FXML private TextField  heureDiffusionField;
+
+    // ---------------- Justificatif (conditionnel) ----------------
+    // Visible uniquement si la categorie selectionnee a
+    // accepteJustificatif=true. PDF/JPG/PNG, max 5 Mo.
+    @FXML private VBox       justificatifBox;
+    @FXML private Button     choisirJustifButton;
+    @FXML private Label      justificatifLabel;
+    private File justificatifSelectionne;
+    private String justificatifTypeMime;
 
     // ---------------- Banque (conditionnel) ----------------
     @FXML private VBox banqueBox;
@@ -141,16 +164,47 @@ public class NouvelleOperationController {
         appliquerModeClient(false);
         appliquerModePaiement(ModePaiement.ESPECES);
 
-        // Recalcul live du montant TTC = montant + timbre
+        // Affiche / cache la zone d'upload du justificatif selon la
+        // categorie selectionnee (flag accepteJustificatif).
+        categorieCombo.valueProperty().addListener(
+                (obs, ancienne, nouvelle) -> appliquerVisibiliteJustificatif(nouvelle));
+
+        // Le timbre est CALCULE automatiquement a partir du montant HT.
+        // L'utilisateur ne le saisit plus : le champ est readonly.
+        timbreField.setEditable(false);
+        timbreField.setFocusTraversable(false);
+        timbreField.getStyleClass().add("timbre-calcule");
+
+        // Recalcul live du timbre + montant TTC quand le montant HT change.
+        // Le changement de mode de paiement declenche aussi recalculerTtc
+        // via appliquerModePaiement() ci-dessus (ESPECES -> timbre
+        // potentiellement applicable, autres modes -> timbre = 0 force).
         montantField.textProperty().addListener((o, a, b) -> recalculerTtc());
-        timbreField.textProperty().addListener((o, a, b) -> recalculerTtc());
         recalculerTtc();
     }
 
+    /** Seuil d'application du timbre fiscal (inclusif) : 20 000 FCFA. */
+    private static final BigDecimal TIMBRE_SEUIL = new BigDecimal("20000");
+    /** Taux du timbre : 1% du montant HT. */
+    private static final BigDecimal TIMBRE_TAUX  = new BigDecimal("0.01");
+
+    /**
+     * Calcule le timbre selon la regle RTS : 1% du montant si paiement
+     * ESPECES ET montant &ge; 20 000 FCFA, sinon 0. Met a jour les champs
+     * Timbre + TTC. Doit reproduire EXACTEMENT le calcul backend
+     * (autoritatif). Les autres modes (cheque, virement, mobile money,
+     * carte) sont exoneres du timbre fiscal.
+     */
     private void recalculerTtc() {
         BigDecimal montant = parseOuZero(montantField.getText());
-        BigDecimal timbre  = parseOuZero(timbreField.getText());
-        BigDecimal ttc     = montant.add(timbre);
+        ModePaiement mode = modePaiementCombo != null
+                ? modePaiementCombo.getValue() : null;
+        boolean especes = mode == ModePaiement.ESPECES;
+        BigDecimal timbre = (especes && montant.compareTo(TIMBRE_SEUIL) >= 0)
+                ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        timbreField.setText(timbre.signum() == 0 ? "" : Ui.formatMontant(timbre));
+        BigDecimal ttc = montant.add(timbre);
         montantTtcField.setText(Ui.formatMontant(ttc));
     }
 
@@ -204,6 +258,9 @@ public class NouvelleOperationController {
         timbreField.setText(op.timbre == null
                 || op.timbre.signum() == 0 ? "" : op.timbre.toPlainString());
         referenceField.setText(op.reference == null ? "" : op.reference);
+
+        // Pre-remplissage de la date+heure de diffusion (si presente).
+        prefRemplirDateDiffusion(op.dateDiffusion);
 
         // Mode de paiement
         if (op.modePaiement != null) {
@@ -323,6 +380,76 @@ public class NouvelleOperationController {
         }
     }
 
+    /**
+     * Affiche ou cache le bloc d'upload selon deux regles cumulatives :
+     *  - la categorie a accepteJustificatif=true (typique AVIS ET
+     *    COMMUNIQUES, APPEL : justificatif metier antenne), OU
+     *  - le mode de paiement n'est pas ESPECES (justificatif de paiement
+     *    electronique : cheque, virement, mobile money, carte bancaire).
+     *
+     * En cas de masquage, on reset le fichier eventuellement deja choisi.
+     */
+    private void appliquerVisibiliteJustificatif(CategorieDTO categorie) {
+        ModePaiement mode = modePaiementCombo != null
+                ? modePaiementCombo.getValue() : null;
+        boolean autoriseParCategorie = categorie != null
+                && categorie.accepteJustificatif;
+        boolean autoriseParModePaiement = mode != null
+                && mode != ModePaiement.ESPECES;
+        boolean visible = autoriseParCategorie || autoriseParModePaiement;
+        if (justificatifBox != null) {
+            justificatifBox.setVisible(visible);
+            justificatifBox.setManaged(visible);
+        }
+        if (!visible) {
+            justificatifSelectionne = null;
+            justificatifTypeMime = null;
+            if (justificatifLabel != null) {
+                justificatifLabel.setText("Aucun fichier selectionne");
+            }
+        }
+    }
+
+    /** Ouvre le FileChooser pour selectionner un PDF / JPG / PNG. */
+    @FXML
+    public void onChoisirJustificatif() {
+        javafx.stage.FileChooser chooser = new javafx.stage.FileChooser();
+        chooser.setTitle("Selectionner le justificatif");
+        chooser.getExtensionFilters().addAll(
+                new javafx.stage.FileChooser.ExtensionFilter(
+                        "Documents (PDF, JPG, PNG)", "*.pdf", "*.jpg", "*.jpeg", "*.png"),
+                new javafx.stage.FileChooser.ExtensionFilter("PDF", "*.pdf"),
+                new javafx.stage.FileChooser.ExtensionFilter("Images", "*.jpg", "*.jpeg", "*.png"));
+        javafx.stage.Stage stage = (javafx.stage.Stage)
+                choisirJustifButton.getScene().getWindow();
+        java.io.File file = chooser.showOpenDialog(stage);
+        if (file == null) return;
+
+        if (file.length() > 5L * 1024 * 1024) {
+            Ui.erreur("Fichier trop volumineux",
+                    "Le fichier fait " + (file.length() / 1024) + " Ko, max 5 Mo.");
+            return;
+        }
+        String mime = deduireMimeJustif(file.getName());
+        if (mime == null) {
+            Ui.erreur("Format non supporte",
+                    "Seuls les fichiers PDF, JPG et PNG sont acceptes.");
+            return;
+        }
+        justificatifSelectionne = file;
+        justificatifTypeMime = mime;
+        justificatifLabel.setText(file.getName() + "  ("
+                + (file.length() / 1024) + " Ko)");
+    }
+
+    private static String deduireMimeJustif(String nom) {
+        String n = nom.toLowerCase();
+        if (n.endsWith(".pdf"))                       return "application/pdf";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+        if (n.endsWith(".png"))                       return "image/png";
+        return null;
+    }
+
     // ==================================================================
     //  Handlers FXML
     // ==================================================================
@@ -368,6 +495,30 @@ public class NouvelleOperationController {
         enregistrerButton.setDisable(true);
         final ClientCreateRequest nouveauClientFinal = nouveauClientRequest;
         final boolean modeModification = (operationEnModification != null);
+        // Snapshot du justificatif eventuel (lecture du fichier en bytes
+        // dans la thread UI pour eviter de tenir une reference File pendant
+        // l'execution asynchrone).
+        final byte[] justifBytes;
+        final String justifNom;
+        final String justifMime;
+        if (justificatifSelectionne != null) {
+            try {
+                justifBytes = java.nio.file.Files.readAllBytes(
+                        justificatifSelectionne.toPath());
+                justifNom = justificatifSelectionne.getName();
+                justifMime = justificatifTypeMime;
+            } catch (Exception ex) {
+                enregistrerButton.setDisable(false);
+                Ui.erreur("Lecture du justificatif",
+                        "Impossible de lire le fichier : " + ex.getMessage());
+                return;
+            }
+        } else {
+            justifBytes = null;
+            justifNom = null;
+            justifMime = null;
+        }
+
         AsyncRunner.run(
                 () -> {
                     ClientDTO clientCree = null;
@@ -378,6 +529,18 @@ public class NouvelleOperationController {
                     OperationCaisseResponse op = modeModification
                             ? api.modifierOperation(operationEnModification.id, req)
                             : api.enregistrerOperation(req);
+                    // Upload du justificatif si selectionne. On capture les
+                    // exceptions pour ne pas perdre l'operation deja creee :
+                    // le caissier peut reuploader plus tard via le web.
+                    if (justifBytes != null && op != null && op.id != null) {
+                        try {
+                            op = api.uploaderJustificatif(op.id,
+                                    justifNom, justifMime, justifBytes);
+                        } catch (Exception ex) {
+                            log.warn("Operation {} creee mais upload justificatif "
+                                    + "echoue : {}", op.numeroRecu, ex.getMessage());
+                        }
+                    }
                     return new ResultatEnregistrement(clientCree, op);
                 },
                 resultat -> {
@@ -410,6 +573,19 @@ public class NouvelleOperationController {
         timbreField.clear();
         montantTtcField.clear();
         referenceField.clear();
+
+        if (dateDiffusionPicker != null) {
+            dateDiffusionPicker.setValue(null);
+        }
+        if (heureDiffusionField != null) {
+            heureDiffusionField.clear();
+        }
+        // Reset du justificatif (visibilite suit la categorie par defaut)
+        justificatifSelectionne = null;
+        justificatifTypeMime = null;
+        if (justificatifLabel != null) {
+            justificatifLabel.setText("Aucun fichier selectionne");
+        }
 
         clientCombo.getSelectionModel().clearSelection();
         clientCombo.setValue(null);
@@ -471,6 +647,20 @@ public class NouvelleOperationController {
                 default -> referenceField.setPromptText("Référence (optionnel)");
             }
         }
+        // Le timbre ne concerne QUE les ESPECES : on cache le bloc entier
+        // pour les autres modes pour ne pas afficher un champ "Timbre 0"
+        // qui pretend etre saisissable. Le calcul reste fait par
+        // recalculerTtc() (montant TTC = montant HT quand timbre cache).
+        boolean afficheTimbre = (mode == ModePaiement.ESPECES);
+        if (timbreBox != null) {
+            timbreBox.setVisible(afficheTimbre);
+            timbreBox.setManaged(afficheTimbre);
+        }
+        // Le justificatif depend AUSSI du mode de paiement : mode non-especes
+        // = justificatif possible (preuve de paiement electronique).
+        appliquerVisibiliteJustificatif(
+                categorieCombo != null ? categorieCombo.getValue() : null);
+        recalculerTtc();
     }
 
     // ==================================================================
@@ -549,13 +739,15 @@ public class NouvelleOperationController {
             return null;
         }
 
-        BigDecimal timbre = Ui.parseMontant(timbreField.getText());
-        if (timbre == null) timbre = BigDecimal.ZERO;
-        if (timbre.signum() < 0) {
-            Ui.erreur("Timbre invalide", "Le timbre doit être positif ou nul.");
-            timbreField.requestFocus();
-            return null;
-        }
+        // Timbre calcule automatiquement a partir du montant HT + mode,
+        // identique a la regle backend : 1% UNIQUEMENT pour ESPECES a partir
+        // de 20 000 FCFA, 0 pour tous les autres modes (cheque, virement,
+        // mobile money, carte). On l'envoie pour information mais le backend
+        // recalcule de toute facon (autoritatif).
+        boolean especes = mode == ModePaiement.ESPECES;
+        BigDecimal timbre = (especes && montant.compareTo(TIMBRE_SEUIL) >= 0)
+                ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
 
         OperationCaisseRequest req = new OperationCaisseRequest();
         req.caisseId      = caisse.id;
@@ -569,6 +761,14 @@ public class NouvelleOperationController {
                 || referenceField.getText().isBlank())
                 ? null
                 : referenceField.getText().trim();
+
+        // Date+heure de diffusion OBLIGATOIRES (regle metier RTS).
+        // Si l'un des deux champs est vide / mal forme, collecterDateDiffusion
+        // affiche l'erreur appropriee et retourne null. On annule.
+        req.dateDiffusion = collecterDateDiffusion();
+        if (req.dateDiffusion == null) {
+            return null;
+        }
 
         // Validation banque pour CHÈQUE / VIREMENT
         if (banqueRequise(mode)) {
@@ -591,6 +791,95 @@ public class NouvelleOperationController {
     private TypeOperation getTypeSelectionne() {
         if (sortieToggle.isSelected()) return TypeOperation.SORTIE;
         return TypeOperation.ENTREE;
+    }
+
+    // ==================================================================
+    //  Diffusion (date + heure)
+    // ==================================================================
+
+    private static final DateTimeFormatter HEURE_FMT =
+            DateTimeFormatter.ofPattern("H:mm");
+
+    /**
+     * Compose la date+heure de diffusion a partir des deux champs FXML.
+     * Desormais OBLIGATOIRE : si l'un des deux champs est vide, affiche une
+     * erreur et retourne null pour bloquer l'enregistrement.
+     */
+    private LocalDateTime collecterDateDiffusion() {
+        if (dateDiffusionPicker == null || heureDiffusionField == null) {
+            return null;
+        }
+        // Piege JavaFX : si l'utilisateur a TAPE la date dans l'editeur du
+        // DatePicker sans appuyer sur Entree ni cliquer dans le calendrier,
+        // getValue() retourne null meme si l'editeur contient du texte. On
+        // force la validation pour recuperer la valeur saisie au clavier.
+        forcerCommitDatePicker(dateDiffusionPicker);
+        LocalDate date = dateDiffusionPicker.getValue();
+        String heureTexte = heureDiffusionField.getText();
+        boolean heureRenseignee = heureTexte != null && !heureTexte.isBlank();
+
+        if (date == null && !heureRenseignee) {
+            Ui.erreur("Diffusion obligatoire",
+                    "Vous devez saisir la date ET l'heure de diffusion "
+                            + "antenne de cette operation.");
+            return null;
+        }
+        if (date == null) {
+            Ui.erreur("Date de diffusion manquante",
+                    "Saisissez la date de diffusion (format JJ/MM/AAAA).");
+            dateDiffusionPicker.requestFocus();
+            return null;
+        }
+        if (!heureRenseignee) {
+            Ui.erreur("Heure de diffusion manquante",
+                    "Saisissez l'heure de diffusion (format HH:mm, ex. 20:30).");
+            heureDiffusionField.requestFocus();
+            return null;
+        }
+        try {
+            LocalTime heure = LocalTime.parse(heureTexte.trim(), HEURE_FMT);
+            return LocalDateTime.of(date, heure);
+        } catch (Exception ex) {
+            Ui.erreur("Heure invalide",
+                    "L'heure de diffusion doit etre au format HH:mm "
+                            + "(ex. 20:30). Valeur saisie : " + heureTexte);
+            heureDiffusionField.requestFocus();
+            return null;
+        }
+    }
+
+    /**
+     * Force le DatePicker a valider le texte saisi dans son editeur en
+     * appelant son converter. Sans ca, {@code getValue()} reste null si
+     * l'utilisateur a juste tape la date sans appuyer sur Entree.
+     */
+    private static void forcerCommitDatePicker(DatePicker picker) {
+        try {
+            String texte = picker.getEditor().getText();
+            if (texte == null || texte.isBlank()) {
+                return;
+            }
+            // Le DatePicker JavaFX a un StringConverter par defaut au format
+            // local. On l'utilise pour parser le texte saisi.
+            LocalDate parse = picker.getConverter().fromString(texte);
+            picker.setValue(parse);
+        } catch (Exception ignored) {
+            // Format invalide : on laisse getValue() retourner null, et la
+            // validation aval affichera l'erreur appropriee.
+        }
+    }
+
+    /** Pre-remplit les deux champs depuis une operation existante. */
+    private void prefRemplirDateDiffusion(LocalDateTime dt) {
+        if (dateDiffusionPicker == null || heureDiffusionField == null) return;
+        if (dt == null) {
+            dateDiffusionPicker.setValue(null);
+            heureDiffusionField.clear();
+            return;
+        }
+        dateDiffusionPicker.setValue(dt.toLocalDate());
+        heureDiffusionField.setText(String.format("%02d:%02d",
+                dt.getHour(), dt.getMinute()));
     }
 
     // ==================================================================

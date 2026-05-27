@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
@@ -120,14 +121,19 @@
                 </VBox>
             </GridPane>
 
-            <!-- ========== Timbre + Montant TTC (calculé) ========== -->
+            <!-- ========== Timbre + Montant TTC (calculé) ==========
+                 Le bloc Timbre n'est visible QUE si le mode de paiement
+                 est ESPECES (regle metier RTS : timbre fiscal physique
+                 colle sur le recu cash uniquement). Le bloc Montant TTC
+                 prend toute la largeur quand Timbre est masque. -->
             <GridPane hgap="14" vgap="6">
                 <columnConstraints>
                     <ColumnConstraints percentWidth="50"/>
                     <ColumnConstraints percentWidth="50"/>
                 </columnConstraints>
-                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Label styleClass="field-label" text="TIMBRE FISCAL (FCFA)"/>
+                <VBox fx:id="timbreBox" spacing="6"
+                      GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="TIMBRE (FCFA)"/>
                     <TextField fx:id="timbreField" promptText="0"/>
                 </VBox>
 
@@ -138,6 +144,53 @@
                                style="-fx-font-weight: bold;"/>
                 </VBox>
             </GridPane>
+
+            <!-- ========== Date + Heure de diffusion (OBLIGATOIRE) ==========
+                 RTS est une chaine TV : toute operation de caisse doit etre
+                 rattachee a un creneau de diffusion antenne (spot pub,
+                 sponsoring, message). Imprime sur le recu (ligne
+                 "Diffusion"). Date ET heure sont desormais obligatoires
+                 cote backend (regle metier). -->
+            <GridPane hgap="14" vgap="6">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="65"/>
+                    <ColumnConstraints percentWidth="35"/>
+                </columnConstraints>
+                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="DATE DE DIFFUSION *"/>
+                    <DatePicker fx:id="dateDiffusionPicker" maxWidth="Infinity"
+                                promptText="JJ/MM/AAAA"/>
+                </VBox>
+                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label styleClass="field-label" text="HEURE (HH:MM) *"/>
+                    <TextField fx:id="heureDiffusionField" promptText="20:30"/>
+                </VBox>
+            </GridPane>
+
+            <!-- ========== Justificatif (visible selon 2 regles) ==========
+                 Le bloc apparait si :
+                  (a) la categorie a accepteJustificatif=true (AVIS ET
+                      COMMUNIQUES, APPEL...) ou
+                  (b) le mode de paiement n'est pas ESPECES (justificatif
+                      de paiement electronique : cheque, virement, mobile
+                      money, carte). Optionnel dans les deux cas. -->
+            <VBox fx:id="justificatifBox" spacing="6"
+                  visible="false" managed="false">
+                <Label styleClass="field-label"
+                       text="JUSTIFICATIF DE PAIEMENT (PDF, JPG ou PNG, 5 Mo max)"/>
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button fx:id="choisirJustifButton" text="Choisir un fichier"
+                            onAction="#onChoisirJustificatif"
+                            styleClass="button, button-secondary">
+                        <graphic>
+                            <FontIcon iconLiteral="fas-paperclip" iconSize="14"
+                                      iconColor="#B30510"/>
+                        </graphic>
+                    </Button>
+                    <Label fx:id="justificatifLabel" text="Aucun fichier selectionne"
+                           styleClass="login-subtitle"/>
+                </HBox>
+            </VBox>
 
             <!-- ========== Banque (visible si CHEQUE / VIREMENT) ========== -->
             <VBox fx:id="banqueBox" spacing="6"

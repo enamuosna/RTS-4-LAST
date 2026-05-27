@@ -185,7 +185,8 @@ class JournalCaisseServiceIT extends AbstractTestcontainersIT {
                 ModePaiement.ESPECES,
                 "Test",
                 null,
-                null // banqueId
+                null, // banqueId
+                null  // dateDiffusion
         ), caissier.getLogin());
     }
 }

@@ -99,6 +99,7 @@ public class CaissierController {
     @FXML private Label soldeLabel;
     @FXML private Button ouvrirButton;
     @FXML private Button cloturerButton;
+    @FXML private Button versementButton;
 
     // ================ Zone opérations ================
     @FXML private Button nouvelleOperationButton;
@@ -551,9 +552,9 @@ public class CaissierController {
 
         // Cloture : reservee a celui qui detient actuellement la caisse
         // (caissierId du DTO = utilisateur qui a ouvert la journee). Le
-        // backend rejette deja toute autre tentative ("Seul le caissier qui
-        // a ouvert la caisse peut la cloturer."). On masque le bouton ici
-        // pour eviter le frottement UX.
+        // backend rejette deja toute autre tentative ("Seul le caissier
+        // qui a ouvert la caisse peut la cloturer."). On masque le bouton
+        // ici pour eviter le frottement UX.
         boolean estDetenteur = estDetenteurDeCetteCaisse(caisse);
         cloturerButton.setVisible(ouverte && estDetenteur);
         cloturerButton.setManaged(ouverte && estDetenteur);
@@ -563,6 +564,15 @@ public class CaissierController {
         nouvelleOperationButton.setVisible(peutOperer);
         nouvelleOperationButton.setManaged(peutOperer);
         nouvelleOperationButton.setDisable(!ouverte);
+
+        // Bouton "Versement bancaire" : visible des qu'on est CAISSIER ou
+        // AGENT_RECETTE affecte, peu importe l'etat de la caisse (le
+        // versement peut etre fait AVANT l'ouverture, PENDANT la journee
+        // ou APRES la cloture). Toujours actif (pas de setDisable).
+        if (versementButton != null) {
+            versementButton.setVisible(peutOperer);
+            versementButton.setManaged(peutOperer);
+        }
 
         if (ouverte) {
             chargerOperationsDuJour();
@@ -756,6 +766,57 @@ public class CaissierController {
         }
     }
 
+    /**
+     * Ouvre le modal de saisie d'un versement bancaire. Le versement est
+     * rattache au journal de la session en cours s'il existe (le caissier
+     * a deja ouvert la caisse). Sinon (versement avant ouverture, apres
+     * cloture, etc.) le versement reste rattache a la caisse seule.
+     */
+    @FXML
+    public void onNouveauVersement() {
+        CaisseDTO caisse = Session.getInstance().getCaisseActive();
+        if (caisse == null) {
+            Ui.erreur("Aucune caisse", "Selectionnez d'abord une caisse.");
+            return;
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    GuichetApplication.class.getResource("/fxml/versement.fxml"));
+            Parent root = loader.load();
+            VersementController controller = loader.getController();
+
+            Stage modal = new Stage();
+            modal.initOwner(getCurrentWindow());
+            modal.initModality(Modality.APPLICATION_MODAL);
+            modal.initStyle(StageStyle.UTILITY);
+            modal.setTitle("Versement bancaire");
+            modal.setResizable(false);
+
+            Scene scene = new Scene(root);
+            ThemeManager.getInstance().register(scene);
+            modal.setOnHidden(e -> ThemeManager.getInstance().unregister(scene));
+            modal.setScene(scene);
+
+            // Journal optionnel : non rattache automatiquement cote guichet
+            // pour l'instant (versement peut etre avant/pendant/apres
+            // cloture). L'admin pourra rattacher manuellement via le web
+            // si necessaire. Le backend met dateVersement=now() si null.
+            Long journalId = null;
+            controller.initialiser(caisse, journalId, v -> {
+                // Pas de rafraichissement de la table operations : le
+                // versement n'impacte pas les operations affichees.
+                log.info("Versement enregistre via le guichet : bord={} montant={}",
+                        v.numeroBordereau, v.montant);
+            });
+
+            modal.showAndWait();
+        } catch (Exception e) {
+            log.error("Echec ouverture du modal Versement : {}", e.getMessage(), e);
+            Ui.erreur("Erreur",
+                    "Impossible d'ouvrir le formulaire de versement : " + e.getMessage());
+        }
+    }
+
     /** Récupère la fenêtre courante (parent du modal) à partir d'un nœud connu. */
     private Window getCurrentWindow() {
         if (operationsTable != null && operationsTable.getScene() != null) {
@@ -800,7 +861,10 @@ public class CaissierController {
      * <ul>
      *   <li>ADMIN, SUPERVISEUR : toujours</li>
      *   <li>AGENT_RECETTE : uniquement s'il est l'agent affecté à cette caisse</li>
-     *   <li>CAISSIER : jamais</li>
+     *   <li>CAISSIER : uniquement s'il est le caissier affecté à cette caisse
+     *       (correction d'erreur de saisie sur sa propre journée). Le backend
+     *       refusera de toute façon si la journée est cloturée ou si
+     *       l'operation est deja annulee.</li>
      * </ul>
      */
     private boolean peutCorriger() {
@@ -809,10 +873,15 @@ public class CaissierController {
         sn.rts.caisse.guichet.model.Role role = auth.role;
         if (role == sn.rts.caisse.guichet.model.Role.ADMIN
                 || role == sn.rts.caisse.guichet.model.Role.SUPERVISEUR) return true;
+        CaisseDTO caisse = Session.getInstance().getCaisseActive();
+        if (caisse == null) return false;
         if (role == sn.rts.caisse.guichet.model.Role.AGENT_RECETTE) {
-            CaisseDTO caisse = Session.getInstance().getCaisseActive();
-            return caisse != null && caisse.agentRecetteId != null
+            return caisse.agentRecetteId != null
                     && caisse.agentRecetteId.equals(auth.utilisateurId);
+        }
+        if (role == sn.rts.caisse.guichet.model.Role.CAISSIER) {
+            return caisse.caissierId != null
+                    && caisse.caissierId.equals(auth.utilisateurId);
         }
         return false;
     }

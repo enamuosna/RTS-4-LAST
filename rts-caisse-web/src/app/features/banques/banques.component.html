@@ -12,7 +12,8 @@
 <div class="toolbar">
     <mat-form-field appearance="outline" class="search-field">
         <mat-label>Rechercher</mat-label>
-        <input matInput [ngModel]="filtre()" (ngModelChange)="filtre.set($event)"
+        <input matInput [(ngModel)]="terme"
+               (ngModelChange)="recherche$.next($event)"
                placeholder="Code, libellé, code établissement…" />
         <mat-icon matSuffix>search</mat-icon>
     </mat-form-field>
@@ -99,4 +100,13 @@
             <p>Aucune banque ne correspond aux critères.</p>
         </div>
     }
+
+    <mat-paginator
+        [length]="totalElements()"
+        [pageSize]="pageSize"
+        [pageIndex]="pageIndex"
+        [pageSizeOptions]="[10, 20, 50, 100]"
+        (page)="changerPage($event)"
+        showFirstLastButtons>
+    </mat-paginator>
 </div>

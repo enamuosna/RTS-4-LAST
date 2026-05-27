@@ -73,6 +73,7 @@ public record AuditLogResponse(
         return switch (a) {
             case LOGIN_SUCCESS              -> "Connexion réussie";
             case LOGIN_FAILED               -> "Connexion refusée";
+            case COMPTE_VERROUILLE          -> "Compte verrouillé (trop d'échecs)";
             case LOGOUT                     -> "Déconnexion";
             case OUVRIR_CAISSE              -> "Ouverture de caisse";
             case CLOTURER_CAISSE            -> "Clôture de caisse";
@@ -87,6 +88,9 @@ public record AuditLogResponse(
             case REACTIVER_OPERATION        -> "Réactivation d'opération";
             case AFFECTER_AGENT_RECETTE     -> "Affectation d'agent de recette";
             case ANNULER_OPERATION          -> "Annulation d'opération";
+            case CREER_VERSEMENT            -> "Enregistrement d'un versement";
+            case SUPPRIMER_VERSEMENT        -> "Suppression d'un versement";
+            case TELECHARGER_BORDEREAU      -> "Téléchargement de bordereau";
             case IMPRIMER_RECU              -> "Impression de reçu";
             case TELECHARGER_RECU_PDF       -> "Téléchargement de reçu PDF";
             case ENVOYER_WHATSAPP           -> "Envoi WhatsApp";
@@ -101,11 +105,14 @@ public record AuditLogResponse(
             case SUPPRIMER_CLIENT           -> "Suppression de client";
             case CREER_UTILISATEUR          -> "Création d'utilisateur";
             case MODIFIER_UTILISATEUR       -> "Modification d'utilisateur";
+            case MODIFIER_ROLE_UTILISATEUR  -> "Modification du rôle d'utilisateur";
             case DESACTIVER_UTILISATEUR     -> "Désactivation d'utilisateur";
             case REACTIVER_UTILISATEUR      -> "Réactivation d'utilisateur";
             case REINITIALISER_MOT_DE_PASSE -> "Réinitialisation de mot de passe";
             case CHANGER_MOT_DE_PASSE       -> "Changement de mot de passe";
             case CONSULTER_AUDIT_LOG        -> "Consultation des logs d'audit";
+            case EXPORTER_AUDIT_LOG         -> "Export du journal d'audit (CSV)";
+            case PURGER_AUDIT_LOG           -> "Purge des logs d'audit anciens";
             case CONSULTER_REPORTING_GLOBAL -> "Consultation du reporting";
             case ACCES_REFUSE               -> "Accès refusé";
             case ERREUR_METIER              -> "Erreur métier";

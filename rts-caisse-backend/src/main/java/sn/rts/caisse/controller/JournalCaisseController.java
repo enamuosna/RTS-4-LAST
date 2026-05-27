@@ -83,4 +83,21 @@ public class JournalCaisseController {
             @RequestParam(required = false) Long caisseId) {
         return ResponseEntity.ok(service.journaux(dateDebut, dateFin, caisseId));
     }
+
+    /**
+     * Variante paginee de {@link #lister(LocalDate, LocalDate, Long)} pour la
+     * page admin Journaux : evite de charger l'ensemble complet lorsqu'il y a
+     * des centaines d'entrees. Tri par defaut : date_ouverture DESC.
+     */
+    @GetMapping("/page")
+    public ResponseEntity<org.springframework.data.domain.Page<JournalCaisseResponse>> listerPagine(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
+            @RequestParam(required = false) Long caisseId,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(
+                service.journauxPagine(dateDebut, dateFin, caisseId, pageable));
+    }
 }

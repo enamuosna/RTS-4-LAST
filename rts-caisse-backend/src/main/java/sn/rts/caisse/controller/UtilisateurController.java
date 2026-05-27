@@ -62,6 +62,24 @@ public class UtilisateurController {
         return ResponseEntity.ok(service.activer(id, actif));
     }
 
+    @PatchMapping("/{id}/role")
+    @Operation(summary = "Modifier le role d'un utilisateur (ADMIN uniquement)",
+               description = "Valeurs autorisees pour 'nouveau' : ADMIN, SUPERVISEUR, "
+                       + "CAISSIER, AGENT_RECETTE. Le role de l'administrateur "
+                       + "general ne peut pas etre modifie.")
+    public ResponseEntity<UtilisateurDTO> modifierRole(@PathVariable Long id,
+                                                       @RequestParam sn.rts.caisse.model.Role nouveau) {
+        return ResponseEntity.ok(service.modifierRole(id, nouveau));
+    }
+
+    @PatchMapping("/{id}/deverrouiller")
+    @Operation(summary = "Deverrouille un compte verrouille apres trop d'echecs",
+               description = "Remet le compteur d'echecs a zero et leve le lock "
+                       + "temporaire. Reserve aux ADMIN.")
+    public ResponseEntity<UtilisateurDTO> deverrouiller(@PathVariable Long id) {
+        return ResponseEntity.ok(service.deverrouiller(id));
+    }
+
     /**
      * Modifie le login d'un utilisateur.
      * <b>Réservé à l'administrateur général</b> — la vérification est faite

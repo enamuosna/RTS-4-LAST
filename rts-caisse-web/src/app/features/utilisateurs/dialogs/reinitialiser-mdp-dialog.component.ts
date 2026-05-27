@@ -16,6 +16,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Utilisateur } from '@core/models/models';
 import { UtilisateurService } from '@core/services/admin.services';
+import { passwordPolicyValidator } from '@core/validators/password-policy.validator';
+import { PasswordChecklistComponent } from '../../../shared/password-checklist/password-checklist.component';
 
 @Component({
   selector: 'rts-reinitialiser-mdp-dialog',
@@ -27,7 +29,8 @@ import { UtilisateurService } from '@core/services/admin.services';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    PasswordChecklistComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -58,11 +61,9 @@ import { UtilisateurService } from '@core/services/admin.services';
           >
             <mat-icon>{{ afficher() ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
-          <mat-hint>Minimum 8 caractères</mat-hint>
-          @if (form.controls.nouveau.hasError('minlength')) {
-            <mat-error>Le mot de passe doit faire au moins 8 caractères</mat-error>
-          }
         </mat-form-field>
+
+        <rts-password-checklist [motDePasse]="form.controls.nouveau.value" />
 
         <button
           mat-stroked-button
@@ -139,7 +140,7 @@ export class ReinitialiserMdpDialogComponent {
   readonly afficher = signal(false);
 
   readonly form = this.fb.nonNullable.group({
-    nouveau: ['', [Validators.required, Validators.minLength(8)]]
+    nouveau: ['', [Validators.required, passwordPolicyValidator()]]
   });
 
   /** Génère un mot de passe aléatoire conforme aux règles métier. */

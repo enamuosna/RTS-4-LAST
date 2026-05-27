@@ -23,6 +23,9 @@ public enum AuditAction {
     /** Tentative de connexion refusée (mauvais mot de passe, compte désactivé…). */
     LOGIN_FAILED,
 
+    /** Compte verrouille apres trop d'echecs successifs (5 par defaut). */
+    COMPTE_VERROUILLE,
+
     /** Déconnexion explicite (le côté client signale la fin de session). */
     LOGOUT,
 
@@ -58,6 +61,19 @@ public enum AuditAction {
 
     /** Annulation d'une opération existante (contre-passation du solde). */
     ANNULER_OPERATION,
+
+    // ==================================================================
+    //  Versements bancaires
+    // ==================================================================
+
+    /** Enregistrement d'un versement bancaire depuis une caisse. */
+    CREER_VERSEMENT,
+
+    /** Suppression d'un versement (ADMIN ou auteur tant que journal ouvert). */
+    SUPPRIMER_VERSEMENT,
+
+    /** Telechargement du bordereau bancaire d'un versement. */
+    TELECHARGER_BORDEREAU,
 
     // ==================================================================
     //  Reçu / Documents
@@ -99,6 +115,7 @@ public enum AuditAction {
 
     CREER_UTILISATEUR,
     MODIFIER_UTILISATEUR,
+    MODIFIER_ROLE_UTILISATEUR,
     DESACTIVER_UTILISATEUR,
     REACTIVER_UTILISATEUR,
     REINITIALISER_MOT_DE_PASSE,
@@ -109,6 +126,8 @@ public enum AuditAction {
     // ==================================================================
 
     CONSULTER_AUDIT_LOG,
+    EXPORTER_AUDIT_LOG,
+    PURGER_AUDIT_LOG,
     CONSULTER_REPORTING_GLOBAL,
 
     // ==================================================================

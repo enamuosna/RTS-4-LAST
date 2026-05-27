@@ -322,7 +322,9 @@
   overflow: auto;
   border: 1px solid var(--rts-gray-200);
   border-radius: 8px;
-  background: #f4f5f7;
+  /* Fond blanc : on a retire le gris #f4f5f7 pour un rendu uniforme
+     blanc autour de l'apercu du recu. */
+  background: #ffffff;
   display: flex;
   justify-content: center;
   padding: 12px;

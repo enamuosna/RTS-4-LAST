@@ -80,6 +80,9 @@ export interface CategorieOperation {
   libelle: string;
   typeOperation: TypeOperation;
   actif: boolean;
+  /** True si les opérations de cette catégorie peuvent porter un
+   *  justificatif (PDF/JPG/PNG) joint par le caissier. */
+  accepteJustificatif: boolean;
 }
 
 // ---------- Client ----------
@@ -106,6 +109,12 @@ export interface OperationCaisseRequest {
   motif: string;
   reference?: string;
   banqueId?: number;
+  /**
+   * Date+heure prévue de diffusion du produit à l'antenne (spot, sponsoring,
+   * message). Optionnel : laissé vide quand l'opération n'est pas liée à
+   * une diffusion. Format ISO 8601 attendu par le backend.
+   */
+  dateDiffusion?: string | null;
 }
 
 // ──────────────────────────────
@@ -132,6 +141,8 @@ export interface OperationCaisse {
   modePaiement: ModePaiement;
   reference?: string;
   dateOperation: string;
+  /** Date+heure de diffusion du produit a l'antenne (optionnel). */
+  dateDiffusion?: string | null;
   caisseId: number;
   caisseLibelle: string;
   caissierId: number;
@@ -145,6 +156,34 @@ export interface OperationCaisse {
   banqueLibelle?: string;
   annulee: boolean;
   motifAnnulation?: string;
+  /** Indique qu'un justificatif (PDF/image) est attache a l'operation. */
+  justificatifPresent?: boolean;
+  justificatifNomFichier?: string;
+  justificatifTypeMime?: string;
+  justificatifTailleFichier?: number;
+}
+
+// ---------- Versements bancaires ----------
+export interface Versement {
+  id: number;
+  caisseId: number;
+  caisseLibelle: string;
+  journalId?: number;
+  banqueId: number;
+  banqueCode: string;
+  banqueLibelle: string;
+  montant: number;
+  numeroBordereau: string;
+  /** ISO 8601 datetime. */
+  dateVersement: string;
+  nomFichier: string;
+  typeMime: string;
+  tailleFichier: number;
+  createdById: number;
+  createdByNom: string;
+  /** ISO 8601 datetime. */
+  createdAt: string;
+  notes?: string;
 }
 
 // ---------- Journal ----------

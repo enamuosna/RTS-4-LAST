@@ -182,7 +182,8 @@ class OperationCaisseServiceIT extends AbstractTestcontainersIT {
                 ModePaiement.ESPECES,
                 "Opération de test",
                 "REF-TEST",
-                null // banqueId
+                null, // banqueId
+                null  // dateDiffusion
         );
     }
 }

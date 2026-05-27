@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   ClotureCaisseRequest,
@@ -12,7 +12,8 @@ import {
   OuvertureCaisseRequest,
   Page,
   ParametresRecu,
-  SupervisionSnapshot
+  SupervisionSnapshot,
+  Versement
 } from '../models/models';
 
 // ======================================================
@@ -66,6 +67,43 @@ export class OperationService {
   historiqueDuJour(caisseId: number): Observable<OperationCaisse[]> {
     return this.http.get<OperationCaisse[]>(`${this.base}/caisse/${caisseId}/jour`);
   }
+
+  // ---------- Justificatif (PDF/JPG/PNG) ----------
+
+  /** Attache (ou remplace) le justificatif d'une opération. */
+  uploaderJustificatif(operationId: number, fichier: File): Observable<OperationCaisse> {
+    const formData = new FormData();
+    formData.append('fichier', fichier);
+    return this.http.post<OperationCaisse>(
+      `${this.base}/${operationId}/justificatif`, formData);
+  }
+
+  /** Telecharge le justificatif via JSON+base64 (bypass tracking blockers). */
+  telechargerJustificatif(operationId: number): Observable<{
+    nomFichier: string; typeMime: string; blob: Blob;
+  }> {
+    return this.http.get<{
+      nomFichier: string;
+      typeMime: string;
+      tailleFichier: number;
+      contenuBase64: string;
+    }>(`${this.base}/${operationId}/justificatif-donnees`).pipe(
+      map(payload => {
+        const bin = atob(payload.contenuBase64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return {
+          nomFichier: payload.nomFichier,
+          typeMime:   payload.typeMime,
+          blob:       new Blob([bytes], { type: payload.typeMime })
+        };
+      })
+    );
+  }
+
+  supprimerJustificatif(operationId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${operationId}/justificatif`);
+  }
 }
 
 // ======================================================
@@ -115,6 +153,24 @@ export class JournalService {
     if (dateFin)   params = params.set('dateFin',   dateFin);
     if (caisseId)  params = params.set('caisseId',  caisseId);
     return this.http.get<JournalCaisse[]>(this.base, { params });
+  }
+
+  /**
+   * Variante paginee : meme criteres mais avec pagination admin web.
+   * Si dateDebut/Fin sont absents, le backend prend une fenetre d'1 an.
+   */
+  listerPaginee(opts?: {
+    dateDebut?: string; dateFin?: string; caisseId?: number;
+    page?: number; size?: number;
+  }): Observable<Page<JournalCaisse>> {
+    let params = new HttpParams()
+      .set('page', opts?.page ?? 0)
+      .set('size', opts?.size ?? 20)
+      .set('sort', 'dateJournal,desc');
+    if (opts?.dateDebut) params = params.set('dateDebut', opts.dateDebut);
+    if (opts?.dateFin)   params = params.set('dateFin',   opts.dateFin);
+    if (opts?.caisseId)  params = params.set('caisseId',  opts.caisseId);
+    return this.http.get<Page<JournalCaisse>>(`${this.base}/page`, { params });
   }
 
   /**
@@ -298,5 +354,99 @@ export class BackupService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<RapportImportBackup>(`${this.base}/import`, formData);
+  }
+}
+
+// ======================================================
+//  VERSEMENTS BANCAIRES
+// ======================================================
+@Injectable({ providedIn: 'root' })
+export class VersementService {
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/versements`;
+
+  /** Tous les versements (admin/superviseur, pagine). */
+  listerTous(page = 0, size = 20): Observable<Page<Versement>> {
+    const params = new HttpParams().set('page', page).set('size', size)
+      .set('sort', 'dateVersement,desc');
+    return this.http.get<Page<Versement>>(this.base, { params });
+  }
+
+  /** Versements d'une caisse, filtrable par dates (YYYY-MM-DD). */
+  listerParCaisse(caisseId: number, opts?: {
+    dateDebut?: string; dateFin?: string; page?: number; size?: number;
+  }): Observable<Page<Versement>> {
+    let params = new HttpParams()
+      .set('page', opts?.page ?? 0)
+      .set('size', opts?.size ?? 20)
+      .set('sort', 'dateVersement,desc');
+    if (opts?.dateDebut) params = params.set('dateDebut', opts.dateDebut);
+    if (opts?.dateFin)   params = params.set('dateFin',   opts.dateFin);
+    return this.http.get<Page<Versement>>(`${this.base}/caisse/${caisseId}`, { params });
+  }
+
+  /** Détail d'un versement (sans le contenu binaire). */
+  obtenir(id: number): Observable<Versement> {
+    return this.http.get<Versement>(`${this.base}/${id}`);
+  }
+
+  /**
+   * Téléchargement du bordereau bancaire (PDF ou image).
+   *
+   * Edge Tracking Prevention bloque les telechargements binaires directs
+   * sur DuckDNS (ERR_BLOCKED_BY_CLIENT), meme avec un Bearer token.
+   * Solution : passer par un endpoint JSON qui renvoie le fichier en
+   * base64. JSON n'est jamais bloque. On reconstruit le Blob cote client.
+   */
+  telechargerFichier(id: number): Observable<{ nomFichier: string; typeMime: string; blob: Blob }> {
+    return this.http.get<{
+      nomFichier: string;
+      typeMime: string;
+      tailleFichier: number;
+      contenuBase64: string;
+    }>(`${this.base}/${id}/donnees`).pipe(
+      map(payload => {
+        const bin = atob(payload.contenuBase64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return {
+          nomFichier: payload.nomFichier,
+          typeMime:   payload.typeMime,
+          blob:       new Blob([bytes], { type: payload.typeMime })
+        };
+      })
+    );
+  }
+
+  /**
+   * Crée un versement avec upload du bordereau bancaire (multipart).
+   * Le fichier doit être PDF, JPG ou PNG, max 5 Mo.
+   */
+  creer(req: {
+    caisseId: number;
+    banqueId: number;
+    journalId?: number;
+    montant: number;
+    numeroBordereau: string;
+    /** ISO 8601 datetime (optionnel ; backend met now() par défaut). */
+    dateVersement?: string;
+    notes?: string;
+    fichier: File;
+  }): Observable<Versement> {
+    const params = new HttpParams()
+      .set('caisseId',        req.caisseId)
+      .set('banqueId',        req.banqueId)
+      .set('montant',         req.montant)
+      .set('numeroBordereau', req.numeroBordereau)
+      .set('journalId',       req.journalId ?? '')
+      .set('dateVersement',   req.dateVersement ?? '')
+      .set('notes',           req.notes ?? '');
+    const formData = new FormData();
+    formData.append('fichier', req.fichier);
+    return this.http.post<Versement>(this.base, formData, { params });
+  }
+
+  supprimer(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
   }
 }

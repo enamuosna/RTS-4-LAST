@@ -69,17 +69,48 @@ export class ParametresComponent implements OnInit {
   params: ParametresRecu | null = null;
 
   /** Métadonnées d'affichage pour chaque section connue. */
+  // Liste complete (29 rubriques) — chaque element est toggleable et
+  // reordonnable. Doit rester en phase avec :
+  //   - backend RecuPdfService.sectionsDefaut()
+  //   - guichet PrintRecu.rendreSection()
   readonly sectionsMeta: Record<string, SectionMeta> = {
-    header:     { id: 'header',     libelle: 'En-tête (logo + société)',  description: 'Bandeau avec le logo et les infos statiques de la société', conditionnelle: false },
-    titre:      { id: 'titre',      libelle: 'Titre "REÇU"',              description: 'Grand titre central', conditionnelle: false },
-    numero:     { id: 'numero',     libelle: 'Numéro de reçu',             description: 'N° d\'opération en gros caractères', conditionnelle: false },
-    details:    { id: 'details',    libelle: 'Détails (caisse, agent…)',   description: 'Date, caisse, agent, catégorie, mode de règlement', conditionnelle: false },
-    client:     { id: 'client',     libelle: 'Bloc client',                description: 'Affiché uniquement si un client est associé', conditionnelle: true },
-    montant:    { id: 'montant',    libelle: 'Bloc montant',               description: 'Le montant en grand format', conditionnelle: false },
-    motif:      { id: 'motif',      libelle: 'Motif',                      description: 'Affiché uniquement si un motif a été saisi', conditionnelle: true },
-    annulation: { id: 'annulation', libelle: 'Bandeau annulation',         description: 'Affiché uniquement pour les opérations annulées', conditionnelle: true },
-    signature:  { id: 'signature',  libelle: 'Signature + date',           description: 'Ligne signature et date du jour', conditionnelle: false },
-    footer:     { id: 'footer',     libelle: 'Pied de page',               description: 'Messages de remerciement / mentions légales', conditionnelle: false }
+    // --- En-tete societe (8 rubriques granulaires) ---
+    logo:              { id: 'logo',              libelle: 'Logo',                       description: 'Logo de la société (image ou pastille texte)',           conditionnelle: false },
+    raison_sociale:    { id: 'raison_sociale',    libelle: 'Raison sociale',             description: 'Nom de la société (ex: Radio Télévision Sénégalaise)',  conditionnelle: false },
+    ligne_legale:      { id: 'ligne_legale',      libelle: 'Mention légale',             description: 'Ex: Créée par la loi n° 92-02 du 06 janvier 1992',      conditionnelle: false },
+    capital:           { id: 'capital',           libelle: 'Capital',                    description: 'Ex: Capital : 7 milliards FCFA',                         conditionnelle: false },
+    adresse_societe:   { id: 'adresse_societe',   libelle: 'Adresse',                    description: 'Adresse physique de la société',                         conditionnelle: false },
+    telephone_societe: { id: 'telephone_societe', libelle: 'Téléphone',                  description: 'Numéro de téléphone de la société',                      conditionnelle: false },
+    boite_postale:     { id: 'boite_postale',     libelle: 'Boîte postale',              description: 'Ex: B.P. 1765 — DAKAR',                                  conditionnelle: false },
+    ninea:             { id: 'ninea',             libelle: 'NINEA',                      description: 'Numéro d\'identification national',                       conditionnelle: false },
+    // --- Titre + numero ---
+    titre_recu:        { id: 'titre_recu',        libelle: 'Titre "REÇU"',              description: 'Grand titre central',                                     conditionnelle: false },
+    numero_recu:       { id: 'numero_recu',       libelle: 'Numéro de reçu',             description: 'N° d\'opération en gros caractères',                      conditionnelle: false },
+    // --- Details operation (8 rubriques granulaires) ---
+    date_operation:    { id: 'date_operation',    libelle: 'Date de l\'opération',       description: 'Date et heure d\'enregistrement',                         conditionnelle: false },
+    caisse:            { id: 'caisse',            libelle: 'Caisse',                     description: 'Libellé de la caisse',                                   conditionnelle: false },
+    agent:             { id: 'agent',             libelle: 'Agent (caissier)',           description: 'Nom de l\'agent qui a saisi l\'opération',                conditionnelle: false },
+    type_operation:    { id: 'type_operation',    libelle: 'Type d\'opération',          description: 'Encaissement ou décaissement',                            conditionnelle: false },
+    categorie:         { id: 'categorie',         libelle: 'Catégorie',                  description: 'Catégorie comptable',                                    conditionnelle: false },
+    mode_paiement:     { id: 'mode_paiement',     libelle: 'Mode de règlement',          description: 'Espèces, chèque, virement, mobile money…',                conditionnelle: false },
+    reference:         { id: 'reference',         libelle: 'Référence',                  description: 'N° de chèque, ID transaction, etc. (si renseignée)',    conditionnelle: true },
+    diffusion:         { id: 'diffusion',         libelle: 'Date de diffusion',          description: 'Date + heure prévues de diffusion antenne',              conditionnelle: false },
+    // --- Banque (bloc conditionnel) ---
+    banque:            { id: 'banque',            libelle: 'Banque émettrice',           description: 'Code + libellé + établissement + site (chèque/virement)', conditionnelle: true },
+    // --- Client (4 rubriques granulaires, conditionnelles) ---
+    client_raison:     { id: 'client_raison',     libelle: 'Client : raison sociale',    description: 'Nom du client (si client associé)',                       conditionnelle: true },
+    client_telephone:  { id: 'client_telephone',  libelle: 'Client : téléphone',         description: 'Téléphone du client (si renseigné)',                      conditionnelle: true },
+    client_adresse:    { id: 'client_adresse',    libelle: 'Client : adresse',           description: 'Adresse du client (si renseignée)',                       conditionnelle: true },
+    client_ninea:      { id: 'client_ninea',      libelle: 'Client : NINEA / RCCM',      description: 'Identifiant fiscal du client (si renseigné)',             conditionnelle: true },
+    // --- Montant (bloc visuel unitaire) ---
+    montant:           { id: 'montant',           libelle: 'Bloc montant (HT + Timbre + TTC)', description: 'Bloc visuel avec montant HT, timbre et TTC en grand', conditionnelle: false },
+    // --- Motif, annulation, signature ---
+    motif:             { id: 'motif',             libelle: 'Motif',                      description: 'Affiché uniquement si un motif a été saisi',             conditionnelle: true },
+    annulation:        { id: 'annulation',        libelle: 'Bandeau annulation',         description: 'Affiché uniquement pour les opérations annulées',        conditionnelle: true },
+    signature:         { id: 'signature',         libelle: 'Signature + date',           description: 'Ligne signature et date du jour',                        conditionnelle: false },
+    // --- Footer (2 rubriques granulaires) ---
+    footer_ligne1:     { id: 'footer_ligne1',     libelle: 'Pied de page — ligne 1',     description: 'Ex: Merci de votre passage.',                            conditionnelle: false },
+    footer_ligne2:     { id: 'footer_ligne2',     libelle: 'Pied de page — ligne 2',     description: 'Ex: RTS - Conservez ce reçu.',                           conditionnelle: false }
   };
 
   ngOnInit(): void {
@@ -91,6 +122,16 @@ export class ParametresComponent implements OnInit {
     this.api.obtenir().subscribe({
       next: (p) => {
         this.params = p;
+        // Migration douce : si le layout sauvegarde contient encore des
+        // anciens IDs (header, details, client, footer, titre, numero),
+        // on reset l'UI sur la nouvelle config granulaire par defaut.
+        // Le user verra immediatement les 29 nouvelles rubriques et
+        // pourra Enregistrer pour persister.
+        const anciensIds = new Set(['header','details','client','footer','titre','numero']);
+        const aDesAnciensIds = (p.sections || []).some(s => anciensIds.has(s.id));
+        if (aDesAnciensIds) {
+          this.reinitialiserOrdre();
+        }
         this.loading.set(false);
         this.rafraichirApercu();
         this.rafraichirLogo();
@@ -254,10 +295,27 @@ export class ParametresComponent implements OnInit {
 
   reinitialiserOrdre(): void {
     if (!this.params) return;
-    const ordreParDefaut = ['header','titre','numero','details','client','montant','motif','annulation','signature','footer'];
-    this.params.sections = ordreParDefaut.map(id => {
-      const existing = this.params!.sections.find(s => s.id === id);
-      return existing ?? { id, visible: true };
-    });
+    // Doit rester en phase avec backend RecuPdfService.sectionsDefaut().
+    const ordreParDefaut = [
+      // En-tete societe
+      'logo','raison_sociale','ligne_legale','capital',
+      'adresse_societe','telephone_societe','boite_postale','ninea',
+      // Titre + numero
+      'titre_recu','numero_recu',
+      // Details operation
+      'date_operation','caisse','agent','type_operation',
+      'categorie','mode_paiement','reference','diffusion',
+      // Banque
+      'banque',
+      // Client (4 rubriques)
+      'client_raison','client_telephone','client_adresse','client_ninea',
+      // Montant
+      'montant',
+      // Motif, annulation, signature
+      'motif','annulation','signature',
+      // Footer
+      'footer_ligne1','footer_ligne2'
+    ];
+    this.params.sections = ordreParDefaut.map(id => ({ id, visible: true }));
   }
 }

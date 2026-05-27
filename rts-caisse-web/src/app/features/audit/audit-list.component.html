@@ -9,6 +9,20 @@
         <mat-icon>refresh</mat-icon>
         Rafraîchir
       </button>
+      <button mat-stroked-button color="primary"
+              (click)="exporterCsv()"
+              [disabled]="loading()"
+              matTooltip="Exporte les logs filtres au format CSV (Excel)">
+        <mat-icon>file_download</mat-icon>
+        Exporter CSV
+      </button>
+      <button mat-stroked-button color="warn"
+              (click)="purgerLogs()"
+              [disabled]="loading()"
+              matTooltip="Supprime definitivement les logs anciens (au-dela de N jours)">
+        <mat-icon>delete_sweep</mat-icon>
+        Purger anciens
+      </button>
     </div>
   </div>
 

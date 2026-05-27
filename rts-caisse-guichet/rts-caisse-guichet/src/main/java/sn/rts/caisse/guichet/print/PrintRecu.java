@@ -56,7 +56,16 @@ public final class PrintRecu {
     private static final DateTimeFormatter DATE_FR =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private static final double LARGEUR_RECU = 380;
+    /** Date + heure : utilise pour la ligne "Diffusion" sur le recu. */
+    private static final DateTimeFormatter DATE_HEURE_FR =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm");
+
+    /**
+     * Largeur du recu pour l'apercu et l'impression desktop. Passe de 380 a
+     * 520 px pour s'aligner sur le format A5 du PDF backend (148 mm de large)
+     * et eviter que les libelles longs (categorie, banque) ne soient tronques.
+     */
+    private static final double LARGEUR_RECU = 520;
 
     // Couleurs de fallback (si backend KO ou champ null)
     private static final Color FB_PRIMAIRE = Color.web("#E30613");
@@ -155,7 +164,12 @@ public final class PrintRecu {
         root.setPadding(new Insets(16, 18, 16, 18));
 
         List<SectionRecu> sections = ctx.sections();
-        boolean separateurDouble = false; // après le header
+        // Rendu compact "old style" : on ne met PAS de separateur entre
+        // chaque rubrique individuelle. Un separateur fin n'apparait qu'au
+        // passage d'un groupe logique a un autre (ex: fin du bloc header,
+        // entre bloc client et bloc operation, etc.). Le gros trait double
+        // apparait apres le groupe header.
+        String previousGroup = null;
         for (int i = 0; i < sections.size(); i++) {
             SectionRecu s = sections.get(i);
             if (!s.visible) continue;
@@ -163,21 +177,48 @@ public final class PrintRecu {
             Node node = rendreSection(s.id, ctx);
             if (node == null) continue; // section conditionnelle absente
 
-            // Séparateurs entre sections (visuels)
-            if (root.getChildren().size() > 0) {
+            String currentGroup = groupePour(s.id);
+            if (previousGroup != null && !previousGroup.equals(currentGroup)) {
+                // Changement de groupe : separateur. Si on quitte le groupe
+                // "header", on met le gros trait double (signature visuelle
+                // de fin d'en-tete societe). Sinon, un fin trait gris.
+                boolean sortDuHeader = "header".equals(previousGroup);
                 root.getChildren().add(
-                        separateurDouble ? separateurDouble(ctx) : separateur(ctx));
-                separateurDouble = false;
+                        sortDuHeader ? separateurDouble(ctx) : separateur(ctx));
             }
             root.getChildren().add(node);
-
-            // Le double séparateur (gros trait) apparaît après l'en-tête.
-            if ("header".equals(s.id)) {
-                separateurDouble = true;
-            }
+            previousGroup = currentGroup;
         }
 
         return root;
+    }
+
+    /**
+     * Mappe un ID de rubrique granulaire vers son groupe visuel logique.
+     * Les rubriques du meme groupe sont rendues sans separateur entre elles
+     * (rendu compact "old style") ; un separateur apparait au changement
+     * de groupe. Si l'admin reorganise les rubriques, les separateurs
+     * suivent automatiquement les frontieres de groupes.
+     */
+    private static String groupePour(String id) {
+        return switch (id) {
+            case "logo", "raison_sociale", "ligne_legale", "capital",
+                 "adresse_societe", "telephone_societe", "boite_postale",
+                 "ninea"                                        -> "header";
+            case "titre_recu", "numero_recu",
+                 "date_operation", "caisse", "agent",
+                 "type_operation", "categorie", "mode_paiement",
+                 "reference", "diffusion"                       -> "details";
+            case "banque"                                       -> "banque";
+            case "client_raison", "client_telephone",
+                 "client_adresse", "client_ninea"               -> "client";
+            case "montant"                                      -> "montant";
+            case "motif"                                        -> "motif";
+            case "annulation"                                   -> "annulation";
+            case "signature"                                    -> "signature";
+            case "footer_ligne1", "footer_ligne2"               -> "footer";
+            default                                             -> id;
+        };
     }
 
     /**
@@ -186,18 +227,71 @@ public final class PrintRecu {
      */
     private static Node rendreSection(String id, Ctx ctx) {
         return switch (id) {
-            case "header"     -> sectionHeader(ctx);
-            case "titre"      -> sectionTitre(ctx);
-            case "numero"     -> sectionNumero(ctx);
-            case "details"    -> sectionDetails(ctx);
-            case "client"     -> ctx.aDesInfosClient() ? sectionClient(ctx) : null;
-            case "montant"    -> sectionMontant(ctx);
-            case "motif"      -> ctx.aDuMotif()        ? sectionMotif(ctx)  : null;
-            case "annulation" -> ctx.op != null && ctx.op.annulee
-                                                       ? sectionAnnulation(ctx) : null;
-            case "signature"  -> sectionSignature(ctx);
-            case "footer"     -> sectionFooter(ctx);
-            default           -> {
+            // -------- En-tete societe (8 rubriques granulaires) --------
+            case "logo"              -> sectionLogo(ctx);
+            case "raison_sociale"    -> ligneAGauche(ctx, ctx.params != null ? ctx.params.raisonSociale : null,
+                                                     11, FontWeight.BOLD, ctx.primaire);
+            case "ligne_legale"      -> ligneAGauche(ctx, ctx.params != null ? ctx.params.ligneLegale   : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "capital"           -> ligneAGauche(ctx, ctx.params != null ? ctx.params.capital       : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "adresse_societe"   -> ligneAGauche(ctx, ctx.params != null ? ctx.params.adresse       : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "telephone_societe" -> ligneAGauche(ctx, ctx.params != null ? ctx.params.telephone     : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "boite_postale"     -> ligneAGauche(ctx, ctx.params != null ? ctx.params.boitePostale  : null,
+                                                     9,  FontWeight.NORMAL, ctx.texte2);
+            case "ninea"             -> ligneAGauche(ctx, ctx.params != null ? ctx.params.ninea         : null,
+                                                     9,  FontWeight.BOLD, ctx.texte);
+            // -------- Titre + numero --------
+            case "titre_recu"        -> sectionTitre(ctx);
+            case "numero_recu"       -> sectionNumero(ctx);
+            // -------- Details operation (8 rubriques granulaires) --------
+            case "date_operation"    -> ligneCleValeur(ctx, "Date",
+                                            ctx.op != null && ctx.op.dateOperation != null
+                                                ? ctx.op.dateOperation.format(DATE_HEURE_FR)
+                                                : "—");
+            case "caisse"            -> ligneCleValeur(ctx, "Caisse",
+                                            ctx.op != null ? ctx.op.caisseLibelle : "—");
+            case "agent"             -> ligneCleValeur(ctx, "Agent",
+                                            ctx.op != null ? ctx.op.caissierNomComplet : "—");
+            case "type_operation"    -> ligneCleValeur(ctx, "Type",
+                                            ctx.op != null && ctx.op.typeOperation != null
+                                                ? ctx.op.typeOperation.getLibelle() : "—");
+            case "categorie"         -> ligneCleValeur(ctx, "Catégorie",
+                                            ctx.op != null ? ctx.op.categorieLibelle : "—");
+            case "mode_paiement"     -> ligneCleValeur(ctx, "Mode régl.",
+                                            ctx.op != null && ctx.op.modePaiement != null
+                                                ? ctx.op.modePaiement.getLibelle() : "—");
+            case "reference"         -> (ctx.op != null && ctx.op.reference != null && !ctx.op.reference.isBlank())
+                                            ? ligneCleValeur(ctx, "Référence", ctx.op.reference) : null;
+            case "diffusion"         -> ligneCleValeur(ctx, "Diffusion",
+                                            ctx.op != null && ctx.op.dateDiffusion != null
+                                                ? ctx.op.dateDiffusion.format(DATE_HEURE_FR)
+                                                : "—");
+            // -------- Banque (bloc unitaire) --------
+            case "banque"            -> aDesInfosBanque(ctx.op) ? blocBanque(ctx) : null;
+            // -------- Client (4 rubriques granulaires) --------
+            case "client_raison"     -> sectionClientChamp(ctx, "M.",        c -> c != null ? c.raisonSociale     : null);
+            case "client_telephone"  -> sectionClientChamp(ctx, "Téléphone", c -> c != null ? c.telephone         : null);
+            case "client_adresse"    -> sectionClientChamp(ctx, "Adresse",   c -> c != null ? c.adresse           : null);
+            case "client_ninea"      -> sectionClientChamp(ctx, "NINEA/RCCM",c -> c != null ? c.identifiantFiscal : null);
+            // -------- Montant (bloc visuel unitaire) --------
+            case "montant"           -> sectionMontant(ctx);
+            // -------- Motif, annulation, signature --------
+            case "motif"             -> ctx.aDuMotif() ? sectionMotif(ctx) : null;
+            case "annulation"        -> ctx.op != null && ctx.op.annulee ? sectionAnnulation(ctx) : null;
+            case "signature"         -> sectionSignature(ctx);
+            // -------- Footer (2 rubriques granulaires) --------
+            case "footer_ligne1"     -> ligneCentree(ctx,
+                                            blankIfNull(ctx.params != null ? ctx.params.footerLigne1 : null,
+                                                    "Merci de votre passage."),
+                                            8, FontWeight.NORMAL, ctx.texte);
+            case "footer_ligne2"     -> ligneCentree(ctx,
+                                            blankIfNull(ctx.params != null ? ctx.params.footerLigne2 : null,
+                                                    "RTS - Conservez ce recu."),
+                                            7, FontWeight.NORMAL, ctx.texte2);
+            default                  -> {
                 log.warn("Section inconnue ignorée : {}", id);
                 yield null;
             }
@@ -369,6 +463,13 @@ public final class PrintRecu {
             if (ctx.op.reference != null && !ctx.op.reference.isBlank()) {
                 box.getChildren().add(ligneCleValeur(ctx, "Référence", ctx.op.reference));
             }
+            // Heure de diffusion du produit a l'antenne (spot, sponsoring...).
+            // TOUJOURS affichee : on imprime "—" si non renseignee, pour que la
+            // rubrique soit visible sur tous les recus.
+            String diffusion = ctx.op.dateDiffusion != null
+                    ? ctx.op.dateDiffusion.format(DATE_HEURE_FR)
+                    : "—";
+            box.getChildren().add(ligneCleValeur(ctx, "Diffusion", diffusion));
             if (aDesInfosBanque(ctx.op)) {
                 box.getChildren().add(blocBanque(ctx));
             }
@@ -423,8 +524,10 @@ public final class PrintRecu {
         VBox box = new VBox(2);
         box.setAlignment(Pos.CENTER);
         box.setPadding(new Insets(8, 12, 8, 12));
+        // Bloc montant : fond blanc, look plat (on ignore volontairement
+        // ctx.fondMontant pour ne pas reintroduire un encadre colore).
         box.setBackground(new Background(new BackgroundFill(
-                ctx.fondMontant, new CornerRadii(4), Insets.EMPTY)));
+                Color.WHITE, new CornerRadii(4), Insets.EMPTY)));
 
         java.math.BigDecimal montant = ctx.op != null && ctx.op.montant != null
                 ? ctx.op.montant : java.math.BigDecimal.ZERO;
@@ -436,11 +539,13 @@ public final class PrintRecu {
         boolean afficheDetail = timbre.signum() > 0;
 
         if (afficheDetail) {
-            // Lignes Montant HT + Timbre alignées
+            // Lignes Montant HT + Timbre alignées.
+            // Ui.formatMontant() inclut deja " FCFA", pas besoin de l'ajouter
+            // (sinon doublon "FCFA FCFA" sur le recu).
             box.getChildren().add(ligneMontantInline(ctx, "Montant HT",
-                    Ui.formatMontant(montant) + " FCFA"));
-            box.getChildren().add(ligneMontantInline(ctx, "Timbre fiscal",
-                    Ui.formatMontant(timbre) + " FCFA"));
+                    Ui.formatMontant(montant)));
+            box.getChildren().add(ligneMontantInline(ctx, "Timbre",
+                    Ui.formatMontant(timbre)));
 
             // Séparateur
             Region sep = new Region();
@@ -457,7 +562,7 @@ public final class PrintRecu {
             libelleTtc.setTextFill(ctx.texte2);
             box.getChildren().add(libelleTtc);
 
-            Label valeurTtc = new Label(Ui.formatMontant(ttc) + " FCFA");
+            Label valeurTtc = new Label(Ui.formatMontant(ttc));
             valeurTtc.setFont(Font.font("Consolas", FontWeight.BOLD, ctx.tailleMontant));
             valeurTtc.setTextFill(ctx.primaire);
             box.getChildren().add(valeurTtc);
@@ -467,7 +572,7 @@ public final class PrintRecu {
             libelle.setTextFill(ctx.texte2);
             box.getChildren().add(libelle);
 
-            Label valeur = new Label(Ui.formatMontant(montant) + " FCFA");
+            Label valeur = new Label(Ui.formatMontant(montant));
             valeur.setFont(Font.font("Consolas", FontWeight.BOLD, ctx.tailleMontant));
             valeur.setTextFill(ctx.primaire);
             box.getChildren().add(valeur);
@@ -637,6 +742,108 @@ public final class PrintRecu {
         return (value == null || value.isBlank()) ? fallback : value;
     }
 
+    /** Remplace null/blanc par {@code fallback}, retourne value sinon. */
+    private static String blankIfNull(String value, String fallback) {
+        return (value == null || value.isBlank()) ? fallback : value;
+    }
+
+    // ==================================================================
+    //  Helpers granulaires (rubrique unitaires de l'en-tete et du footer)
+    // ==================================================================
+
+    /** Logo standalone aligne en haut a GAUCHE - utilise par la rubrique "logo".
+     *  L'admin ayant demande un logo en haut a gauche (et non centre comme
+     *  par defaut sur les autres rubriques d'en-tete), on force ici
+     *  l'alignement CENTER_LEFT plutot que de subir l'alignement parent. */
+    private static Node sectionLogo(Ctx ctx) {
+        HBox box = new HBox();
+        box.setAlignment(Pos.CENTER_LEFT);
+        ImageView logo = chargerLogo(ctx);
+        if (logo != null) {
+            box.getChildren().add(logo);
+        } else {
+            box.getChildren().add(logoTexteFallback(ctx));
+        }
+        return box;
+    }
+
+    /**
+     * Ligne de texte centree (utilisee pour chaque info societe granulaire
+     * et pour les deux lignes de pied de page). Retourne null si texte vide
+     * pour ne pas afficher de ligne creuse.
+     */
+    private static Node ligneCentree(Ctx ctx, String texte, double tailleFont,
+                                      FontWeight weight,
+                                      javafx.scene.paint.Color couleur) {
+        if (texte == null || texte.isBlank()) return null;
+        Label label = new Label(texte);
+        label.setFont(Font.font("Arial", weight, tailleFont));
+        label.setTextFill(couleur);
+        label.setWrapText(true);
+        HBox box = new HBox(label);
+        box.setAlignment(Pos.CENTER);
+        return box;
+    }
+
+    /** Ligne alignee a GAUCHE, utilisee pour les infos d'en-tete societe
+     *  sous le logo (qui est lui-meme aligne a gauche). Le bandeau forme
+     *  ainsi un bloc compact aligne sur le bord gauche du recu, comme
+     *  sur un en-tete officiel classique. */
+    private static Node ligneAGauche(Ctx ctx, String texte, double tailleFont,
+                                      FontWeight weight,
+                                      javafx.scene.paint.Color couleur) {
+        if (texte == null || texte.isBlank()) return null;
+        Label label = new Label(texte);
+        label.setFont(Font.font("Arial", weight, tailleFont));
+        label.setTextFill(couleur);
+        label.setWrapText(true);
+        HBox box = new HBox(label);
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
+    }
+
+    /**
+     * Une rubrique client granulaire : "M. : <raison sociale>",
+     * "Telephone : <tel>", etc. Retourne null si l'op n'a pas de client
+     * ou si le champ est vide (rubrique conditionnelle silencieuse).
+     */
+    private static Node sectionClientChamp(Ctx ctx, String label,
+            java.util.function.Function<sn.rts.caisse.guichet.model.Dto.ClientDTO, String> getter) {
+        if (ctx.op == null) {
+            // apercu : on affiche un exemple
+            return ligneCleValeur(ctx, label, "Client exemple");
+        }
+        // Le DTO de reponse expose les champs client a plat (pas d'objet
+        // Client embarque). On utilise un mini-DTO synthetique.
+        sn.rts.caisse.guichet.model.Dto.ClientDTO c =
+                synthClientFromOp(ctx.op);
+        if (c == null) return null;
+        String valeur = getter.apply(c);
+        if (valeur == null || valeur.isBlank()) return null;
+        return ligneCleValeur(ctx, label, valeur);
+    }
+
+    /**
+     * Construit un objet {@link sn.rts.caisse.guichet.model.Dto.ClientDTO}
+     * a partir des champs a plat de l'OperationCaisseResponse, ou retourne
+     * null si aucun client n'est associe a l'operation.
+     */
+    private static sn.rts.caisse.guichet.model.Dto.ClientDTO synthClientFromOp(
+            OperationCaisseResponse op) {
+        if (op.clientId == null && (op.clientRaisonSociale == null
+                || op.clientRaisonSociale.isBlank())) {
+            return null;
+        }
+        sn.rts.caisse.guichet.model.Dto.ClientDTO c =
+                new sn.rts.caisse.guichet.model.Dto.ClientDTO();
+        c.id = op.clientId;
+        c.raisonSociale     = op.clientRaisonSociale;
+        c.telephone         = op.clientTelephone;
+        c.adresse           = op.clientAdresse;
+        c.identifiantFiscal = op.clientIdentifiantFiscal;
+        return c;
+    }
+
     // ==================================================================
     //  Contexte de rendu : agrège op + params + couleurs + tailles résolues
     // ==================================================================
@@ -704,13 +911,50 @@ public final class PrintRecu {
             return op != null && op.motif != null && !op.motif.isBlank();
         }
 
+        /** IDs de l'ancien format coarse (avant la granularite max).
+         *  Si l'un d'eux apparait, on considere le layout obsolete et on
+         *  retombe sur la config granulaire par defaut. Migration identique
+         *  cote backend (RecuPdfService) et frontend web. */
+        private static final java.util.Set<String> ANCIENS_IDS = java.util.Set.of(
+                "header", "details", "client", "footer", "numero", "titre");
+
         List<SectionRecu> sections() {
             if (params != null && params.sections != null && !params.sections.isEmpty()) {
-                return params.sections;
+                // Detection d'un ancien layout : si un seul ancien ID est
+                // present, on ignore le layout sauvegarde et on retombe sur
+                // les 29 rubriques granulaires. Evite que le recu apparaisse
+                // vide quand l'admin n'a pas encore re-enregistre les
+                // parametres depuis la mise a jour.
+                boolean obsolete = params.sections.stream()
+                        .anyMatch(s -> ANCIENS_IDS.contains(s.id));
+                if (!obsolete) {
+                    return params.sections;
+                }
+                log.info("Layout recu obsolete detecte cote guichet, "
+                        + "fallback sur la config granulaire par defaut.");
             }
-            // Ordre par défaut (cohérent avec le backend)
-            String[] ids = {"header","titre","numero","details","client","montant",
-                            "motif","annulation","signature","footer"};
+            // Ordre par defaut : 29 rubriques granulaires (coherent avec
+            // backend RecuPdfService.sectionsDefaut()).
+            String[] ids = {
+                    // En-tete societe (8)
+                    "logo","raison_sociale","ligne_legale","capital",
+                    "adresse_societe","telephone_societe","boite_postale","ninea",
+                    // Titre + numero
+                    "titre_recu","numero_recu",
+                    // Details operation (8)
+                    "date_operation","caisse","agent","type_operation",
+                    "categorie","mode_paiement","reference","diffusion",
+                    // Banque
+                    "banque",
+                    // Client (4)
+                    "client_raison","client_telephone","client_adresse","client_ninea",
+                    // Montant
+                    "montant",
+                    // Motif, annulation, signature
+                    "motif","annulation","signature",
+                    // Footer (2)
+                    "footer_ligne1","footer_ligne2"
+            };
             List<SectionRecu> list = new ArrayList<>();
             for (String id : ids) {
                 SectionRecu s = new SectionRecu();

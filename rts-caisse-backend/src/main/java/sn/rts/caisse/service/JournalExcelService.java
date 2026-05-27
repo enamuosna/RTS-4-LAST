@@ -90,6 +90,7 @@ public class JournalExcelService {
 
     private final JournalCaisseRepository journalRepository;
     private final OperationCaisseRepository operationRepository;
+    private final sn.rts.caisse.repository.VersementRepository versementRepository;
 
     // ==================================================================
     //  API publique
@@ -224,13 +225,13 @@ public class JournalExcelService {
                 j.getFondOuverture(), s.montantRecap);
         row = ecrireLigneMontant(sheet, row, "Total entrées HT",
                 j.getTotalEntrees(), s.montantVert);
-        row = ecrireLigneMontant(sheet, row, "  • Timbre fiscal entrées",
+        row = ecrireLigneMontant(sheet, row, "  • Timbre entrées",
                 timbreEntrees, s.montantRecap);
         row = ecrireLigneMontant(sheet, row, "Total entrées TTC",
                 ttcEntrees, s.montantVertImportant);
         row = ecrireLigneMontant(sheet, row, "Total sorties HT",
                 j.getTotalSorties(), s.montantRouge);
-        row = ecrireLigneMontant(sheet, row, "  • Timbre fiscal sorties",
+        row = ecrireLigneMontant(sheet, row, "  • Timbre sorties",
                 timbreSorties, s.montantRecap);
         row = ecrireLigneMontant(sheet, row, "Total sorties TTC",
                 ttcSorties, s.montantRougeImportant);
@@ -328,6 +329,31 @@ public class JournalExcelService {
                 String pct = pourcentage(e.getValue(), grandTotalNonAnnule);
                 row = ecrireLigneRepartition(sheet, row, label, e.getValue(), pct, s);
             }
+        }
+
+        row++;
+
+        // ----- Section : versements bancaires de la periode -----
+        // Liste tous les versements rattaches a ce journal (le caissier
+        // ou agent recette les rattache explicitement lors du depot).
+        java.util.List<sn.rts.caisse.model.Versement> versements =
+                versementRepository.findByJournalIdOrderByDateVersementAsc(j.getId());
+        row = ecrireSection(sheet, row, "VERSEMENTS BANCAIRES DE LA PÉRIODE", s);
+        if (versements.isEmpty()) {
+            row = ecrireLigne(sheet, row, "Aucun versement rattaché", "—", s);
+        } else {
+            BigDecimal totalVersements = BigDecimal.ZERO;
+            for (sn.rts.caisse.model.Versement v : versements) {
+                String label = v.getDateVersement().format(FMT_DATETIME_LISIBLE)
+                        + " — " + v.getBanque().getCode()
+                        + " (bord. " + v.getNumeroBordereau() + ")";
+                row = ecrireLigneMontant(sheet, row, label,
+                        v.getMontant(), s.montantRecap);
+                totalVersements = totalVersements.add(v.getMontant());
+            }
+            row = ecrireLigneMontant(sheet, row,
+                    "TOTAL versements (" + versements.size() + ")",
+                    totalVersements, s.montantVertImportant);
         }
 
         row++;

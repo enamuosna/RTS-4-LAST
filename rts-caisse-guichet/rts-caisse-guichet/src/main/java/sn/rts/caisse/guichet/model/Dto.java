@@ -50,6 +50,13 @@ public final class Dto {
         public String emplacement;
         public StatutCaisse statut;
         public BigDecimal soldeCourant;
+        /**
+         * Type(s) d'opération autorisé(s) sur la caisse : "ENTREE", "SORTIE"
+         * ou "TOUS" (mixte). Défini par l'ADMIN. Le guichet adapte l'affichage
+         * du type d'opération en conséquence. Null pour les caisses héritées
+         * (traité comme TOUS).
+         */
+        public String typeOperationAutorise;
         public Long caissierId;
         public String caissierNomComplet;
         /** Agent de recette rattaché à cette caisse (peut modifier les opérations). */
@@ -429,5 +436,23 @@ public final class Dto {
         public String        notes;
 
         public VersementResponse() {}
+    }
+
+    // ================================================================
+    //  TimbreConfigDto - configuration personnalisable du timbre fiscal.
+    //  Lue par le guichet pour reproduire EXACTEMENT le calcul backend
+    //  (autoritatif). La mise a jour est reservee a l'ADMIN via le web.
+    // ================================================================
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class TimbreConfigDto {
+        public boolean actif;
+        public BigDecimal seuil;
+        public BigDecimal pourcentage;
+        /** IDs des categories concernees ; liste vide = toutes. */
+        public java.util.List<Long> categorieIds;
+        /** Noms des modes de paiement concernes ; liste vide = tous. */
+        public java.util.List<String> modesPaiement;
+
+        public TimbreConfigDto() {}
     }
 }

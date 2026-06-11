@@ -21,6 +21,11 @@
               <mat-icon class="icon-inline">place</mat-icon>
               {{ c.emplacement || 'Non spécifié' }}
             </div>
+            <div class="caisse-emplacement"
+                 [matTooltip]="'Type d\'opération autorisé pour le caissier'">
+              <mat-icon class="icon-inline">{{ typeOperationIcon(c.typeOperationAutorise) }}</mat-icon>
+              {{ typeOperationLibelle(c.typeOperationAutorise) }}
+            </div>
           </div>
           <span class="badge" [class]="statutBadge(c.statut)">{{ c.statut }}</span>
         </div>

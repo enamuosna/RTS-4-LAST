@@ -89,26 +89,27 @@ export class MainLayoutComponent {
     {
       label: 'Vue d\'ensemble',
       items: [
-        { label: 'Tableau de bord', icon: 'dashboard',      route: '/dashboard',    roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] },
-        { label: 'Supervision',     icon: 'monitor_heart',  route: '/supervision',  roles: ['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'] }
+        { label: 'Tableau de bord', icon: 'dashboard',      route: '/dashboard',    roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'] },
+        { label: 'Supervision',     icon: 'monitor_heart',  route: '/supervision',  roles: ['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR'] }
       ]
     },
     {
       label: 'Gestion caisse',
       items: [
         { label: 'Caisses',    icon: 'point_of_sale', route: '/caisses',    roles: ['ADMIN', 'SUPERVISEUR'] },
-        { label: 'Opérations', icon: 'receipt_long',  route: '/operations', roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] },
-        { label: 'Journaux',   icon: 'event_note',    route: '/journaux',   roles: ['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'] },
-        { label: 'Versements', icon: 'account_balance_wallet', route: '/versements', roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] },
+        { label: 'Opérations', icon: 'receipt_long',  route: '/operations', roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'] },
+        { label: 'Journaux',   icon: 'event_note',    route: '/journaux',   roles: ['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR'] },
+        { label: 'Versements', icon: 'account_balance_wallet', route: '/versements', roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'] },
         { label: 'Clients',    icon: 'business',      route: '/clients',    roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] }
       ]
     },
     {
       label: 'Configuration',
       items: [
-        { label: 'Catégories',   icon: 'category',        route: '/categories',   roles: ['ADMIN'] },
+        { label: 'Produits',     icon: 'category',        route: '/categories',   roles: ['ADMIN'] },
         { label: 'Utilisateurs', icon: 'people',          route: '/utilisateurs', roles: ['ADMIN'] },
         { label: 'Banques',      icon: 'account_balance', route: '/banques',      roles: ['ADMIN'] },
+        { label: 'Timbre',       icon: 'local_offer',     route: '/timbre',       roles: ['ADMIN'] },
         { label: 'Paramètres',   icon: 'tune',            route: '/parametres',   roles: ['ADMIN'] }
       ]
     },

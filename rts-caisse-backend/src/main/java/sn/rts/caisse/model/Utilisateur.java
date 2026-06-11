@@ -66,8 +66,16 @@ public class Utilisateur extends Auditable implements UserDetails {
     @Column(length = 20)
     private String telephone;
 
+    /**
+     * Rôle applicatif. {@code columnDefinition} explicite (et non {@code length})
+     * pour empêcher Hibernate (profil docker, ddl-auto=update) de regénérer un
+     * CHECK constraint figeant la liste des rôles connus au premier démarrage :
+     * tout nouveau rôle ajouté à l'enum (ex. {@code CONTROLEUR}) ferait alors
+     * échouer l'INSERT. La validation des valeurs reste assurée côté Java par
+     * {@link Enumerated}. Même correctif que sur {@code audit_logs.action}.
+     */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "VARCHAR(20) NOT NULL")
     private Role role;
 
     @Column(nullable = false)

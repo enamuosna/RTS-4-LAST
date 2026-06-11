@@ -31,7 +31,7 @@ public class SupervisionController {
     private final SupervisionService service;
 
     @GetMapping("/snapshot")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR')")
     @Operation(summary = "Cliché temps réel : caisses + agrégats du jour + activité récente",
                description = "Sans dates : journee courante, a appeler en polling regulier (10s) cote UI. "
                        + "Avec dates : vue historique sur [dateDebut, dateFin] (le polling devrait alors etre desactive). "

@@ -52,7 +52,7 @@ import { OperationService } from '../../core/services/caisse.services';
         <mat-icon>info</mat-icon>
         <span>
           Le solde de la caisse sera recalculé automatiquement.
-          Pour changer la catégorie, le mode de paiement, le client ou la
+          Pour changer le produit, le mode de paiement, le client ou la
           banque, annulez puis resaisissez au guichet.
         </span>
       </div>

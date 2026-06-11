@@ -16,6 +16,16 @@
       <mat-label>Emplacement</mat-label>
       <input matInput formControlName="emplacement" />
     </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Type d'opération autorisé</mat-label>
+      <mat-select formControlName="typeOperationAutorise">
+        <mat-option value="TOUS">Encaissement et décaissement</mat-option>
+        <mat-option value="ENTREE">Encaissement uniquement</mat-option>
+        <mat-option value="SORTIE">Décaissement uniquement</mat-option>
+      </mat-select>
+      <mat-hint>Détermine ce que le caissier pourra saisir au guichet.</mat-hint>
+    </mat-form-field>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">

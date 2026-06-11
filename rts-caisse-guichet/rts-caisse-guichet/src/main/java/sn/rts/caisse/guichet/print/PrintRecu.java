@@ -258,7 +258,7 @@ public final class PrintRecu {
             case "type_operation"    -> ligneCleValeur(ctx, "Type",
                                             ctx.op != null && ctx.op.typeOperation != null
                                                 ? ctx.op.typeOperation.getLibelle() : "—");
-            case "categorie"         -> ligneCleValeur(ctx, "Catégorie",
+            case "categorie"         -> ligneCleValeur(ctx, "Produit",
                                             ctx.op != null ? ctx.op.categorieLibelle : "—");
             case "mode_paiement"     -> ligneCleValeur(ctx, "Mode régl.",
                                             ctx.op != null && ctx.op.modePaiement != null
@@ -456,7 +456,7 @@ public final class PrintRecu {
                     ctx.op.caissierNomComplet == null ? "—" : ctx.op.caissierNomComplet));
             box.getChildren().add(ligneCleValeur(ctx, "Type",
                     ctx.op.typeOperation == null ? "—" : ctx.op.typeOperation.getLibelle()));
-            box.getChildren().add(ligneCleValeur(ctx, "Catégorie",
+            box.getChildren().add(ligneCleValeur(ctx, "Produit",
                     ctx.op.categorieLibelle == null ? "—" : ctx.op.categorieLibelle));
             box.getChildren().add(ligneCleValeur(ctx, "Mode régl.",
                     ctx.op.modePaiement == null ? "—" : ctx.op.modePaiement.getLibelle()));

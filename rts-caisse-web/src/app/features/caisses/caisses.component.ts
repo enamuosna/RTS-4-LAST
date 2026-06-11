@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Caisse, StatutCaisse } from '../../core/models/models';
+import { Caisse, StatutCaisse, TypeOperationAutorise } from '../../core/models/models';
 import { CaisseService } from '../../core/services/admin.services';
 import { AffecterCaissierDialogComponent } from './dialogs/affecter-caissier-dialog.component';
 import { AffecterAgentRecetteDialogComponent } from './dialogs/affecter-agent-recette-dialog.component';
@@ -120,5 +120,23 @@ export class CaissesComponent implements OnInit {
       : statut === 'SUSPENDUE'
         ? 'badge-warning'
         : 'badge-neutral';
+  }
+
+  /** Libellé lisible du type d'opération autorisé sur la caisse. */
+  typeOperationLibelle(type: TypeOperationAutorise | undefined): string {
+    switch (type) {
+      case 'ENTREE': return 'Encaissement uniquement';
+      case 'SORTIE': return 'Décaissement uniquement';
+      default:       return 'Encaissement et décaissement';
+    }
+  }
+
+  /** Icône Material associée au type d'opération autorisé. */
+  typeOperationIcon(type: TypeOperationAutorise | undefined): string {
+    switch (type) {
+      case 'ENTREE': return 'south_west';
+      case 'SORTIE': return 'north_east';
+      default:       return 'swap_vert';
+    }
   }
 }

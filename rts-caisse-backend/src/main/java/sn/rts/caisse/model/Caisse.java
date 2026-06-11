@@ -43,6 +43,22 @@ public class Caisse extends Auditable {
     private StatutCaisse statut = StatutCaisse.FERMEE;
 
     /**
+     * Type(s) d'opération autorisé(s) sur cette caisse, fixé par l'ADMIN.
+     * Par défaut {@link TypeOperationAutorise#TOUS} (caisse mixte) pour la
+     * compatibilité avec les caisses existantes.
+     *
+     * <p>{@code columnDefinition} explicite (avec {@code DEFAULT 'TOUS'}) pour
+     * (1) renseigner les lignes déjà en base lors de l'ajout de la colonne et
+     * (2) empêcher Hibernate de générer un CHECK constraint figé — même
+     * approche que sur {@code utilisateurs.role}.</p>
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type_operation_autorise", nullable = false,
+            columnDefinition = "VARCHAR(20) NOT NULL DEFAULT 'TOUS'")
+    @Builder.Default
+    private TypeOperationAutorise typeOperationAutorise = TypeOperationAutorise.TOUS;
+
+    /**
      * Solde théorique courant (fond de caisse + mouvements du jour).
      * Mis à jour transactionnellement par le service.
      */

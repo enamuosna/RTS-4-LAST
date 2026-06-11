@@ -52,7 +52,7 @@ export class CategorieDialogComponent {
       ? this.service.modifier(this.data.id, dto)
       : this.service.creer(dto);
     obs.subscribe((c) => {
-      this.snackBar.open('Catégorie enregistrée', 'OK', {
+      this.snackBar.open('Produit enregistré', 'OK', {
         duration: 2500,
         panelClass: ['snackbar-success']
       });

@@ -8,9 +8,11 @@ import org.springframework.stereotype.Component;
 import sn.rts.caisse.model.*;
 import sn.rts.caisse.repository.CaisseRepository;
 import sn.rts.caisse.repository.CategorieOperationRepository;
+import sn.rts.caisse.repository.TimbreConfigRepository;
 import sn.rts.caisse.repository.UtilisateurRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -27,6 +29,7 @@ public class DataInitializer implements CommandLineRunner {
     private final UtilisateurRepository utilisateurRepository;
     private final CategorieOperationRepository categorieRepository;
     private final CaisseRepository caisseRepository;
+    private final TimbreConfigRepository timbreConfigRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -34,6 +37,7 @@ public class DataInitializer implements CommandLineRunner {
         initAdmin();
         initCategories();
         initCaisse();
+        initTimbreConfig();
     }
 
     // ------------------------------------------------------------------
@@ -114,5 +118,29 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         caisseRepository.save(caisse);
         log.info("Caisse d'exemple créée : {} - {}", caisse.getCode(), caisse.getLibelle());
+    }
+
+    /**
+     * Seed du singleton de configuration du timbre. Indispensable en profil
+     * docker (Flyway désactivé, ddl-auto=update) où la table est créée par
+     * Hibernate mais aucune ligne n'est insérée. Idempotent : si la migration
+     * Flyway (dev) a déjà inséré la ligne id=1, on ne fait rien.
+     */
+    private void initTimbreConfig() {
+        if (timbreConfigRepository.existsById(1L)) {
+            return;
+        }
+        TimbreConfig config = TimbreConfig.builder()
+                .id(1L)
+                .actif(true)
+                .seuil(new BigDecimal("20000"))
+                .pourcentage(new BigDecimal("1.00"))
+                .categoriesJson("[]")
+                .modesPaiementJson("[\"ESPECES\"]")
+                .updatedAt(LocalDateTime.now())
+                .updatedBy("system")
+                .build();
+        timbreConfigRepository.save(config);
+        log.info("Configuration du timbre initialisée (seuil=20000, taux=1%, ESPECES).");
     }
 }

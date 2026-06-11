@@ -42,9 +42,11 @@ import { VersementDialogComponent } from './versement-dialog.component';
         <h1><mat-icon class="title-icon">account_balance_wallet</mat-icon> Versements bancaires</h1>
         <p class="subtitle">Dépôts d'espèces et virements internes effectués depuis les caisses RTS.</p>
       </div>
-      <button mat-flat-button color="primary" (click)="ouvrirDialog()">
-        <mat-icon>add</mat-icon> Nouveau versement
-      </button>
+      @if (!estControleur()) {
+        <button mat-flat-button color="primary" (click)="ouvrirDialog()">
+          <mat-icon>add</mat-icon> Nouveau versement
+        </button>
+      }
     </div>
 
     <div class="filtres">
@@ -116,11 +118,13 @@ import { VersementDialogComponent } from './versement-dialog.component';
                     matTooltip="Télécharger {{ v.nomFichier }}">
               <mat-icon>download</mat-icon>
             </button>
-            <button mat-icon-button color="warn"
-                    (click)="supprimer(v)"
-                    matTooltip="Supprimer">
-              <mat-icon>delete_outline</mat-icon>
-            </button>
+            @if (!estControleur()) {
+              <button mat-icon-button color="warn"
+                      (click)="supprimer(v)"
+                      matTooltip="Supprimer">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            }
           </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="colonnes"></tr>
@@ -187,12 +191,16 @@ export class VersementsComponent implements OnInit {
   readonly totalAffiche = computed(() =>
     this.versements().reduce((acc, v) => acc + (v.montant || 0), 0));
 
-  /** ADMIN / SUPERVISEUR voient toutes les caisses ;
+  /** ADMIN / SUPERVISEUR / CONTROLEUR voient toutes les caisses ;
    *  CAISSIER / AGENT_RECETTE sont restreints a leur(s) caisse(s) affectee(s). */
   readonly peutVoirToutesCaisses = computed(() => {
     const r = this.authService.currentRole();
-    return r === 'ADMIN' || r === 'SUPERVISEUR';
+    return r === 'ADMIN' || r === 'SUPERVISEUR' || r === 'CONTROLEUR';
   });
+
+  /** CONTROLEUR : acteur en lecture seule. Il consulte les versements mais
+   *  ne peut ni en créer ni en supprimer (le backend refuse de toute façon). */
+  readonly estControleur = computed(() => this.authService.currentRole() === 'CONTROLEUR');
 
   /** Si l'utilisateur n'a qu'une seule caisse, on l'auto-selectionne et
    *  on verrouille le dropdown : il ne peut pas voir les autres caisses. */

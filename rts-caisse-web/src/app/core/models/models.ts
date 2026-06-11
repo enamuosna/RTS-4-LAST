@@ -2,9 +2,12 @@
 //  Types miroirs des DTOs Spring Boot (sn.rts.caisse.dto)
 // ============================================================
 
-export type Role = 'ADMIN' | 'SUPERVISEUR' | 'CAISSIER' | 'AGENT_RECETTE';
+export type Role = 'ADMIN' | 'SUPERVISEUR' | 'CAISSIER' | 'AGENT_RECETTE' | 'CONTROLEUR';
 
 export type TypeOperation = 'ENTREE' | 'SORTIE';
+
+/** Type(s) d'opération qu'une caisse est autorisée à effectuer. */
+export type TypeOperationAutorise = 'ENTREE' | 'SORTIE' | 'TOUS';
 
 export type ModePaiement =
   | 'ESPECES'
@@ -16,6 +19,20 @@ export type ModePaiement =
   | 'FREE_MONEY';
 
 export type StatutCaisse = 'FERMEE' | 'OUVERTE' | 'SUSPENDUE';
+
+/**
+ * Configuration personnalisable du timbre fiscal (singleton, ADMIN).
+ * Le timbre s'applique si actif, montant >= seuil, mode concerné
+ * (modesPaiement vide = tous) et catégorie concernée (categorieIds vide
+ * = toutes). Montant = montant * pourcentage / 100.
+ */
+export interface TimbreConfig {
+  actif: boolean;
+  seuil: number;
+  pourcentage: number;
+  categorieIds: number[];
+  modesPaiement: ModePaiement[];
+}
 
 // ---------- Auth ----------
 export interface LoginRequest {
@@ -66,6 +83,8 @@ export interface Caisse {
   emplacement?: string;
   statut: StatutCaisse;
   soldeCourant: number;
+  /** Type(s) d'opération autorisé(s) sur la caisse (défini par l'ADMIN). */
+  typeOperationAutorise?: TypeOperationAutorise;
   caissierId?: number;
   caissierNomComplet?: string;
   /** Agent de recette rattaché : peut modifier/réactiver les opérations. */

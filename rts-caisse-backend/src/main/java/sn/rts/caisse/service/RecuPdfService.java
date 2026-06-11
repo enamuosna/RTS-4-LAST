@@ -165,7 +165,7 @@ public class RecuPdfService {
                     case "caisse"            -> ecrireLigneCleValeur(document, "Caisse",     op != null ? op.getCaisse().getLibelle() : "Caisse — Aperçu", cTexte, cTexteSec, tCorps);
                     case "agent"             -> ecrireLigneCleValeur(document, "Agent",      op != null ? op.getCaissier().getNomComplet() : "AGENT TEST", cTexte, cTexteSec, tCorps);
                     case "type_operation"    -> ecrireLigneCleValeur(document, "Type",       libelleType(op),                                              cTexte, cTexteSec, tCorps);
-                    case "categorie"         -> ecrireLigneCleValeur(document, "Catégorie",  op != null ? op.getCategorie().getLibelle() : "Catégorie exemple", cTexte, cTexteSec, tCorps);
+                    case "categorie"         -> ecrireLigneCleValeur(document, "Produit",    op != null ? op.getCategorie().getLibelle() : "Produit exemple", cTexte, cTexteSec, tCorps);
                     case "mode_paiement"     -> ecrireLigneCleValeur(document, "Mode régl.", op != null ? op.getModePaiement().name().replace('_', ' ') : "Espèces", cTexte, cTexteSec, tCorps);
                     case "reference"         -> { if (op != null && op.getReference() != null && !op.getReference().isBlank())
                                                        ecrireLigneCleValeur(document, "Référence", op.getReference(), cTexte, cTexteSec, tCorps); }
@@ -293,7 +293,7 @@ public class RecuPdfService {
             ajouterLigne(table, "Caisse",    op.getCaisse().getLibelle(),            cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Agent",     op.getCaissier().getNomComplet(),       cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Type",      libelleType(op),                        cTexte, cTexteSec, tCorps);
-            ajouterLigne(table, "Catégorie", op.getCategorie().getLibelle(),         cTexte, cTexteSec, tCorps);
+            ajouterLigne(table, "Produit",   op.getCategorie().getLibelle(),         cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Mode régl.",op.getModePaiement().name().replace('_', ' '), cTexte, cTexteSec, tCorps);
             if (op.getReference() != null && !op.getReference().isBlank()) {
                 ajouterLigne(table, "Référence", op.getReference(), cTexte, cTexteSec, tCorps);
@@ -313,7 +313,7 @@ public class RecuPdfService {
             ajouterLigne(table, "Caisse",    "Caisse — Aperçu",                   cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Agent",     "AGENT TEST",                        cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Type",      "Encaissement",                      cTexte, cTexteSec, tCorps);
-            ajouterLigne(table, "Catégorie", "Catégorie exemple",                 cTexte, cTexteSec, tCorps);
+            ajouterLigne(table, "Produit",   "Produit exemple",                   cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Mode régl.","Espèces",                           cTexte, cTexteSec, tCorps);
             ajouterLigne(table, "Diffusion", LocalDate.now().format(DATE_COURTE) + " à 20:00",
                     cTexte, cTexteSec, tCorps);

@@ -21,5 +21,15 @@ public enum Role {
      * de SA caisse en cas d'erreur de saisie ou d'annulation accidentelle
      * du caissier. Le caissier lui-même ne dispose pas de ces actions.
      */
-    AGENT_RECETTE
+    AGENT_RECETTE,
+
+    /**
+     * Contrôleur : acteur en <b>lecture seule</b>. Il consulte les
+     * transactions (opérations de caisse, versements bancaires, journaux,
+     * vue de supervision) à des fins de contrôle, mais ne peut
+     * <b>jamais</b> créer, modifier, annuler ni supprimer quoi que ce soit.
+     * Aucun endpoint de mutation ne l'autorise (cf. {@code @PreAuthorize}
+     * des controllers).
+     */
+    CONTROLEUR
 }

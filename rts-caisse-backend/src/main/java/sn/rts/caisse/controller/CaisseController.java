@@ -66,6 +66,7 @@ public class CaisseController {
     }
 
     @PatchMapping("/{id}/caissier")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','SUPERVISEUR')")
     @Operation(summary = "Affecter un caissier à une caisse")
     public ResponseEntity<CaisseDTO> affecterCaissier(@PathVariable Long id,
                                                       @RequestParam Long caissierId) {
@@ -84,6 +85,7 @@ public class CaisseController {
     }
 
     @PatchMapping("/{id}/suspendre")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN','SUPERVISEUR')")
     public ResponseEntity<CaisseDTO> suspendre(@PathVariable Long id,
                                                @RequestParam boolean suspendre) {
         return ResponseEntity.ok(service.suspendre(id, suspendre));

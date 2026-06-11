@@ -308,8 +308,8 @@ public class JournalExcelService {
         row++;
 
         // ----- Section : répartition par catégorie -----
-        row = ecrireSection(sheet, row, "RÉPARTITION PAR CATÉGORIE", s);
-        row = ecrireRepartitionEntete(sheet, row, "Catégorie", s);
+        row = ecrireSection(sheet, row, "RÉPARTITION PAR PRODUIT", s);
+        row = ecrireRepartitionEntete(sheet, row, "Produit", s);
         // LinkedHashMap pour conserver l'ordre d'apparition
         Map<String, BigDecimal> parCat   = new LinkedHashMap<>();
         Map<String, Long>       nbParCat = new LinkedHashMap<>();
@@ -406,7 +406,7 @@ public class JournalExcelService {
         Row header = sheet.createRow(0);
         header.setHeightInPoints(28);
         String[] entetes = {
-                "Date & heure", "N° Reçu", "Type", "Catégorie",
+                "Date & heure", "N° Reçu", "Type", "Produit",
                 "Mode paiement", "Client", "Motif", "Référence",
                 "Montant HT (FCFA)", "Timbre (FCFA)", "Montant TTC (FCFA)",
                 "Annulée", "Motif annulation"

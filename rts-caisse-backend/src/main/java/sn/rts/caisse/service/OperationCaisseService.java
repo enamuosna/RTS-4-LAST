@@ -23,6 +23,7 @@ import sn.rts.caisse.model.ModePaiement;
 import sn.rts.caisse.model.OperationCaisse;
 import sn.rts.caisse.model.StatutCaisse;
 import sn.rts.caisse.model.TypeOperation;
+import sn.rts.caisse.model.TypeOperationAutorise;
 import sn.rts.caisse.model.Utilisateur;
 import sn.rts.caisse.repository.BanqueRepository;
 import sn.rts.caisse.repository.OperationCaisseRepository;
@@ -100,18 +101,20 @@ public class OperationCaisseService {
                         "La caisse " + caisse.getCode()
                                 + " doit être ouverte pour saisir une opération.");
             }
+            // Le type d'opération doit être autorisé par la configuration de la caisse.
+            verifierTypeAutoriseParCaisse(caisse, request.typeOperation());
 
             // ---------- 2. Catégorie ----------
             CategorieOperation categorie = categorieService.trouver(request.categorieId());
             if (categorie.getTypeOperation() != request.typeOperation()) {
                 throw new BusinessException(
-                        "La catégorie '" + categorie.getLibelle()
+                        "Le produit '" + categorie.getLibelle()
                                 + "' ne correspond pas au type d'opération demandé ("
                                 + request.typeOperation() + ").");
             }
             if (!categorie.isActif()) {
                 throw new BusinessException(
-                        "Catégorie désactivée : " + categorie.getLibelle());
+                        "Produit désactivé : " + categorie.getLibelle());
             }
 
             // ---------- 3. Calcul automatique du timbre + montant TTC ----------
@@ -121,7 +124,7 @@ public class OperationCaisseService {
             // valeur envoyee par le client (request.timbre()) : seul le
             // calcul backend fait foi.
             BigDecimal timbre = timbreCalculator.calculer(
-                    request.montant(), request.modePaiement());
+                    request.montant(), request.modePaiement(), categorie.getId());
             BigDecimal montantTtc = request.montant().add(timbre);
 
             // Solde suffisant pour les sorties (sur le TTC)
@@ -203,7 +206,7 @@ public class OperationCaisseService {
                             + " Montant=" + saved.getMontant() + " FCFA"
                             + " Mode=" + saved.getModePaiement()
                             + " Caisse=" + caisse.getCode()
-                            + " Catégorie=" + categorie.getLibelle()
+                            + " Produit=" + categorie.getLibelle()
                             + (client != null
                             ? " Client=" + client.getRaisonSociale() : "")
                             + (banque != null
@@ -368,12 +371,12 @@ public class OperationCaisseService {
             CategorieOperation categorie = categorieService.trouver(request.categorieId());
             if (categorie.getTypeOperation() != request.typeOperation()) {
                 throw new BusinessException(
-                        "La catégorie '" + categorie.getLibelle()
+                        "Le produit '" + categorie.getLibelle()
                                 + "' ne correspond pas au type d'opération.");
             }
             if (!categorie.isActif()) {
                 throw new BusinessException(
-                        "Catégorie désactivée : " + categorie.getLibelle());
+                        "Produit désactivé : " + categorie.getLibelle());
             }
 
             ModePaiement mode = request.modePaiement();
@@ -401,7 +404,7 @@ public class OperationCaisseService {
             // d'ESPECES a CHEQUE/VIREMENT/Wave/OM, le timbre disparait
             // automatiquement.
             BigDecimal nouveauTimbre = timbreCalculator.calculer(
-                    request.montant(), request.modePaiement());
+                    request.montant(), request.modePaiement(), categorie.getId());
             BigDecimal nouveauTtc = request.montant().add(nouveauTimbre);
 
             // ---------- Recalcul du solde caisse ----------
@@ -525,6 +528,31 @@ public class OperationCaisseService {
         }
         throw new BusinessException(
                 "Action réservée au personnel autorisé sur cette caisse.");
+    }
+
+    /**
+     * Vérifie que le type d'opération demandé est compatible avec le type
+     * d'opération autorisé configuré sur la caisse par l'ADMIN.
+     * {@link TypeOperationAutorise#TOUS} (ou null pour les caisses héritées)
+     * autorise les deux sens.
+     */
+    private void verifierTypeAutoriseParCaisse(Caisse caisse, TypeOperation type) {
+        TypeOperationAutorise autorise = caisse.getTypeOperationAutorise();
+        if (autorise == null || autorise == TypeOperationAutorise.TOUS) {
+            return; // caisse mixte : encaissement et décaissement permis
+        }
+        boolean ok = (autorise == TypeOperationAutorise.ENTREE && type == TypeOperation.ENTREE)
+                || (autorise == TypeOperationAutorise.SORTIE && type == TypeOperation.SORTIE);
+        if (!ok) {
+            throw new BusinessException(
+                    "La caisse " + caisse.getCode() + " est configurée uniquement pour "
+                            + (autorise == TypeOperationAutorise.ENTREE
+                                    ? "les encaissements"
+                                    : "les décaissements")
+                            + " : opération de type "
+                            + (type == TypeOperation.ENTREE ? "encaissement" : "décaissement")
+                            + " refusée.");
+        }
     }
 
     // ==================================================================

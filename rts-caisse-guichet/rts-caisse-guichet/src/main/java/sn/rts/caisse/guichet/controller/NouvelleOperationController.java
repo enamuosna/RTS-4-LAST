@@ -27,6 +27,7 @@ import sn.rts.caisse.guichet.model.Dto.ClientCreateRequest;
 import sn.rts.caisse.guichet.model.Dto.ClientDTO;
 import sn.rts.caisse.guichet.model.Dto.OperationCaisseRequest;
 import sn.rts.caisse.guichet.model.Dto.OperationCaisseResponse;
+import sn.rts.caisse.guichet.model.Dto.TimbreConfigDto;
 import sn.rts.caisse.guichet.model.ModePaiement;
 import sn.rts.caisse.guichet.model.TypeOperation;
 import sn.rts.caisse.guichet.print.PrintRecu;
@@ -120,6 +121,14 @@ public class NouvelleOperationController {
     private List<ClientDTO>    tousClients      = new ArrayList<>();
     private List<BanqueDTO>    toutesBanques    = List.of();
 
+    /**
+     * Configuration personnalisable du timbre, chargée depuis le backend à
+     * l'ouverture du formulaire. Null tant qu'elle n'est pas chargée : le
+     * timbre affiché vaut alors 0 (le backend reste autoritatif au moment de
+     * l'enregistrement).
+     */
+    private TimbreConfigDto timbreConfig;
+
     // ==================================================================
     //  Initialisation
     // ==================================================================
@@ -165,9 +174,13 @@ public class NouvelleOperationController {
         appliquerModePaiement(ModePaiement.ESPECES);
 
         // Affiche / cache la zone d'upload du justificatif selon la
-        // categorie selectionnee (flag accepteJustificatif).
+        // categorie selectionnee (flag accepteJustificatif). Recalcule aussi
+        // le timbre : il peut dependre de la categorie selon la config.
         categorieCombo.valueProperty().addListener(
-                (obs, ancienne, nouvelle) -> appliquerVisibiliteJustificatif(nouvelle));
+                (obs, ancienne, nouvelle) -> {
+                    appliquerVisibiliteJustificatif(nouvelle);
+                    recalculerTtc();
+                });
 
         // Le timbre est CALCULE automatiquement a partir du montant HT.
         // L'utilisateur ne le saisit plus : le champ est readonly.
@@ -183,29 +196,70 @@ public class NouvelleOperationController {
         recalculerTtc();
     }
 
-    /** Seuil d'application du timbre fiscal (inclusif) : 20 000 FCFA. */
-    private static final BigDecimal TIMBRE_SEUIL = new BigDecimal("20000");
-    /** Taux du timbre : 1% du montant HT. */
-    private static final BigDecimal TIMBRE_TAUX  = new BigDecimal("0.01");
+    private static final BigDecimal CENT = new BigDecimal("100");
 
     /**
-     * Calcule le timbre selon la regle RTS : 1% du montant si paiement
-     * ESPECES ET montant &ge; 20 000 FCFA, sinon 0. Met a jour les champs
-     * Timbre + TTC. Doit reproduire EXACTEMENT le calcul backend
-     * (autoritatif). Les autres modes (cheque, virement, mobile money,
-     * carte) sont exoneres du timbre fiscal.
+     * Recalcule le timbre + le montant TTC à partir du montant HT, du mode de
+     * paiement et de la catégorie sélectionnés, en appliquant la configuration
+     * personnalisable du timbre ({@link #timbreConfig}). Doit reproduire
+     * EXACTEMENT le calcul backend (autoritatif).
      */
     private void recalculerTtc() {
         BigDecimal montant = parseOuZero(montantField.getText());
         ModePaiement mode = modePaiementCombo != null
                 ? modePaiementCombo.getValue() : null;
-        boolean especes = mode == ModePaiement.ESPECES;
-        BigDecimal timbre = (especes && montant.compareTo(TIMBRE_SEUIL) >= 0)
-                ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
+        Long categorieId = (categorieCombo != null && categorieCombo.getValue() != null)
+                ? categorieCombo.getValue().id : null;
+        BigDecimal timbre = calculerTimbre(montant, mode, categorieId);
         timbreField.setText(timbre.signum() == 0 ? "" : Ui.formatMontant(timbre));
         BigDecimal ttc = montant.add(timbre);
         montantTtcField.setText(Ui.formatMontant(ttc));
+        // Affiche le bloc Timbre uniquement si la config peut appliquer un
+        // timbre pour ce mode de paiement (sinon TTC = HT, bloc masqué).
+        boolean afficheTimbre = timbreApplicablePourMode(mode);
+        if (timbreBox != null) {
+            timbreBox.setVisible(afficheTimbre);
+            timbreBox.setManaged(afficheTimbre);
+        }
+    }
+
+    /**
+     * Indique si la configuration courante peut appliquer un timbre pour ce
+     * mode de paiement (config active et mode concerné). Sert à afficher ou
+     * masquer le bloc Timbre, indépendamment du montant.
+     */
+    private boolean timbreApplicablePourMode(ModePaiement mode) {
+        TimbreConfigDto cfg = timbreConfig;
+        if (cfg == null || !cfg.actif || mode == null) {
+            return false;
+        }
+        return cfg.modesPaiement == null || cfg.modesPaiement.isEmpty()
+                || cfg.modesPaiement.contains(mode.name());
+    }
+
+    /**
+     * Calcule le timbre selon la configuration courante : actif, montant &ge;
+     * seuil, mode concerné (liste vide = tous) et catégorie concernée (liste
+     * vide = toutes). Renvoie 0 si la config n'est pas (encore) chargée.
+     */
+    private BigDecimal calculerTimbre(BigDecimal montant, ModePaiement mode, Long categorieId) {
+        TimbreConfigDto cfg = timbreConfig;
+        if (cfg == null || !cfg.actif || montant == null) {
+            return BigDecimal.ZERO;
+        }
+        if (cfg.seuil != null && montant.compareTo(cfg.seuil) < 0) {
+            return BigDecimal.ZERO;
+        }
+        if (cfg.modesPaiement != null && !cfg.modesPaiement.isEmpty()
+                && (mode == null || !cfg.modesPaiement.contains(mode.name()))) {
+            return BigDecimal.ZERO;
+        }
+        if (cfg.categorieIds != null && !cfg.categorieIds.isEmpty()
+                && (categorieId == null || !cfg.categorieIds.contains(categorieId))) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal taux = cfg.pourcentage == null ? BigDecimal.ZERO : cfg.pourcentage;
+        return montant.multiply(taux).divide(CENT, 0, java.math.RoundingMode.HALF_UP);
     }
 
     private static BigDecimal parseOuZero(String texte) {
@@ -221,6 +275,8 @@ public class NouvelleOperationController {
         if (caisse != null) {
             caisseLabel.setText(caisse.code + " · " + caisse.libelle);
         }
+        // Affiche / verrouille le type d'opération selon la config de la caisse.
+        appliquerTypeOperationAutorise(true);
         chargerReferences();
         Platform.runLater(() -> montantField.requestFocus());
     }
@@ -245,6 +301,10 @@ public class NouvelleOperationController {
         }
         // On charge d'abord les référentiels, PUIS on pré-remplit (callback)
         chargerReferencesEtPrefRemplir(op);
+        // Verrouille le type selon la caisse SANS écraser le type de l'op éditée
+        // (forcerDefautMixte=false : pour une caisse mixte, on garde le type
+        // déjà pré-rempli depuis l'opération).
+        appliquerTypeOperationAutorise(false);
         Platform.runLater(() -> montantField.requestFocus());
     }
 
@@ -312,6 +372,8 @@ public class NouvelleOperationController {
                     }
                 },
                 e -> log.error("Banques indisponibles", e));
+
+        chargerTimbreConfig();
     }
 
     private void chargerReferences() {
@@ -325,8 +387,8 @@ public class NouvelleOperationController {
                 },
                 e -> {
                     log.error("Catégories indisponibles", e);
-                    Ui.erreur("Catégories indisponibles",
-                            "Impossible de charger les catégories.\n\n" + describe(e));
+                    Ui.erreur("Produits indisponibles",
+                            "Impossible de charger les produits.\n\n" + describe(e));
                 });
 
         // Clients
@@ -356,6 +418,26 @@ public class NouvelleOperationController {
                     Ui.erreur("Banques indisponibles",
                             "Impossible de charger la liste des banques.\n\n" + describe(e));
                 });
+
+        chargerTimbreConfig();
+    }
+
+    /**
+     * Charge la configuration du timbre depuis le backend (à chaque ouverture
+     * du formulaire, pour refléter immédiatement les changements de l'ADMIN).
+     * En cas d'échec, on conserve {@code timbreConfig == null} : le timbre
+     * affiché reste 0, le backend recalculant la valeur correcte à
+     * l'enregistrement.
+     */
+    private void chargerTimbreConfig() {
+        AsyncRunner.run(
+                api::obtenirTimbreConfig,
+                cfg -> {
+                    this.timbreConfig = cfg;
+                    recalculerTtc();
+                },
+                e -> log.warn("Configuration du timbre indisponible, timbre affiché = 0 : {}",
+                        describe(e)));
     }
 
     /** Formate proprement une exception API pour l'affichage utilisateur. */
@@ -378,6 +460,69 @@ public class NouvelleOperationController {
         if (!filtrees.isEmpty()) {
             categorieCombo.getSelectionModel().selectFirst();
         }
+    }
+
+    /**
+     * Adapte la section « Type d'opération » selon le type autorisé de la
+     * caisse (défini par l'ADMIN) :
+     * <ul>
+     *   <li>{@code "ENTREE"} : seul ENCAISSEMENT est affiché et sélectionné
+     *       (verrouillé) ;</li>
+     *   <li>{@code "SORTIE"} : seul DÉCAISSEMENT est affiché et sélectionné
+     *       (verrouillé) ;</li>
+     *   <li>{@code "TOUS"} / null : les deux toggles restent disponibles
+     *       (caisse mixte, choix libre du caissier).</li>
+     * </ul>
+     *
+     * @param forcerDefautMixte si {@code true} et caisse mixte, sélectionne
+     *        ENCAISSEMENT par défaut (création / reset). {@code false} en
+     *        modification pour préserver le type de l'opération éditée.
+     */
+    private void appliquerTypeOperationAutorise(boolean forcerDefautMixte) {
+        String autorise = (caisse != null && caisse.typeOperationAutorise != null)
+                ? caisse.typeOperationAutorise
+                : "TOUS";
+        switch (autorise) {
+            case "ENTREE" -> verrouillerType(entreeToggle, sortieToggle);
+            case "SORTIE" -> verrouillerType(sortieToggle, entreeToggle);
+            default -> {
+                // Caisse mixte : les deux choix sont offerts au caissier.
+                afficherToggle(entreeToggle, true);
+                afficherToggle(sortieToggle, true);
+                deverrouillerToggle(entreeToggle);
+                deverrouillerToggle(sortieToggle);
+                if (forcerDefautMixte) {
+                    entreeToggle.setSelected(true);
+                }
+            }
+        }
+        filtrerCategoriesPourType();
+    }
+
+    /**
+     * Verrouille la caisse sur un seul type d'opération : {@code autorise}
+     * reste visible et sélectionné mais non modifiable ; {@code interdit}
+     * est masqué. Le caissier voit ainsi clairement le type imposé.
+     */
+    private void verrouillerType(ToggleButton autorise, ToggleButton interdit) {
+        afficherToggle(autorise, true);
+        autorise.setSelected(true);
+        autorise.setDisable(true);       // non cliquable...
+        // ...mais on force l'opacité à 1 (sinon modena grise le bouton à 40%)
+        // pour que le type reste parfaitement lisible par le caissier.
+        autorise.setStyle("-fx-opacity: 1.0; -fx-cursor: default;");
+        afficherToggle(interdit, false); // masqué
+    }
+
+    /** Rend un toggle de nouveau cliquable et retire le style de verrouillage. */
+    private static void deverrouillerToggle(ToggleButton t) {
+        t.setDisable(false);
+        t.setStyle("");
+    }
+
+    private static void afficherToggle(ToggleButton t, boolean visible) {
+        t.setVisible(visible);
+        t.setManaged(visible);
     }
 
     /**
@@ -603,8 +748,9 @@ public class NouvelleOperationController {
         clientExistantToggle.setSelected(true);
         appliquerModeClient(false);
 
-        entreeToggle.setSelected(true);
-        filtrerCategoriesPourType();
+        // Réinitialise le type en respectant la config de la caisse
+        // (revient à ENCAISSEMENT par défaut pour une caisse mixte).
+        appliquerTypeOperationAutorise(true);
 
         modePaiementCombo.getSelectionModel().select(ModePaiement.ESPECES);
         appliquerModePaiement(ModePaiement.ESPECES);
@@ -647,15 +793,8 @@ public class NouvelleOperationController {
                 default -> referenceField.setPromptText("Référence (optionnel)");
             }
         }
-        // Le timbre ne concerne QUE les ESPECES : on cache le bloc entier
-        // pour les autres modes pour ne pas afficher un champ "Timbre 0"
-        // qui pretend etre saisissable. Le calcul reste fait par
-        // recalculerTtc() (montant TTC = montant HT quand timbre cache).
-        boolean afficheTimbre = (mode == ModePaiement.ESPECES);
-        if (timbreBox != null) {
-            timbreBox.setVisible(afficheTimbre);
-            timbreBox.setManaged(afficheTimbre);
-        }
+        // La visibilité du bloc Timbre dépend désormais de la configuration
+        // (modes concernés) et est gérée par recalculerTtc() ci-dessous.
         // Le justificatif depend AUSSI du mode de paiement : mode non-especes
         // = justificatif possible (preuve de paiement electronique).
         appliquerVisibiliteJustificatif(
@@ -722,7 +861,7 @@ public class NouvelleOperationController {
         }
         CategorieDTO categorie = categorieCombo.getValue();
         if (categorie == null) {
-            Ui.erreur("Catégorie manquante", "Sélectionnez une catégorie.");
+            Ui.erreur("Produit manquant", "Sélectionnez un produit.");
             return null;
         }
         ModePaiement mode = modePaiementCombo.getValue();
@@ -739,15 +878,10 @@ public class NouvelleOperationController {
             return null;
         }
 
-        // Timbre calcule automatiquement a partir du montant HT + mode,
-        // identique a la regle backend : 1% UNIQUEMENT pour ESPECES a partir
-        // de 20 000 FCFA, 0 pour tous les autres modes (cheque, virement,
-        // mobile money, carte). On l'envoie pour information mais le backend
-        // recalcule de toute facon (autoritatif).
-        boolean especes = mode == ModePaiement.ESPECES;
-        BigDecimal timbre = (especes && montant.compareTo(TIMBRE_SEUIL) >= 0)
-                ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
+        // Timbre calcule automatiquement selon la configuration personnalisable
+        // (seuil, taux, modes et categories concernes). On l'envoie pour
+        // information mais le backend recalcule de toute facon (autoritatif).
+        BigDecimal timbre = calculerTimbre(montant, mode, categorie.id);
 
         OperationCaisseRequest req = new OperationCaisseRequest();
         req.caisseId      = caisse.id;

@@ -301,6 +301,12 @@ public class CaisseApi {
                 sn.rts.caisse.guichet.model.Dto.ParametresRecuDto.class);
     }
 
+    /** Configuration personnalisable du timbre fiscal (lecture seule). */
+    public sn.rts.caisse.guichet.model.Dto.TimbreConfigDto obtenirTimbreConfig() {
+        return client.get("/parametres/timbre",
+                sn.rts.caisse.guichet.model.Dto.TimbreConfigDto.class);
+    }
+
     /** Renvoie l'image du logo en octets, ou null si aucun logo n'a été déposé. */
     public byte[] obtenirLogoRecu() {
         try {

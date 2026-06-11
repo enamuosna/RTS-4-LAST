@@ -8,6 +8,7 @@ import sn.rts.caisse.exception.BusinessException;
 import sn.rts.caisse.exception.ResourceNotFoundException;
 import sn.rts.caisse.model.Caisse;
 import sn.rts.caisse.model.StatutCaisse;
+import sn.rts.caisse.model.TypeOperationAutorise;
 import sn.rts.caisse.model.Utilisateur;
 import sn.rts.caisse.repository.CaisseRepository;
 import sn.rts.caisse.repository.UtilisateurRepository;
@@ -34,6 +35,11 @@ public class CaisseService {
                 .emplacement(dto.emplacement())
                 .statut(StatutCaisse.FERMEE)
                 .soldeCourant(BigDecimal.ZERO)
+                // Type d'opération autorisé choisi par l'ADMIN ; TOUS (mixte)
+                // par défaut si non précisé.
+                .typeOperationAutorise(dto.typeOperationAutorise() != null
+                        ? dto.typeOperationAutorise()
+                        : TypeOperationAutorise.TOUS)
                 .build();
         return CaisseDTO.from(caisseRepository.save(caisse));
     }
@@ -42,6 +48,11 @@ public class CaisseService {
         Caisse caisse = trouver(id);
         caisse.setLibelle(dto.libelle());
         caisse.setEmplacement(dto.emplacement());
+        // L'ADMIN peut faire évoluer le type autorisé. On ignore un null
+        // pour ne pas écraser la valeur existante par mégarde.
+        if (dto.typeOperationAutorise() != null) {
+            caisse.setTypeOperationAutorise(dto.typeOperationAutorise());
+        }
         return CaisseDTO.from(caisseRepository.save(caisse));
     }
 

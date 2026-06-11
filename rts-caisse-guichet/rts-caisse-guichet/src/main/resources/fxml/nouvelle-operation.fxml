@@ -84,7 +84,7 @@
                 </HBox>
             </VBox>
 
-            <!-- ========== Catégorie + Mode de paiement ========== -->
+            <!-- ========== Produit + Mode de paiement ========== -->
             <GridPane hgap="14" vgap="6">
                 <columnConstraints>
                     <ColumnConstraints percentWidth="50"/>
@@ -92,9 +92,9 @@
                 </columnConstraints>
 
                 <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Label styleClass="field-label" text="CATÉGORIE *"/>
+                    <Label styleClass="field-label" text="PRODUIT *"/>
                     <ComboBox fx:id="categorieCombo" maxWidth="Infinity"
-                              promptText="Sélectionner une catégorie"/>
+                              promptText="Sélectionner un produit"/>
                 </VBox>
 
                 <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">

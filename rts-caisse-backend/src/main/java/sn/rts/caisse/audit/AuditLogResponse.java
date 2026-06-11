@@ -98,9 +98,9 @@ public record AuditLogResponse(
             case EXPORTER_JOURNAL_EXCEL     -> "Export Excel du journal";
             case EXPORTER_BDD               -> "Sauvegarde de la BDD";
             case IMPORTER_BDD               -> "Restauration de la BDD";
-            case CREER_CATEGORIE            -> "Création de catégorie";
-            case MODIFIER_CATEGORIE         -> "Modification de catégorie";
-            case SUPPRIMER_CATEGORIE        -> "Suppression de catégorie";
+            case CREER_CATEGORIE            -> "Création de produit";
+            case MODIFIER_CATEGORIE         -> "Modification de produit";
+            case SUPPRIMER_CATEGORIE        -> "Suppression de produit";
             case CREER_CLIENT               -> "Création de client";
             case MODIFIER_CLIENT            -> "Modification de client";
             case SUPPRIMER_CLIENT           -> "Suppression de client";

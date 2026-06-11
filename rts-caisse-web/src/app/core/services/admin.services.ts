@@ -12,6 +12,7 @@ import {
   CategorieOperation,
   Client,
   RegisterRequest,
+  TimbreConfig,
   TypeOperation,
   Utilisateur
 } from '../models/models';
@@ -230,5 +231,22 @@ export class ClientService {
 
   modifier(id: number, dto: Partial<Client>): Observable<Client> {
     return this.http.put<Client>(`${this.base}/${id}`, dto);
+  }
+}
+
+// ======================================================
+//  TIMBRE FISCAL (configuration personnalisable)
+// ======================================================
+@Injectable({ providedIn: 'root' })
+export class TimbreService {
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/parametres/timbre`;
+
+  obtenir(): Observable<TimbreConfig> {
+    return this.http.get<TimbreConfig>(this.base);
+  }
+
+  mettreAJour(config: TimbreConfig): Observable<TimbreConfig> {
+    return this.http.put<TimbreConfig>(this.base, config);
   }
 }

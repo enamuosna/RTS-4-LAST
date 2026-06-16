@@ -118,8 +118,13 @@ export class LoginComponent {
         return '/dashboard';
       case 'CAISSIER':
         return '/caisses';
+      // Chefs validateurs des recettes : leur page métier est la ventilation.
+      case 'CHEF_UNITE_FINANCES':
+      case 'CHEF_DEPARTEMENT':
+        return '/recettes';
+      // CONTROLEUR et autres : le tableau de bord (accessible en lecture).
       default:
-        return '/caisses';
+        return '/dashboard';
     }
   }
 }

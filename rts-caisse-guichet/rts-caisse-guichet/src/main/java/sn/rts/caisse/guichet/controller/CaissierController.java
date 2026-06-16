@@ -11,8 +11,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
@@ -43,6 +41,7 @@ import sn.rts.caisse.guichet.print.RecuExporter;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 import sn.rts.caisse.guichet.util.AsyncRunner;
+import sn.rts.caisse.guichet.util.RtsDialog;
 import sn.rts.caisse.guichet.util.Session;
 import sn.rts.caisse.guichet.util.Ui;
 import sn.rts.caisse.guichet.util.ThemeManager;
@@ -700,12 +699,18 @@ public class CaissierController {
         }
         resume += "\n\nLa clôture reste à valider par un superviseur.";
 
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("RTS Caisse - Clôture");
-        alert.setHeaderText("Caisse " + journal.caisseLibelle + " clôturée");
-        alert.setContentText(resume);
-        alert.getDialogPane().setPrefWidth(480);
-        alert.showAndWait();
+        RtsDialog.Type type = (ecart.signum() == 0)
+                ? RtsDialog.Type.SUCCESS
+                : RtsDialog.Type.WARNING;
+        RtsDialog.<Void>create()
+                .type(type)
+                .title("Caisse " + journal.caisseLibelle + " clôturée")
+                .message(resume)
+                .width(520)
+                .monospace()
+                .cancelValue(null)
+                .button("OK", RtsDialog.ButtonKind.PRIMARY, null)
+                .showAndWait();
 
         rafraichirCaisse();
     }
@@ -735,9 +740,11 @@ public class CaissierController {
             Stage modal = new Stage();
             modal.initOwner(getCurrentWindow());
             modal.initModality(Modality.APPLICATION_MODAL);
-            modal.initStyle(StageStyle.UTILITY);
+            modal.initStyle(StageStyle.DECORATED);
             modal.setTitle("Nouvelle opération de caisse");
-            modal.setResizable(false);
+            modal.setResizable(true);
+            modal.setMinWidth(640);
+            modal.setMinHeight(580);
 
             Scene scene = new Scene(root);
 
@@ -788,9 +795,11 @@ public class CaissierController {
             Stage modal = new Stage();
             modal.initOwner(getCurrentWindow());
             modal.initModality(Modality.APPLICATION_MODAL);
-            modal.initStyle(StageStyle.UTILITY);
+            modal.initStyle(StageStyle.DECORATED);
             modal.setTitle("Versement bancaire");
-            modal.setResizable(false);
+            modal.setResizable(true);
+            modal.setMinWidth(600);
+            modal.setMinHeight(620);
 
             Scene scene = new Scene(root);
             ThemeManager.getInstance().register(scene);
@@ -952,9 +961,11 @@ public class CaissierController {
             Stage modal = new Stage();
             modal.initOwner(getCurrentWindow());
             modal.initModality(Modality.APPLICATION_MODAL);
-            modal.initStyle(StageStyle.UTILITY);
+            modal.initStyle(StageStyle.DECORATED);
             modal.setTitle("Modifier l'opération " + op.numeroRecu);
-            modal.setResizable(false);
+            modal.setResizable(true);
+            modal.setMinWidth(640);
+            modal.setMinHeight(580);
 
             Scene scene = new Scene(root);
             ThemeManager.getInstance().register(scene);

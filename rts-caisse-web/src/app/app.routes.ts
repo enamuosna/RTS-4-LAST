@@ -29,8 +29,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
         // CAISSIER autorisé : le backend filtre automatiquement sur ses propres opérations.
-        // CONTROLEUR autorisé : vue d'ensemble en lecture seule.
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'])]
+        // CONTROLEUR + chefs validateurs : vue d'ensemble en lecture seule
+        // (sert aussi de page de repli pour /unauthorized).
+        canActivate: [roleGuard([
+          'ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR',
+          'CHEF_UNITE_FINANCES', 'CHEF_DEPARTEMENT'
+        ])]
       },
       {
         path: 'utilisateurs',
@@ -77,6 +81,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/journaux/journaux.component').then((m) => m.JournauxComponent),
         canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR'])]
+      },
+      {
+        path: 'recettes',
+        loadComponent: () =>
+          import('./features/recettes/recettes.component').then((m) => m.RecettesComponent),
+        canActivate: [roleGuard([
+          'ADMIN', 'SUPERVISEUR', 'CONTROLEUR', 'CHEF_UNITE_FINANCES', 'CHEF_DEPARTEMENT'
+        ])]
       },
       {
         path: 'audit',

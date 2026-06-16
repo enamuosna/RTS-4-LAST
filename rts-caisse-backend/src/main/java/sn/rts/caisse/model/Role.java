@@ -31,5 +31,19 @@ public enum Role {
      * Aucun endpoint de mutation ne l'autorise (cf. {@code @PreAuthorize}
      * des controllers).
      */
-    CONTROLEUR
+    CONTROLEUR,
+
+    /**
+     * Chef de l'Unité Finances : signataire du <b>Contrôle 1</b> de la
+     * ventilation hebdomadaire des recettes (premier niveau de validation).
+     * Accède en lecture à la rubrique « Recettes » de l'application web.
+     */
+    CHEF_UNITE_FINANCES,
+
+    /**
+     * Chef de Département : signataire du <b>Contrôle 2</b> de la ventilation
+     * hebdomadaire des recettes (validation finale, après le Contrôle 1).
+     * Accède en lecture à la rubrique « Recettes » de l'application web.
+     */
+    CHEF_DEPARTEMENT
 }

@@ -2,7 +2,14 @@
 //  Types miroirs des DTOs Spring Boot (sn.rts.caisse.dto)
 // ============================================================
 
-export type Role = 'ADMIN' | 'SUPERVISEUR' | 'CAISSIER' | 'AGENT_RECETTE' | 'CONTROLEUR';
+export type Role =
+  | 'ADMIN'
+  | 'SUPERVISEUR'
+  | 'CAISSIER'
+  | 'AGENT_RECETTE'
+  | 'CONTROLEUR'
+  | 'CHEF_UNITE_FINANCES'
+  | 'CHEF_DEPARTEMENT';
 
 export type TypeOperation = 'ENTREE' | 'SORTIE';
 
@@ -349,6 +356,75 @@ export interface SupervisionSnapshot {
   soldeNetJour: number;
   caisses: EtatCaisseSupervision[];
   activiteRecente: ActiviteRecente[];
+}
+
+// ---------- Recettes (ventilation hebdomadaire + double validation) ----------
+export type StatutRecette = 'BROUILLON' | 'CONTROLE_1' | 'VALIDEE';
+
+export interface LigneVentilation {
+  produitCode: string;
+  produitLibelle: string;
+  montantHt: number;
+  timbre: number;
+  montantTtc: number;
+}
+
+export interface FicheReference {
+  numeroRecu: string;
+  /** ISO 8601 datetime. */
+  date: string;
+  montant: number;
+}
+
+export interface ReversementLigne {
+  /** ISO 8601 datetime. */
+  date: string;
+  refBordereau: string;
+  montant: number;
+}
+
+export interface VentilationRecette {
+  recetteId: number;
+  caisseId: number;
+  caisseCode: string;
+  caisseLibelle: string;
+  /** ISO LocalDate (yyyy-MM-dd). */
+  dateDebut: string;
+  dateFin: string;
+  statut: StatutRecette;
+  controle1ParId?: number;
+  controle1ParNom?: string;
+  controle1Le?: string;
+  controle2ParId?: number;
+  controle2ParNom?: string;
+  controle2Le?: string;
+  lignes: LigneVentilation[];
+  totalHt: number;
+  totalTimbre: number;
+  totalTtc: number;
+  fiches: FicheReference[];
+  reversements: ReversementLigne[];
+  totalReversements: number;
+}
+
+export interface LigneCaisseRecette {
+  caisseId: number;
+  caisseCode: string;
+  caisseLibelle: string;
+  totalHt: number;
+  totalTimbre: number;
+  totalTtc: number;
+  nbOperations: number;
+}
+
+export interface ConsolidationRecette {
+  dateDebut: string;
+  dateFin: string;
+  parProduit: LigneVentilation[];
+  totalHt: number;
+  totalTimbre: number;
+  totalTtc: number;
+  parCaisse: LigneCaisseRecette[];
 }
 
 // ---------- Pagination Spring ----------

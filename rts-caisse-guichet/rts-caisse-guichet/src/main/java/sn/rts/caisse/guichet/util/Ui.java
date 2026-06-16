@@ -1,9 +1,5 @@
 package sn.rts.caisse.guichet.util;
 
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextInputDialog;
-
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -54,36 +50,27 @@ public final class Ui {
     // ==================================================================
 
     public static void info(String titre, String message) {
-        showAlert(Alert.AlertType.INFORMATION, titre, message);
+        RtsDialog.message(RtsDialog.Type.INFO, titre, message);
     }
 
     public static void erreur(String titre, String message) {
-        showAlert(Alert.AlertType.ERROR, titre, message);
+        RtsDialog.message(RtsDialog.Type.ERROR, titre, message);
+    }
+
+    public static void succes(String titre, String message) {
+        RtsDialog.message(RtsDialog.Type.SUCCESS, titre, message);
+    }
+
+    public static void avertissement(String titre, String message) {
+        RtsDialog.message(RtsDialog.Type.WARNING, titre, message);
     }
 
     public static boolean confirmer(String titre, String message) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("RTS Caisse - " + titre);
-        alert.setHeaderText(titre);
-        alert.setContentText(message);
-        Optional<ButtonType> result = alert.showAndWait();
-        return result.isPresent() && result.get() == ButtonType.OK;
+        return RtsDialog.confirm(titre, message);
     }
 
     public static Optional<String> demanderTexte(String titre, String message, String defaut) {
-        TextInputDialog dialog = new TextInputDialog(defaut == null ? "" : defaut);
-        dialog.setTitle("RTS Caisse - " + titre);
-        dialog.setHeaderText(titre);
-        dialog.setContentText(message);
-        return dialog.showAndWait();
-    }
-
-    private static void showAlert(Alert.AlertType type, String titre, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle("RTS Caisse - " + titre);
-        alert.setHeaderText(titre);
-        alert.setContentText(message);
-        alert.showAndWait();
+        return RtsDialog.prompt(titre, message, defaut);
     }
 
     /** Parse un montant saisi par l'utilisateur (accepte "1 500" ou "1500.00"). */

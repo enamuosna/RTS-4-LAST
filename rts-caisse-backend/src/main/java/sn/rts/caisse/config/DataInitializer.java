@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import sn.rts.caisse.model.*;
 import sn.rts.caisse.repository.CaisseRepository;
 import sn.rts.caisse.repository.CategorieOperationRepository;
+import sn.rts.caisse.repository.ParametresRecuRepository;
 import sn.rts.caisse.repository.TimbreConfigRepository;
 import sn.rts.caisse.repository.UtilisateurRepository;
 
@@ -30,14 +31,17 @@ public class DataInitializer implements CommandLineRunner {
     private final CategorieOperationRepository categorieRepository;
     private final CaisseRepository caisseRepository;
     private final TimbreConfigRepository timbreConfigRepository;
+    private final ParametresRecuRepository parametresRecuRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
         initAdmin();
+        initChefsControle();
         initCategories();
         initCaisse();
         initTimbreConfig();
+        initParametresRecu();
     }
 
     // ------------------------------------------------------------------
@@ -64,6 +68,40 @@ public class DataInitializer implements CommandLineRunner {
         log.warn("│  Password : Admin@2026                                       │");
         log.warn("│  ** CHANGEZ CE MOT DE PASSE IMMÉDIATEMENT EN PRODUCTION **   │");
         log.warn("└──────────────────────────────────────────────────────────────┘");
+    }
+
+    /**
+     * Crée deux comptes de démonstration pour les signataires de la ventilation
+     * hebdomadaire des recettes : Chef Unité Finances (Contrôle 1) et Chef de
+     * Département (Contrôle 2). Idempotent.
+     */
+    private void initChefsControle() {
+        if (!utilisateurRepository.existsByLogin("chef.finances")) {
+            utilisateurRepository.save(Utilisateur.builder()
+                    .matricule("RTS-CUF-001")
+                    .login("chef.finances")
+                    .motDePasse(passwordEncoder.encode("Chef@2026"))
+                    .prenom("Chef")
+                    .nom("Unité Finances")
+                    .email("finances@rts.sn")
+                    .role(Role.CHEF_UNITE_FINANCES)
+                    .actif(true)
+                    .build());
+            log.warn("Compte de démo créé : chef.finances / Chef@2026 (CHEF_UNITE_FINANCES) — à sécuriser.");
+        }
+        if (!utilisateurRepository.existsByLogin("chef.departement")) {
+            utilisateurRepository.save(Utilisateur.builder()
+                    .matricule("RTS-CDEP-001")
+                    .login("chef.departement")
+                    .motDePasse(passwordEncoder.encode("Chef@2026"))
+                    .prenom("Chef")
+                    .nom("Département")
+                    .email("departement@rts.sn")
+                    .role(Role.CHEF_DEPARTEMENT)
+                    .actif(true)
+                    .build());
+            log.warn("Compte de démo créé : chef.departement / Chef@2026 (CHEF_DEPARTEMENT) — à sécuriser.");
+        }
     }
 
     private void initCategories() {
@@ -142,5 +180,51 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         timbreConfigRepository.save(config);
         log.info("Configuration du timbre initialisée (seuil=20000, taux=1%, ESPECES).");
+    }
+
+    /**
+     * Seed du singleton de paramètres du reçu (id=1). Indispensable en profil
+     * docker (Flyway désactivé, ddl-auto=update) où la table est créée par
+     * Hibernate mais aucune ligne n'est insérée — sans cette ligne, l'aperçu
+     * du reçu et l'upload du logo échouent ("Paramètres du reçu introuvables").
+     * Reprend les valeurs par défaut RTS de la migration V4. Idempotent.
+     */
+    private void initParametresRecu() {
+        if (parametresRecuRepository.existsById(1L)) {
+            return;
+        }
+        ParametresRecu params = ParametresRecu.builder()
+                .id(1L)
+                .logoTexte("RTS")
+                .raisonSociale("SOCIÉTÉ NATIONALE DE RADIODIFFUSION TÉLÉVISION DU SÉNÉGAL")
+                .sousTitreEntete("Radiodiffusion Télévision Sénégalaise")
+                .ligneLegale("Créée par la loi n° 92-02 du 06 janvier 1992")
+                .capital("Capital : 7 milliards FCFA")
+                .adresse("Triangle Sud")
+                .telephone("Tél. (221) 33 849 12 12")
+                .boitePostale("B.P. 1765 — DAKAR")
+                .ninea("NINEA : 2059782 2G3")
+                .footerLigne1("Merci de votre passage.")
+                .footerLigne2("RTS — Conservez ce reçu comme preuve.")
+                .villeSignature("Dakar")
+                .couleurPrimaire("#E30613")
+                .couleurAccent("#1A1A1A")
+                .couleurTexte("#212121")
+                .couleurTexteSecondaire("#9E9E9E")
+                .couleurSuccess("#2E7D32")
+                .couleurDanger("#C62828")
+                .couleurFondMontant("#FBE5E7")
+                .tailleTitre(14)
+                .tailleEntete(16)
+                .tailleCorps(9)
+                .tailleMontant(20)
+                .tailleFooter(7)
+                // layout null -> RecuPdfService retombe sur sa config granulaire par défaut
+                .layoutJson(null)
+                .updatedAt(LocalDateTime.now())
+                .updatedBy("system")
+                .build();
+        parametresRecuRepository.save(params);
+        log.info("Paramètres du reçu initialisés (singleton id=1, valeurs RTS par défaut).");
     }
 }

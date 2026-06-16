@@ -1215,6 +1215,134 @@
 
 
 /* ╔══════════════════════════════════════════════════════════════════════════╗
+   ║  RTS DIALOG — boîtes de dialogue personnalisées (classe RtsDialog)      ║
+   ║  Fenêtre transparente sans décoration : tout l'habillage est en CSS.    ║
+   ╚══════════════════════════════════════════════════════════════════════════╝ */
+
+.rts-dialog-overlay {
+    -fx-background-color: transparent;
+}
+
+/* ----- Carte ----- */
+.rts-dialog {
+    -fx-background-color: -rts-surface;
+    -fx-background-radius: 16;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.58), 44, 0.0, 0, 18);
+}
+
+/* ----- En-tête coloré ----- */
+.rts-dialog-header {
+    -fx-padding: 18 20 18 22;
+    -fx-background-radius: 16 16 0 0;
+    -fx-effect: innershadow(gaussian, rgba(0, 0, 0, 0.18), 8, 0.0, 0, -2);
+}
+.rts-dialog-title {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 800;
+}
+.rts-dialog-badge {
+    -fx-min-width: 40;  -fx-min-height: 40;
+    -fx-max-width: 40;  -fx-max-height: 40;
+    -fx-pref-width: 40; -fx-pref-height: 40;
+    -fx-alignment: center;
+    -fx-background-radius: 20;
+    -fx-background-color: rgba(255, 255, 255, 0.22);
+    -fx-text-fill: white;
+    -fx-font-size: 19px;
+    -fx-font-weight: 800;
+}
+.rts-dialog-close {
+    -fx-background-color: rgba(255, 255, 255, 0.14);
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-min-width: 30;  -fx-min-height: 30;
+    -fx-max-width: 30;  -fx-max-height: 30;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+.rts-dialog-close:hover   { -fx-background-color: rgba(255, 255, 255, 0.30); }
+.rts-dialog-close:pressed { -fx-background-color: rgba(255, 255, 255, 0.42); }
+
+/* ----- Couleurs sémantiques de l'en-tête ----- */
+.rts-dialog.type-info .rts-dialog-header {
+    -fx-background-color: linear-gradient(to right, #38BDF8 0%, #0284C7 100%);
+}
+.rts-dialog.type-success .rts-dialog-header {
+    -fx-background-color: linear-gradient(to right, #34D399 0%, #059669 100%);
+}
+.rts-dialog.type-warning .rts-dialog-header {
+    -fx-background-color: linear-gradient(to right, #FBBF24 0%, #F59E0B 100%);
+}
+.rts-dialog.type-error .rts-dialog-header {
+    -fx-background-color: linear-gradient(to right, #F87171 0%, #DC2626 100%);
+}
+.rts-dialog.type-confirm .rts-dialog-header {
+    -fx-background-color: linear-gradient(to right, -rts-primary-light 0%, -rts-primary-dark 100%);
+}
+
+/* Avertissement : fond ambre clair → texte foncé pour le contraste */
+.rts-dialog.type-warning .rts-dialog-title,
+.rts-dialog.type-warning .rts-dialog-badge,
+.rts-dialog.type-warning .rts-dialog-close {
+    -fx-text-fill: #1A1308;
+}
+.rts-dialog.type-warning .rts-dialog-badge {
+    -fx-background-color: rgba(0, 0, 0, 0.16);
+}
+.rts-dialog.type-warning .rts-dialog-close {
+    -fx-background-color: rgba(0, 0, 0, 0.12);
+}
+.rts-dialog.type-warning .rts-dialog-close:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.22);
+}
+
+/* ----- Corps ----- */
+.rts-dialog-body {
+    -fx-padding: 22 24 8 24;
+}
+.rts-dialog-message {
+    -fx-text-fill: -rts-text-2;
+    -fx-font-size: 13.5px;
+    -fx-line-spacing: 2;
+}
+.rts-dialog-message-mono {
+    -fx-font-family: -rts-mono;
+    -fx-font-size: 12.5px;
+    -fx-text-fill: -rts-text;
+}
+.rts-dialog-input {
+    -fx-background-color: -rts-surface-2;
+    -fx-text-fill: -rts-text;
+    -fx-prompt-text-fill: -rts-text-muted;
+    -fx-background-radius: 10;
+    -fx-border-color: -rts-border-hl;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 10 12 10 12;
+    -fx-font-size: 14px;
+}
+.rts-dialog-input:focused {
+    -fx-border-color: -rts-primary;
+    -fx-background-color: -rts-surface;
+}
+
+/* ----- Pied ----- */
+.rts-dialog-footer {
+    -fx-padding: 14 24 22 24;
+}
+.rts-dialog-footer .button {
+    -fx-min-width: 96;
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════════════════╗
    ║  SÉPARATEURS                                                            ║
    ╚══════════════════════════════════════════════════════════════════════════╝ */
 

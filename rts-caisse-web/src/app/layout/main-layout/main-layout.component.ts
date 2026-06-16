@@ -89,7 +89,7 @@ export class MainLayoutComponent {
     {
       label: 'Vue d\'ensemble',
       items: [
-        { label: 'Tableau de bord', icon: 'dashboard',      route: '/dashboard',    roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'] },
+        { label: 'Tableau de bord', icon: 'dashboard',      route: '/dashboard',    roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR', 'CHEF_UNITE_FINANCES', 'CHEF_DEPARTEMENT'] },
         { label: 'Supervision',     icon: 'monitor_heart',  route: '/supervision',  roles: ['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR'] }
       ]
     },
@@ -99,6 +99,7 @@ export class MainLayoutComponent {
         { label: 'Caisses',    icon: 'point_of_sale', route: '/caisses',    roles: ['ADMIN', 'SUPERVISEUR'] },
         { label: 'Opérations', icon: 'receipt_long',  route: '/operations', roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'] },
         { label: 'Journaux',   icon: 'event_note',    route: '/journaux',   roles: ['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR'] },
+        { label: 'Recettes',   icon: 'payments',      route: '/recettes',   roles: ['ADMIN', 'SUPERVISEUR', 'CONTROLEUR', 'CHEF_UNITE_FINANCES', 'CHEF_DEPARTEMENT'] },
         { label: 'Versements', icon: 'account_balance_wallet', route: '/versements', roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'] },
         { label: 'Clients',    icon: 'business',      route: '/clients',    roles: ['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'] }
       ]

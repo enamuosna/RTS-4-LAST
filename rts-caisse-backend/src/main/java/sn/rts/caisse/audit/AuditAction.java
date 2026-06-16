@@ -42,6 +42,15 @@ public enum AuditAction {
     /** Validation par un superviseur d'un journal clôturé. */
     VALIDER_JOURNAL,
 
+    /** Ventilation hebdomadaire des recettes : Contrôle 1 (Chef Unité Finances). */
+    CONTROLE_1_RECETTE,
+
+    /** Ventilation hebdomadaire des recettes : Contrôle 2 (Chef de Département). */
+    CONTROLE_2_RECETTE,
+
+    /** Téléchargement du PDF de la ventilation hebdomadaire des recettes. */
+    TELECHARGER_RECETTE_PDF,
+
     /** Création / modification / suppression d'une caisse (admin). */
     CREER_CAISSE,
     MODIFIER_CAISSE,

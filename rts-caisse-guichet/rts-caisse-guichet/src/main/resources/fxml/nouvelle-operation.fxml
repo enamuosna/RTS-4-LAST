@@ -33,8 +33,8 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="sn.rts.caisse.guichet.controller.NouvelleOperationController"
       styleClass="modal-root"
-      prefWidth="680"  minWidth="600"  maxWidth="760"
-      prefHeight="600" minHeight="460" maxHeight="780">
+      prefWidth="680"  minWidth="600"
+      prefHeight="600" minHeight="460">
 
     <!-- ====================== HEADER MODAL ====================== -->
     <HBox styleClass="modal-header" alignment="CENTER_LEFT" spacing="14">

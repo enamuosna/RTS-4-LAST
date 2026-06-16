@@ -3,10 +3,7 @@ package sn.rts.caisse.guichet.controller;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -33,6 +30,7 @@ import sn.rts.caisse.guichet.model.TypeOperation;
 import sn.rts.caisse.guichet.print.PrintRecu;
 import sn.rts.caisse.guichet.print.RecuExporter;
 import sn.rts.caisse.guichet.util.AsyncRunner;
+import sn.rts.caisse.guichet.util.RtsDialog;
 import sn.rts.caisse.guichet.util.Ui;
 
 import java.io.File;
@@ -1021,29 +1019,29 @@ public class NouvelleOperationController {
     // ==================================================================
 
     private void proposerActionsApresEnregistrement(OperationCaisseResponse op) {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("RTS Caisse - Opération enregistrée");
-        alert.setHeaderText("Reçu n° " + op.numeroRecu + " enregistré");
-        alert.setContentText(
-                "Montant : " + Ui.formatMontant(op.montant) + "\n"
-                        + (op.clientRaisonSociale != null
-                        ? "Client : " + op.clientRaisonSociale + "\n" : "")
-                        + (op.banqueCode != null
-                        ? "Banque : " + op.banqueCode
-                        + " - " + op.banqueLibelle + "\n" : "")
-                        + "\nQue souhaitez-vous faire ?");
-        ButtonType btnImprimer = new ButtonType("🖨  Imprimer");
-        ButtonType btnWhatsApp = new ButtonType("📱  WhatsApp");
-        ButtonType btnFermer   = new ButtonType("Fermer", ButtonType.CANCEL.getButtonData());
-        alert.getButtonTypes().setAll(btnImprimer, btnWhatsApp, btnFermer);
-        alert.getDialogPane().setPrefWidth(420);
-        Optional<ButtonType> choix = alert.showAndWait();
+        String message = "Montant : " + Ui.formatMontant(op.montant) + "\n"
+                + (op.clientRaisonSociale != null
+                ? "Client : " + op.clientRaisonSociale + "\n" : "")
+                + (op.banqueCode != null
+                ? "Banque : " + op.banqueCode + " - " + op.banqueLibelle + "\n" : "")
+                + "\nQue souhaitez-vous faire ?";
+
+        Optional<String> choix = RtsDialog.<String>create()
+                .type(RtsDialog.Type.SUCCESS)
+                .title("Reçu n° " + op.numeroRecu + " enregistré")
+                .message(message)
+                .width(440)
+                .cancelValue(null)
+                .defaultButton("🖨  Imprimer", RtsDialog.ButtonKind.PRIMARY, "print")
+                .button("📱  WhatsApp", RtsDialog.ButtonKind.SUCCESS, "whatsapp")
+                .cancelButton("Fermer", RtsDialog.ButtonKind.SECONDARY, null)
+                .showAndWait();
+
         if (choix.isEmpty()) return;
-        ButtonType bt = choix.get();
-        if (bt == btnImprimer) {
-            PrintRecu.imprimer(op);
-        } else if (bt == btnWhatsApp) {
-            RecuExporter.envoyerWhatsApp(op);
+        switch (choix.get()) {
+            case "print"    -> PrintRecu.imprimer(op);
+            case "whatsapp" -> RecuExporter.envoyerWhatsApp(op);
+            default         -> { /* Fermer */ }
         }
     }
 

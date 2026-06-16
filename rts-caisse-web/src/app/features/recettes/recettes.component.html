@@ -1,0 +1,267 @@
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Recettes</h1>
+      <p class="subtitle">Ventilation hebdomadaire des recettes par caisse</p>
+    </div>
+  </header>
+
+  <!-- Filtres -->
+  <section class="filtres card">
+    <mat-button-toggle-group [(ngModel)]="mode" (change)="changerMode()" class="mode-toggle" hideSingleSelectionIndicator>
+      <mat-button-toggle value="caisse"><mat-icon>point_of_sale</mat-icon> Par caisse</mat-button-toggle>
+      <mat-button-toggle value="consolide"><mat-icon>summarize</mat-icon> Consolidé</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    @if (mode() === 'caisse') {
+      <mat-form-field appearance="outline" class="f-caisse">
+        <mat-label>Caisse</mat-label>
+        <mat-select [(ngModel)]="caisseSelectionneeId">
+          @for (c of caisses(); track c.id) {
+            <mat-option [value]="c.id">{{ c.code }} — {{ c.libelle }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <mat-form-field appearance="outline" class="f-date">
+      <mat-label>Du</mat-label>
+      <input matInput [matDatepicker]="dp1" [(ngModel)]="dateDebut" />
+      <mat-datepicker-toggle matIconSuffix [for]="dp1"></mat-datepicker-toggle>
+      <mat-datepicker #dp1></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="f-date">
+      <mat-label>Au</mat-label>
+      <input matInput [matDatepicker]="dp2" [(ngModel)]="dateFin" />
+      <mat-datepicker-toggle matIconSuffix [for]="dp2"></mat-datepicker-toggle>
+      <mat-datepicker #dp2></mat-datepicker>
+    </mat-form-field>
+
+    <button mat-flat-button color="primary" (click)="generer()" [disabled]="chargement()">
+      <mat-icon>search</mat-icon> Générer
+    </button>
+  </section>
+
+  @if (chargement()) {
+    <div class="loading"><mat-spinner diameter="34"></mat-spinner></div>
+  }
+
+  @if (ventilation(); as v) {
+    <!-- Bandeau d'état + actions -->
+    <section class="card etat-bar">
+      <div class="etat-info">
+        <span class="etat-caisse">{{ v.caisseCode }} — {{ v.caisseLibelle }}</span>
+        <span class="etat-periode">Semaine du {{ v.dateDebut | date:'dd/MM/yyyy' }}
+          au {{ v.dateFin | date:'dd/MM/yyyy' }}</span>
+        <span class="badge" [class]="classeStatut(v.statut)">{{ libelleStatut(v.statut) }}</span>
+      </div>
+      <div class="etat-actions">
+        @if (peutControle1()) {
+          <button mat-stroked-button color="primary" (click)="controle1()" [disabled]="actionEnCours()">
+            <mat-icon>verified_user</mat-icon> Valider Contrôle 1
+          </button>
+        }
+        @if (peutControle2()) {
+          <button mat-flat-button color="primary" (click)="controle2()" [disabled]="actionEnCours()">
+            <mat-icon>task_alt</mat-icon> Valider Contrôle 2
+          </button>
+        }
+        <button mat-stroked-button (click)="telechargerPdf()" matTooltip="Télécharger la fiche PDF">
+          <mat-icon>picture_as_pdf</mat-icon> PDF
+        </button>
+      </div>
+    </section>
+
+    <!-- Tableau de ventilation des produits -->
+    <section class="card">
+      <h2>Ventilation des produits</h2>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th class="left">Produits</th>
+            <th class="right">Montant HT</th>
+            <th class="right">Timbre</th>
+            <th class="right">Montant TTC</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of v.lignes; track l.produitCode) {
+            <tr>
+              <td class="left">{{ l.produitLibelle }}</td>
+              <td class="right">{{ l.montantHt | number:'1.0-0' }}</td>
+              <td class="right">{{ l.timbre | number:'1.0-0' }}</td>
+              <td class="right">{{ l.montantTtc | number:'1.0-0' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="vide">Aucune recette sur la période.</td></tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="total">
+            <td class="left">TOTAL RECETTES</td>
+            <td class="right">{{ v.totalHt | number:'1.0-0' }}</td>
+            <td class="right">{{ v.totalTimbre | number:'1.0-0' }}</td>
+            <td class="right">{{ v.totalTtc | number:'1.0-0' }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <!-- Fiche de références + Reversements -->
+    <div class="deux-colonnes">
+      <section class="card">
+        <h2>Fiche de références</h2>
+        <table class="grid">
+          <thead>
+            <tr><th class="left">N° Fiches</th><th>Date</th><th class="right">Montant</th></tr>
+          </thead>
+          <tbody>
+            @for (f of v.fiches; track f.numeroRecu) {
+              <tr>
+                <td class="left">{{ f.numeroRecu }}</td>
+                <td class="center">{{ f.date | date:'dd/MM/yyyy' }}</td>
+                <td class="right">{{ f.montant | number:'1.0-0' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="vide">—</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Reversements des produits</h2>
+        <table class="grid">
+          <thead>
+            <tr><th>Date</th><th class="left">Réf. b. versements</th><th class="right">Montant</th></tr>
+          </thead>
+          <tbody>
+            @for (r of v.reversements; track $index) {
+              <tr>
+                <td class="center">{{ r.date | date:'dd/MM/yyyy' }}</td>
+                <td class="left">{{ r.refBordereau }}</td>
+                <td class="right">{{ r.montant | number:'1.0-0' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="vide">—</td></tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr class="total">
+              <td colspan="2" class="left">TOTAL VENTE</td>
+              <td class="right">{{ v.totalReversements | number:'1.0-0' }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+    </div>
+
+    <!-- Double validation -->
+    <div class="deux-colonnes">
+      <section class="card controle">
+        <h3>Contrôle 1</h3>
+        @if (v.controle1ParNom) {
+          <p class="signe">Validé par <strong>{{ v.controle1ParNom }}</strong></p>
+          <p class="signe-date">{{ v.controle1Le | date:'dd/MM/yyyy HH:mm' }}</p>
+        } @else {
+          <p class="attente">En attente de signature</p>
+        }
+        <p class="fonction">Le Chef Unité Finances</p>
+      </section>
+
+      <section class="card controle">
+        <h3>Contrôle 2</h3>
+        @if (v.controle2ParNom) {
+          <p class="signe">Validé par <strong>{{ v.controle2ParNom }}</strong></p>
+          <p class="signe-date">{{ v.controle2Le | date:'dd/MM/yyyy HH:mm' }}</p>
+        } @else {
+          <p class="attente">En attente de signature</p>
+        }
+        <p class="fonction">Le Chef de Département</p>
+      </section>
+    </div>
+  }
+
+  <!-- Vue consolidée (toutes caisses) -->
+  @if (mode() === 'consolide' && consolidation(); as c) {
+    <section class="card etat-bar">
+      <div class="etat-info">
+        <span class="etat-caisse">Consolidation — toutes les caisses</span>
+        <span class="etat-periode">Du {{ c.dateDebut | date:'dd/MM/yyyy' }}
+          au {{ c.dateFin | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Recettes par produit (toutes caisses)</h2>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th class="left">Produits</th>
+            <th class="right">Montant HT</th>
+            <th class="right">Timbre</th>
+            <th class="right">Montant TTC</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of c.parProduit; track l.produitCode) {
+            <tr>
+              <td class="left">{{ l.produitLibelle }}</td>
+              <td class="right">{{ l.montantHt | number:'1.0-0' }}</td>
+              <td class="right">{{ l.timbre | number:'1.0-0' }}</td>
+              <td class="right">{{ l.montantTtc | number:'1.0-0' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="vide">Aucune recette sur la période.</td></tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="total">
+            <td class="left">TOTAL RECETTES</td>
+            <td class="right">{{ c.totalHt | number:'1.0-0' }}</td>
+            <td class="right">{{ c.totalTimbre | number:'1.0-0' }}</td>
+            <td class="right">{{ c.totalTtc | number:'1.0-0' }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Répartition par caisse</h2>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th class="left">Caisse</th>
+            <th class="right">Nb opér.</th>
+            <th class="right">Montant HT</th>
+            <th class="right">Timbre</th>
+            <th class="right">Montant TTC</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (lc of c.parCaisse; track lc.caisseId) {
+            <tr>
+              <td class="left">{{ lc.caisseCode }} — {{ lc.caisseLibelle }}</td>
+              <td class="right">{{ lc.nbOperations }}</td>
+              <td class="right">{{ lc.totalHt | number:'1.0-0' }}</td>
+              <td class="right">{{ lc.totalTimbre | number:'1.0-0' }}</td>
+              <td class="right">{{ lc.totalTtc | number:'1.0-0' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="vide">Aucune caisse avec des recettes sur la période.</td></tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr class="total">
+            <td class="left">TOTAL GÉNÉRAL</td>
+            <td class="right">—</td>
+            <td class="right">{{ c.totalHt | number:'1.0-0' }}</td>
+            <td class="right">{{ c.totalTimbre | number:'1.0-0' }}</td>
+            <td class="right">{{ c.totalTtc | number:'1.0-0' }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+  }
+</div>

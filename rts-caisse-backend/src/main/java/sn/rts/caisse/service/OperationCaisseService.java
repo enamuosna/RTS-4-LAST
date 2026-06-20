@@ -70,6 +70,8 @@ public class OperationCaisseService {
     private final AuditService              auditService;
     private final TimbreFiscalCalculator    timbreCalculator;
     private final TimbreConfigService       timbreConfigService;
+    private final sn.rts.caisse.repository.OperationDiffusionRepository diffusionRepository;
+    private final sn.rts.caisse.repository.LangueRepository            langueRepository;
 
     // ==================================================================
     //  ENREGISTREMENT
@@ -85,15 +87,10 @@ public class OperationCaisseService {
                     request.montant(), request.reference(),
                     request.dateDiffusion(), loginCaissier);
 
-            // ---------- 0bis. Date de diffusion obligatoire ----------
-            // Garde-fou : la regle est aussi posee par @NotNull sur le DTO,
-            // mais on remet une verification ici pour fournir un message clair
-            // meme si un client venait a contourner la validation.
-            if (request.dateDiffusion() == null) {
-                throw new BusinessException(
-                        "La date et l'heure de diffusion sont obligatoires "
-                                + "pour toute operation de caisse.");
-            }
+            // ---------- 0bis. Diffusions — désormais OPTIONNELLES ----------
+            // Une opération peut n'avoir aucune diffusion, ou plusieurs créneaux
+            // (jours/heures/langues différents). Les créneaux sont persistés
+            // après l'enregistrement de l'opération (cf. enregistrerDiffusions).
 
             // ---------- 1. Caisse ----------
             Caisse caisse = caisseService.trouver(request.caisseId());
@@ -198,8 +195,11 @@ public class OperationCaisseService {
                     montantTtc));
 
             OperationCaisse saved = operationRepository.save(operation);
-            log.info("Opération enregistrée : {} ({} FCFA) - caisse {}",
-                    saved.getNumeroRecu(), saved.getMontant(), caisse.getCode());
+            // Créneaux de diffusion (date/heure/langue) — optionnels, multiples.
+            enregistrerDiffusions(saved, request);
+            log.info("Opération enregistrée : {} ({} FCFA) - caisse {} - {} diffusion(s)",
+                    saved.getNumeroRecu(), saved.getMontant(), caisse.getCode(),
+                    request.diffusions() != null ? request.diffusions().size() : 0);
 
             // ---------- 9. Audit succès ----------
             auditService.logSuccess(
@@ -218,7 +218,7 @@ public class OperationCaisseService {
                             ? " Banque=" + banque.getCode() : "")
                             + " NouveauSolde=" + caisse.getSoldeCourant() + " FCFA");
 
-            return OperationCaisseResponse.from(saved);
+            return toResponse(saved);
 
         } catch (BusinessException | ResourceNotFoundException e) {
             // Audit échec (transaction REQUIRES_NEW dans AuditService)
@@ -346,14 +346,8 @@ public class OperationCaisseService {
                     operationId, request.reference(), request.dateDiffusion(),
                     loginModificateur);
 
-            // Date de diffusion obligatoire aussi sur la modification :
-            // on ne peut pas re-enregistrer une operation sans la rattacher
-            // a un creneau de diffusion antenne.
-            if (request.dateDiffusion() == null) {
-                throw new BusinessException(
-                        "La date et l'heure de diffusion sont obligatoires "
-                                + "pour modifier une operation.");
-            }
+            // Diffusions optionnelles aussi en modification : les créneaux sont
+            // remplacés via enregistrerDiffusions() plus bas.
 
             operation = trouver(operationId);
             verifierDroitModifierOuReactiver(operation, loginModificateur);
@@ -445,10 +439,11 @@ public class OperationCaisseService {
             operation.setMotif(request.motif());
             operation.setModePaiement(mode);
             operation.setReference(request.reference());
-            operation.setDateDiffusion(request.dateDiffusion());
             operation.setCategorie(categorie);
             operation.setClient(client);
             operation.setBanque(banque);
+            // Remplace les créneaux de diffusion (et met à jour dateDiffusion).
+            enregistrerDiffusions(operation, request);
 
             log.info("Opération {} modifiée par {} : montant={} timbre={} TTC={} solde {}->{}",
                     operation.getNumeroRecu(), loginModificateur,
@@ -470,7 +465,7 @@ public class OperationCaisseService {
                             + " SoldeApres=" + nouveauSolde + " FCFA"
                             + " ModifieePar=" + loginModificateur);
 
-            return OperationCaisseResponse.from(operation);
+            return toResponse(operation);
 
         } catch (BusinessException | ResourceNotFoundException e) {
             auditService.logFailure(
@@ -704,12 +699,64 @@ public class OperationCaisseService {
 
     @Transactional(readOnly = true)
     public OperationCaisseResponse obtenir(Long id) {
-        return OperationCaisseResponse.from(trouver(id));
+        return toResponse(trouver(id));
     }
 
     private OperationCaisse trouver(Long id) {
         return operationRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.of("Opération", id));
+    }
+
+    // ==================================================================
+    //  Diffusions (créneaux date/heure/langue) — optionnelles, multiples
+    // ==================================================================
+
+    /** Construit la réponse en incluant les créneaux de diffusion de l'opération. */
+    private OperationCaisseResponse toResponse(OperationCaisse op) {
+        java.util.List<sn.rts.caisse.dto.DiffusionDto> diffusions = diffusionRepository
+                .findByOperationIdOrderByDateHeureAsc(op.getId())
+                .stream().map(sn.rts.caisse.dto.DiffusionDto::from).toList();
+        return OperationCaisseResponse.from(op, diffusions);
+    }
+
+    /**
+     * Remplace les créneaux de diffusion d'une opération à partir de la requête.
+     * Compat : si aucune liste mais un {@code dateDiffusion} simple est fourni,
+     * on crée un créneau unique. Met à jour {@code dateDiffusion} = 1er créneau
+     * (pour le reçu).
+     */
+    private void enregistrerDiffusions(OperationCaisse op, OperationCaisseRequest request) {
+        diffusionRepository.deleteByOperationId(op.getId());
+
+        java.util.List<sn.rts.caisse.dto.DiffusionDto> demandes = request.diffusions();
+        if ((demandes == null || demandes.isEmpty()) && request.dateDiffusion() != null) {
+            demandes = java.util.List.of(
+                    new sn.rts.caisse.dto.DiffusionDto(request.dateDiffusion(), null, null));
+        }
+
+        java.time.LocalDateTime premiere = null;
+        if (demandes != null) {
+            for (sn.rts.caisse.dto.DiffusionDto d : demandes) {
+                if (d == null || d.dateHeure() == null) continue;
+                String libelle = null;
+                Long langueId = null;
+                if (d.langueId() != null) {
+                    var langue = langueRepository.findById(d.langueId()).orElse(null);
+                    if (langue != null) {
+                        langueId = langue.getId();
+                        libelle = langue.getLibelle();
+                    }
+                }
+                diffusionRepository.save(sn.rts.caisse.model.OperationDiffusion.builder()
+                        .operationId(op.getId())
+                        .dateHeure(d.dateHeure())
+                        .langueId(langueId)
+                        .langueLibelle(libelle)
+                        .build());
+                if (premiere == null) premiere = d.dateHeure();
+            }
+        }
+        op.setDateDiffusion(premiere);
     }
 
     // ==================================================================

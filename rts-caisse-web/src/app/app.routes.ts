@@ -109,6 +109,12 @@ export const routes: Routes = [
         canActivate: [roleGuard(['ADMIN'])]
       },
       {
+        path: 'langues',
+        loadComponent: () =>
+          import('./features/langues/langues.component').then((m) => m.LanguesComponent),
+        canActivate: [roleGuard(['ADMIN'])]
+      },
+      {
         path: 'supervision',
         loadComponent: () =>
           import('./features/supervision/supervision.component').then((m) => m.SupervisionComponent),

@@ -115,6 +115,12 @@ public class CaisseApi {
                 new TypeReference<List<BanqueDTO>>() {});
     }
 
+    /** Langues de diffusion actives (référentiel). */
+    public List<sn.rts.caisse.guichet.model.Dto.LangueDTO> listerLangues() {
+        return client.get("/langues?actives=true",
+                new TypeReference<List<sn.rts.caisse.guichet.model.Dto.LangueDTO>>() {});
+    }
+
     /**
      * Récupère un client par son identifiant.
      */

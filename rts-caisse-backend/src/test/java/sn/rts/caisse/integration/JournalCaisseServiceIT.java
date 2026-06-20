@@ -187,7 +187,8 @@ class JournalCaisseServiceIT extends AbstractTestcontainersIT {
                 "Test",
                 null,
                 null, // banqueId
-                null  // dateDiffusion
+                null, // dateDiffusion
+                null  // diffusions
         ), caissier.getLogin());
     }
 }

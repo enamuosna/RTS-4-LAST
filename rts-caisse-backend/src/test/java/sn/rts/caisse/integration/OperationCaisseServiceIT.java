@@ -184,7 +184,8 @@ class OperationCaisseServiceIT extends AbstractTestcontainersIT {
                 "Opération de test",
                 "REF-TEST",
                 null, // banqueId
-                null  // dateDiffusion
+                null, // dateDiffusion
+                null  // diffusions
         );
     }
 }

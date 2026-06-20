@@ -11,6 +11,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
@@ -68,12 +71,26 @@ public class NouvelleOperationController {
     @FXML private TextField montantTtcField;
     @FXML private TextField referenceField;
 
-    // ---------------- Heure de diffusion (optionnel) ----------------
-    // RTS est une chaine TV : pour un spot/sponsoring, on imprime sur le
-    // recu la date+heure de diffusion antenne. DatePicker + champ heure
-    // (HH:mm) pour ne pas dependre de saisie texte libre.
-    @FXML private DatePicker dateDiffusionPicker;
-    @FXML private TextField  heureDiffusionField;
+    // ---------------- Diffusions à l'antenne (optionnel, multiples) ----------------
+    // Une opération peut avoir plusieurs créneaux {date + heure + langue}.
+    // Les lignes sont gérées dynamiquement dans diffusionsBox.
+    @FXML private VBox    diffusionsBox;
+    @FXML private Button  ajouterDiffusionButton;
+    private final java.util.List<LigneDiffusion> lignesDiffusion = new ArrayList<>();
+    /** Langues de diffusion chargées depuis le backend (référentiel). */
+    private java.util.List<sn.rts.caisse.guichet.model.Dto.LangueDTO> langues = new ArrayList<>();
+
+    /** Une ligne de diffusion dans l'IHM : date + heure + langue (optionnelle). */
+    private static final class LigneDiffusion {
+        final HBox node;
+        final DatePicker date;
+        final TextField heure;
+        final ComboBox<sn.rts.caisse.guichet.model.Dto.LangueDTO> langue;
+        LigneDiffusion(HBox node, DatePicker date, TextField heure,
+                       ComboBox<sn.rts.caisse.guichet.model.Dto.LangueDTO> langue) {
+            this.node = node; this.date = date; this.heure = heure; this.langue = langue;
+        }
+    }
 
     // ---------------- Justificatif (conditionnel) ----------------
     // Visible uniquement si la categorie selectionnee a
@@ -179,6 +196,7 @@ public class NouvelleOperationController {
         categorieCombo.valueProperty().addListener(
                 (obs, ancienne, nouvelle) -> {
                     appliquerVisibiliteJustificatif(nouvelle);
+                    majVisibiliteLangues();
                     recalculerTtc();
                 });
 
@@ -400,6 +418,9 @@ public class NouvelleOperationController {
                 e -> log.error("Banques indisponibles", e));
 
         chargerTimbreConfig();
+        // Diffusions : une ligne vide au départ + chargement des langues.
+        reinitialiserDiffusions();
+        chargerLangues();
     }
 
     private void chargerReferences() {
@@ -446,6 +467,7 @@ public class NouvelleOperationController {
                 });
 
         chargerTimbreConfig();
+        chargerLangues();
     }
 
     /**
@@ -757,12 +779,7 @@ public class NouvelleOperationController {
         montantTtcField.clear();
         referenceField.clear();
 
-        if (dateDiffusionPicker != null) {
-            dateDiffusionPicker.setValue(null);
-        }
-        if (heureDiffusionField != null) {
-            heureDiffusionField.clear();
-        }
+        reinitialiserDiffusions();
         // Reset du justificatif (visibilite suit la categorie par defaut)
         justificatifSelectionne = null;
         justificatifTypeMime = null;
@@ -938,13 +955,15 @@ public class NouvelleOperationController {
                 ? null
                 : referenceField.getText().trim();
 
-        // Date+heure de diffusion OBLIGATOIRES (regle metier RTS).
-        // Si l'un des deux champs est vide / mal forme, collecterDateDiffusion
-        // affiche l'erreur appropriee et retourne null. On annule.
-        req.dateDiffusion = collecterDateDiffusion();
-        if (req.dateDiffusion == null) {
+        // Diffusions OPTIONNELLES et multiples. collecterDiffusions renvoie
+        // null si un créneau est incomplet (date sans heure, heure invalide…).
+        java.util.List<sn.rts.caisse.guichet.model.Dto.DiffusionDto> diffs = collecterDiffusions();
+        if (diffs == null) {
             return null;
         }
+        req.diffusions = diffs;
+        // dateDiffusion principale (compat reçu) = premier créneau, sinon null.
+        req.dateDiffusion = diffs.isEmpty() ? null : diffs.get(0).dateHeure;
 
         // Validation banque pour CHÈQUE / VIREMENT
         if (banqueRequise(mode)) {
@@ -976,52 +995,148 @@ public class NouvelleOperationController {
     private static final DateTimeFormatter HEURE_FMT =
             DateTimeFormatter.ofPattern("H:mm");
 
-    /**
-     * Compose la date+heure de diffusion a partir des deux champs FXML.
-     * Desormais OBLIGATOIRE : si l'un des deux champs est vide, affiche une
-     * erreur et retourne null pour bloquer l'enregistrement.
-     */
-    private LocalDateTime collecterDateDiffusion() {
-        if (dateDiffusionPicker == null || heureDiffusionField == null) {
-            return null;
-        }
-        // Piege JavaFX : si l'utilisateur a TAPE la date dans l'editeur du
-        // DatePicker sans appuyer sur Entree ni cliquer dans le calendrier,
-        // getValue() retourne null meme si l'editeur contient du texte. On
-        // force la validation pour recuperer la valeur saisie au clavier.
-        forcerCommitDatePicker(dateDiffusionPicker);
-        LocalDate date = dateDiffusionPicker.getValue();
-        String heureTexte = heureDiffusionField.getText();
-        boolean heureRenseignee = heureTexte != null && !heureTexte.isBlank();
+    /** Bouton « Ajouter une diffusion ». */
+    @FXML
+    public void onAjouterDiffusion() {
+        ajouterLigneDiffusion();
+    }
 
-        if (date == null && !heureRenseignee) {
-            Ui.erreur("Diffusion obligatoire",
-                    "Vous devez saisir la date ET l'heure de diffusion "
-                            + "antenne de cette operation.");
-            return null;
+    /** Ajoute une ligne de diffusion (date + heure + langue) dans l'IHM. */
+    private LigneDiffusion ajouterLigneDiffusion() {
+        DatePicker date = new DatePicker();
+        date.setPromptText("JJ/MM/AAAA");
+        date.setPrefWidth(150);
+        TextField heure = new TextField();
+        heure.setPromptText("HH:mm");
+        heure.setPrefWidth(90);
+        ComboBox<sn.rts.caisse.guichet.model.Dto.LangueDTO> langue = new ComboBox<>();
+        langue.setPromptText("Langue (optionnel)");
+        langue.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(langue, Priority.ALWAYS);
+        peuplerCombo(langue);
+        Button suppr = new Button("✕");
+        suppr.getStyleClass().addAll("button", "button-ghost");
+
+        HBox row = new HBox(8, date, heure, langue, suppr);
+        LigneDiffusion ligne = new LigneDiffusion(row, date, heure, langue);
+        suppr.setOnAction(e -> supprimerLigneDiffusion(ligne));
+        lignesDiffusion.add(ligne);
+        if (diffusionsBox != null) {
+            diffusionsBox.getChildren().add(row);
         }
-        if (date == null) {
-            Ui.erreur("Date de diffusion manquante",
-                    "Saisissez la date de diffusion (format JJ/MM/AAAA).");
-            dateDiffusionPicker.requestFocus();
-            return null;
+        majVisibiliteLanguesLigne(ligne);
+        return ligne;
+    }
+
+    private void supprimerLigneDiffusion(LigneDiffusion ligne) {
+        lignesDiffusion.remove(ligne);
+        if (diffusionsBox != null) {
+            diffusionsBox.getChildren().remove(ligne.node);
         }
-        if (!heureRenseignee) {
-            Ui.erreur("Heure de diffusion manquante",
-                    "Saisissez l'heure de diffusion (format HH:mm, ex. 20:30).");
-            heureDiffusionField.requestFocus();
-            return null;
+        if (lignesDiffusion.isEmpty()) {
+            ajouterLigneDiffusion(); // toujours laisser au moins une ligne vide
         }
-        try {
-            LocalTime heure = LocalTime.parse(heureTexte.trim(), HEURE_FMT);
-            return LocalDateTime.of(date, heure);
-        } catch (Exception ex) {
-            Ui.erreur("Heure invalide",
-                    "L'heure de diffusion doit etre au format HH:mm "
-                            + "(ex. 20:30). Valeur saisie : " + heureTexte);
-            heureDiffusionField.requestFocus();
-            return null;
+    }
+
+    /** Remet la liste des diffusions à une unique ligne vide. */
+    private void reinitialiserDiffusions() {
+        lignesDiffusion.clear();
+        if (diffusionsBox != null) {
+            diffusionsBox.getChildren().clear();
         }
+        ajouterLigneDiffusion();
+    }
+
+    /** Charge le référentiel des langues et (re)peuple les combos existants. */
+    private void chargerLangues() {
+        AsyncRunner.run(
+                api::listerLangues,
+                list -> {
+                    this.langues = list == null ? new ArrayList<>() : list;
+                    for (LigneDiffusion l : lignesDiffusion) {
+                        peuplerCombo(l.langue);
+                    }
+                },
+                e -> log.warn("Langues de diffusion indisponibles : {}", describe(e)));
+    }
+
+    /** Remplit un combo avec « Aucune » + les langues actives, en conservant la sélection. */
+    private void peuplerCombo(ComboBox<sn.rts.caisse.guichet.model.Dto.LangueDTO> combo) {
+        sn.rts.caisse.guichet.model.Dto.LangueDTO aucune =
+                new sn.rts.caisse.guichet.model.Dto.LangueDTO();
+        aucune.libelle = "— Aucune —";
+        java.util.List<sn.rts.caisse.guichet.model.Dto.LangueDTO> items = new ArrayList<>();
+        items.add(aucune);
+        items.addAll(langues);
+        Long selId = combo.getValue() != null ? combo.getValue().id : null;
+        combo.setItems(FXCollections.observableArrayList(items));
+        if (selId != null) {
+            for (var l : items) {
+                if (selId.equals(l.id)) { combo.setValue(l); break; }
+            }
+        }
+    }
+
+    /** Affiche/masque le combo langue de chaque ligne selon le produit choisi. */
+    private void majVisibiliteLangues() {
+        for (LigneDiffusion l : lignesDiffusion) {
+            majVisibiliteLanguesLigne(l);
+        }
+    }
+
+    private void majVisibiliteLanguesLigne(LigneDiffusion l) {
+        boolean propose = categorieCombo != null && categorieCombo.getValue() != null
+                && categorieCombo.getValue().proposeLangue;
+        l.langue.setVisible(propose);
+        l.langue.setManaged(propose);
+        if (!propose) {
+            l.langue.setValue(null);
+        }
+    }
+
+    /**
+     * Collecte les créneaux de diffusion saisis. Lignes vides ignorées
+     * (diffusion optionnelle) ; ligne incomplète/heure invalide → erreur + null.
+     */
+    private java.util.List<sn.rts.caisse.guichet.model.Dto.DiffusionDto> collecterDiffusions() {
+        java.util.List<sn.rts.caisse.guichet.model.Dto.DiffusionDto> result = new ArrayList<>();
+        for (LigneDiffusion l : lignesDiffusion) {
+            forcerCommitDatePicker(l.date);
+            LocalDate date = l.date.getValue();
+            String heureTexte = l.heure.getText();
+            boolean heureRenseignee = heureTexte != null && !heureTexte.isBlank();
+
+            if (date == null && !heureRenseignee) {
+                continue; // ligne vide : ignorée (diffusion optionnelle)
+            }
+            if (date == null) {
+                Ui.erreur("Date de diffusion manquante",
+                        "Une diffusion a une heure sans date. Complétez la date ou videz la ligne.");
+                l.date.requestFocus();
+                return null;
+            }
+            if (!heureRenseignee) {
+                Ui.erreur("Heure de diffusion manquante",
+                        "Une diffusion a une date sans heure (format HH:mm, ex. 20:30).");
+                l.heure.requestFocus();
+                return null;
+            }
+            LocalTime heure;
+            try {
+                heure = LocalTime.parse(heureTexte.trim(), HEURE_FMT);
+            } catch (Exception ex) {
+                Ui.erreur("Heure invalide",
+                        "L'heure de diffusion doit être au format HH:mm (ex. 20:30). "
+                                + "Valeur : " + heureTexte);
+                l.heure.requestFocus();
+                return null;
+            }
+            Long langueId = (l.langue.isVisible() && l.langue.getValue() != null)
+                    ? l.langue.getValue().id : null;
+            result.add(new sn.rts.caisse.guichet.model.Dto.DiffusionDto(
+                    LocalDateTime.of(date, heure), langueId));
+        }
+        return result;
     }
 
     /**
@@ -1045,17 +1160,14 @@ public class NouvelleOperationController {
         }
     }
 
-    /** Pre-remplit les deux champs depuis une operation existante. */
+    /** Pré-remplit les diffusions depuis une opération existante (modification). */
     private void prefRemplirDateDiffusion(LocalDateTime dt) {
-        if (dateDiffusionPicker == null || heureDiffusionField == null) return;
-        if (dt == null) {
-            dateDiffusionPicker.setValue(null);
-            heureDiffusionField.clear();
-            return;
+        reinitialiserDiffusions();
+        if (dt != null && !lignesDiffusion.isEmpty()) {
+            LigneDiffusion l = lignesDiffusion.get(0);
+            l.date.setValue(dt.toLocalDate());
+            l.heure.setText(String.format("%02d:%02d", dt.getHour(), dt.getMinute()));
         }
-        dateDiffusionPicker.setValue(dt.toLocalDate());
-        heureDiffusionField.setText(String.format("%02d:%02d",
-                dt.getHour(), dt.getMinute()));
     }
 
     // ==================================================================

@@ -42,7 +42,8 @@ export class CategorieDialogComponent {
     libelle: [this.data?.libelle ?? '', Validators.required],
     typeOperation: [(this.data?.typeOperation ?? 'ENTREE') as TypeOperation, Validators.required],
     actif: [this.data?.actif ?? true],
-    accepteJustificatif: [this.data?.accepteJustificatif ?? false]
+    accepteJustificatif: [this.data?.accepteJustificatif ?? false],
+    proposeLangue: [this.data?.proposeLangue ?? false]
   });
 
   valider(): void {

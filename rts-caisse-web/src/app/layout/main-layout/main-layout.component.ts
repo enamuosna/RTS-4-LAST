@@ -111,6 +111,7 @@ export class MainLayoutComponent {
         { label: 'Utilisateurs', icon: 'people',          route: '/utilisateurs', roles: ['ADMIN'] },
         { label: 'Banques',      icon: 'account_balance', route: '/banques',      roles: ['ADMIN'] },
         { label: 'Timbre',       icon: 'local_offer',     route: '/timbre',       roles: ['ADMIN'] },
+        { label: 'Langues',      icon: 'translate',       route: '/langues',      roles: ['ADMIN'] },
         { label: 'Paramètres',   icon: 'tune',            route: '/parametres',   roles: ['ADMIN'] }
       ]
     },

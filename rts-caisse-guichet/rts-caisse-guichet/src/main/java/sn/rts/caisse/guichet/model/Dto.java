@@ -73,8 +73,34 @@ public final class Dto {
         public boolean actif;
         /** Permet de joindre un PDF/JPG/PNG a une operation de cette categorie. */
         public boolean accepteJustificatif;
+        /** Propose le choix d'une langue de diffusion (ex. Avis & Communiques). */
+        public boolean proposeLangue;
 
         @Override public String toString() { return libelle; }
+    }
+
+    /** Langue de diffusion (referentiel). */
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    public static class LangueDTO {
+        public Long id;
+        public String code;
+        public String libelle;
+        public boolean actif;
+
+        public LangueDTO() {}
+        @Override public String toString() { return libelle; }
+    }
+
+    /** Un creneau de diffusion (date+heure + langue optionnelle). */
+    public static class DiffusionDto {
+        public LocalDateTime dateHeure;
+        public Long langueId;
+
+        public DiffusionDto() {}
+        public DiffusionDto(LocalDateTime dateHeure, Long langueId) {
+            this.dateHeure = dateHeure;
+            this.langueId = langueId;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -311,6 +337,9 @@ public final class Dto {
          * vente d'archives, prestation). Affiche sur le recu sous "Reference".
          */
         public LocalDateTime dateDiffusion;
+
+        /** Creneaux de diffusion (date/heure + langue optionnelle). Optionnel. */
+        public java.util.List<DiffusionDto> diffusions;
 
         public OperationCaisseRequest() {}
     }

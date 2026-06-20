@@ -11,6 +11,7 @@ import {
   Caisse,
   CategorieOperation,
   Client,
+  Langue,
   RegisterRequest,
   TimbreConfig,
   TypeOperation,
@@ -254,5 +255,31 @@ export class TimbreService {
     let params = new HttpParams();
     if (caisseId != null) params = params.set('caisseId', caisseId);
     return this.http.put<TimbreConfig>(this.base, config, { params });
+  }
+}
+
+// ======================================================
+//  LANGUES (référentiel de diffusion)
+// ======================================================
+@Injectable({ providedIn: 'root' })
+export class LangueService {
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/langues`;
+
+  lister(activesSeulement = false): Observable<Langue[]> {
+    const params = new HttpParams().set('actives', String(activesSeulement));
+    return this.http.get<Langue[]>(this.base, { params });
+  }
+
+  creer(l: Langue): Observable<Langue> {
+    return this.http.post<Langue>(this.base, l);
+  }
+
+  modifier(id: number, l: Langue): Observable<Langue> {
+    return this.http.put<Langue>(`${this.base}/${id}`, l);
+  }
+
+  supprimer(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
   }
 }

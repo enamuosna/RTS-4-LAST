@@ -150,27 +150,19 @@
                 </VBox>
             </GridPane>
 
-            <!-- ========== Date + Heure de diffusion (OBLIGATOIRE) ==========
-                 RTS est une chaine TV : toute operation de caisse doit etre
-                 rattachee a un creneau de diffusion antenne (spot pub,
-                 sponsoring, message). Imprime sur le recu (ligne
-                 "Diffusion"). Date ET heure sont desormais obligatoires
-                 cote backend (regle metier). -->
-            <GridPane hgap="14" vgap="6">
-                <columnConstraints>
-                    <ColumnConstraints percentWidth="65"/>
-                    <ColumnConstraints percentWidth="35"/>
-                </columnConstraints>
-                <VBox spacing="6" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Label styleClass="field-label" text="DATE DE DIFFUSION *"/>
-                    <DatePicker fx:id="dateDiffusionPicker" maxWidth="Infinity"
-                                promptText="JJ/MM/AAAA"/>
-                </VBox>
-                <VBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                    <Label styleClass="field-label" text="HEURE (HH:MM) *"/>
-                    <TextField fx:id="heureDiffusionField" promptText="20:30"/>
-                </VBox>
-            </GridPane>
+            <!-- ========== Diffusions à l'antenne (OPTIONNEL, multiples) ==========
+                 Une opération peut avoir plusieurs créneaux de diffusion (jours
+                 et heures différents), chacun avec une langue optionnelle (pour
+                 les produits qui le proposent, ex. Avis & Communiqués). -->
+            <VBox spacing="8">
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label styleClass="field-label" text="DIFFUSIONS À L'ANTENNE (optionnel)"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="ajouterDiffusionButton" onAction="#onAjouterDiffusion"
+                            styleClass="button, button-ghost" text="＋ Ajouter une diffusion"/>
+                </HBox>
+                <VBox fx:id="diffusionsBox" spacing="8"/>
+            </VBox>
 
             <!-- ========== Justificatif (visible selon 2 regles) ==========
                  Le bloc apparait si :

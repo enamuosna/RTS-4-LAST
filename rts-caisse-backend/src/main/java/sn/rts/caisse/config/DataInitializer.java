@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import sn.rts.caisse.model.*;
 import sn.rts.caisse.repository.CaisseRepository;
 import sn.rts.caisse.repository.CategorieOperationRepository;
+import sn.rts.caisse.repository.LangueRepository;
 import sn.rts.caisse.repository.ParametresRecuRepository;
 import sn.rts.caisse.repository.TimbreConfigRepository;
 import sn.rts.caisse.repository.UtilisateurRepository;
@@ -33,6 +34,7 @@ public class DataInitializer implements CommandLineRunner {
     private final CaisseRepository caisseRepository;
     private final TimbreConfigRepository timbreConfigRepository;
     private final ParametresRecuRepository parametresRecuRepository;
+    private final LangueRepository langueRepository;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -45,6 +47,27 @@ public class DataInitializer implements CommandLineRunner {
         initCaisse();
         initTimbreConfig();
         initParametresRecu();
+        initLangues();
+    }
+
+    /**
+     * Seed du référentiel des langues de diffusion (idempotent). Indispensable
+     * en profil docker (Flyway désactivé) où la table est créée par Hibernate
+     * mais reste vide.
+     */
+    private void initLangues() {
+        if (langueRepository.count() > 0) {
+            return;
+        }
+        langueRepository.saveAll(List.of(
+                Langue.builder().code("FR").libelle("Français").actif(true).build(),
+                Langue.builder().code("WO").libelle("Wolof").actif(true).build(),
+                Langue.builder().code("FF").libelle("Pulaar").actif(true).build(),
+                Langue.builder().code("MND").libelle("Mandingue").actif(true).build(),
+                Langue.builder().code("SRR").libelle("Sérère").actif(true).build(),
+                Langue.builder().code("DYO").libelle("Diola").actif(true).build()
+        ));
+        log.info("Référentiel des langues de diffusion initialisé (6 langues).");
     }
 
     // ------------------------------------------------------------------

@@ -73,7 +73,8 @@ class RecuPdfServiceIT extends AbstractTestcontainersIT {
                         null, // timbreManuel (auto)
                         ModePaiement.WAVE, "Spot publicitaire JT 20h", "TX-WAVE-1234",
                         null, // banqueId
-                        null  // dateDiffusion
+                        null, // dateDiffusion
+                        null  // diffusions
                 ),
                 caissier.getLogin());
     }

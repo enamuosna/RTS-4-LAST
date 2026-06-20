@@ -79,14 +79,17 @@ public record OperationCaisseRequest(
         Long banqueId,
 
         /**
-         * Date et heure prevues de diffusion du produit a l'antenne (spot
-         * publicitaire, sponsoring, message).
-         *
-         * <p><b>Obligatoire</b> (regle metier RTS) : toute operation de caisse
-         * doit etre rattachee a une diffusion antenne. Le backend renvoie 400
-         * si le champ est absent ou null.</p>
+         * Date+heure de diffusion « principale » (compat / reçu). <b>Optionnel</b>
+         * désormais. Si {@link #diffusions} est fourni, la première sert de valeur
+         * de référence sur le reçu.
          */
-        @NotNull
-        LocalDateTime dateDiffusion
+        LocalDateTime dateDiffusion,
+
+        /**
+         * Créneaux de diffusion à l'antenne (plusieurs jours/heures possibles),
+         * chacun avec une langue optionnelle. Optionnel : liste vide = aucune
+         * diffusion. Le « nombre de diffusion » = taille de cette liste.
+         */
+        java.util.List<DiffusionDto> diffusions
 ) {
 }

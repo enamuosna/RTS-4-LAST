@@ -113,6 +113,25 @@ export interface CategorieOperation {
   /** True si les opérations de cette catégorie peuvent porter un
    *  justificatif (PDF/JPG/PNG) joint par le caissier. */
   accepteJustificatif: boolean;
+  /** True si le produit propose le choix d'une langue de diffusion
+   *  (ex. Avis & Communiqués). Sélection optionnelle au guichet. */
+  proposeLangue: boolean;
+}
+
+// ---------- Langue de diffusion ----------
+export interface Langue {
+  id?: number;
+  code: string;
+  libelle: string;
+  actif: boolean;
+}
+
+// ---------- Créneau de diffusion (date/heure + langue) ----------
+export interface DiffusionSlot {
+  /** ISO 8601 datetime. */
+  dateHeure: string;
+  langueId?: number | null;
+  langueLibelle?: string | null;
 }
 
 // ---------- Client ----------
@@ -148,6 +167,8 @@ export interface OperationCaisseRequest {
    * une diffusion. Format ISO 8601 attendu par le backend.
    */
   dateDiffusion?: string | null;
+  /** Créneaux de diffusion multiples (date/heure + langue optionnelle). */
+  diffusions?: DiffusionSlot[];
 }
 
 // ──────────────────────────────
@@ -174,8 +195,12 @@ export interface OperationCaisse {
   modePaiement: ModePaiement;
   reference?: string;
   dateOperation: string;
-  /** Date+heure de diffusion du produit a l'antenne (optionnel). */
+  /** Date+heure de diffusion du produit a l'antenne (optionnel, 1er créneau). */
   dateDiffusion?: string | null;
+  /** Créneaux de diffusion (date/heure + langue). */
+  diffusions?: DiffusionSlot[];
+  /** Nombre de créneaux de diffusion. */
+  nombreDiffusions?: number;
   caisseId: number;
   caisseLibelle: string;
   caissierId: number;

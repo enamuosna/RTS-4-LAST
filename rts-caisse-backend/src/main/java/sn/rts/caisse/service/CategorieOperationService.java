@@ -29,6 +29,7 @@ public class CategorieOperationService {
                 .typeOperation(dto.typeOperation())
                 .actif(true)
                 .accepteJustificatif(dto.accepteJustificatif())
+                .proposeLangue(dto.proposeLangue())
                 .build();
         return CategorieOperationDTO.from(repository.save(c));
     }
@@ -39,6 +40,7 @@ public class CategorieOperationService {
         c.setTypeOperation(dto.typeOperation());
         c.setActif(dto.actif());
         c.setAccepteJustificatif(dto.accepteJustificatif());
+        c.setProposeLangue(dto.proposeLangue());
         return CategorieOperationDTO.from(repository.save(c));
     }
 

@@ -163,6 +163,25 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-prod.ps1
 
 Le script fait `docker compose pull` puis `up -d`. Docker remplace les conteneurs un par un de manière transparente (zero-downtime tant que les migrations Flyway sont compatibles).
 
+### Serveur Ubuntu (Caddy auto-HTTPS, build depuis les sources)
+
+Le serveur de production tourne avec `docker-compose.prod.yml` (Caddy + Let's Encrypt,
+images **buildées depuis les sources** : `pull_policy: build`). Pour déployer une nouvelle
+version, un seul script bash fait tout (pull + rebuild + vérifications) :
+
+```bash
+cd rts-caisse-docker
+./scripts/deploy-prod.sh                 # met à jour depuis la branche courante
+./scripts/deploy-prod.sh main            # force une branche précise
+```
+
+Le script : `git fetch` + `git reset --hard origin/<branche>` (déterministe, préserve le
+`.env` non suivi), `docker compose -f docker-compose.prod.yml up -d --build` (toute la stack,
+sans argument de service pour ne pas laisser Caddy/Frontend à l'arrêt), attend le backend
+`healthy`, puis vérifie le schéma et le seed des données (langues, table `operation_diffusion`,
+colonne `propose_langue`). L'auto-réparation du schéma au démarrage gère les volumes existants
+(Flyway OFF en docker).
+
 ---
 
 ## Configuration côté projets backend & frontend

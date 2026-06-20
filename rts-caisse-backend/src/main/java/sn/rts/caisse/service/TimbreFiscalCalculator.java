@@ -44,13 +44,14 @@ public class TimbreFiscalCalculator {
      * @param categorieId identifiant de la catégorie/produit de l'opération
      * @return timbre arrondi au FCFA, ou 0 si non applicable
      */
-    public BigDecimal calculer(BigDecimal montantHt, ModePaiement mode, Long categorieId) {
+    public BigDecimal calculer(BigDecimal montantHt, ModePaiement mode, Long categorieId, Long caisseId) {
         if (montantHt == null) {
             return BigDecimal.ZERO;
         }
-        TimbreConfigService.Reglement r = configService.obtenirReglement();
+        TimbreConfigService.Reglement r = configService.obtenirReglement(caisseId);
 
-        if (!r.actif()) {
+        // Mode MANUEL : aucun calcul automatique (le caissier saisit le timbre).
+        if (r.manuel() || !r.actif()) {
             return BigDecimal.ZERO;
         }
         if (r.seuil() != null && montantHt.compareTo(r.seuil()) < 0) {

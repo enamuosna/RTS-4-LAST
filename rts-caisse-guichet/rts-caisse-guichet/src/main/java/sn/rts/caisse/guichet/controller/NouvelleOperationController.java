@@ -456,10 +456,22 @@ public class NouvelleOperationController {
      * l'enregistrement.
      */
     private void chargerTimbreConfig() {
+        Long caisseId = (caisse != null) ? caisse.id : null;
         AsyncRunner.run(
-                api::obtenirTimbreConfig,
+                () -> api.obtenirTimbreConfig(caisseId),
                 cfg -> {
                     this.timbreConfig = cfg;
+                    // Caisse en mode MANUEL : on force la saisie manuelle du timbre
+                    // (le caissier saisit ; champ optionnel). Case verrouillée.
+                    boolean manuelCaisse = cfg != null && "MANUEL".equalsIgnoreCase(cfg.mode);
+                    if (timbreManuelCheck != null) {
+                        if (manuelCaisse) {
+                            timbreManuelCheck.setSelected(true);
+                            timbreManuelCheck.setDisable(true);
+                        } else {
+                            timbreManuelCheck.setDisable(false);
+                        }
+                    }
                     recalculerTtc();
                 },
                 e -> log.warn("Configuration du timbre indisponible, timbre affiché = 0 : {}",

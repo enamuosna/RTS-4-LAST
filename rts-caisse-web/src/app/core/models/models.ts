@@ -33,12 +33,16 @@ export type StatutCaisse = 'FERMEE' | 'OUVERTE' | 'SUSPENDUE';
  * (modesPaiement vide = tous) et catégorie concernée (categorieIds vide
  * = toutes). Montant = montant * pourcentage / 100.
  */
+export type ModeTimbre = 'AUTO' | 'MANUEL';
+
 export interface TimbreConfig {
   actif: boolean;
   seuil: number;
   pourcentage: number;
   categorieIds: number[];
   modesPaiement: ModePaiement[];
+  /** AUTO = calcul automatique ; MANUEL = saisie par le caissier (par caisse). */
+  mode?: ModeTimbre;
 }
 
 // ---------- Auth ----------

@@ -242,11 +242,17 @@ export class TimbreService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/parametres/timbre`;
 
-  obtenir(): Observable<TimbreConfig> {
-    return this.http.get<TimbreConfig>(this.base);
+  /** Config du timbre d'une caisse (ou les défauts si caisseId omis). */
+  obtenir(caisseId?: number): Observable<TimbreConfig> {
+    let params = new HttpParams();
+    if (caisseId != null) params = params.set('caisseId', caisseId);
+    return this.http.get<TimbreConfig>(this.base, { params });
   }
 
-  mettreAJour(config: TimbreConfig): Observable<TimbreConfig> {
-    return this.http.put<TimbreConfig>(this.base, config);
+  /** Enregistre la config du timbre pour une caisse donnée. */
+  mettreAJour(config: TimbreConfig, caisseId?: number): Observable<TimbreConfig> {
+    let params = new HttpParams();
+    if (caisseId != null) params = params.set('caisseId', caisseId);
+    return this.http.put<TimbreConfig>(this.base, config, { params });
   }
 }

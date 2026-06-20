@@ -4,59 +4,93 @@
   </div>
 
   <p class="page-intro">
-    Personnalisez le calcul automatique du timbre. Ces réglages s'appliquent
-    immédiatement au backend et à l'app de caisse (guichet).
+    Configurez le timbre <strong>par caisse</strong>. Sélectionnez une caisse, choisissez
+    le mode (automatique ou manuel) puis enregistrez : les réglages s'appliquent
+    uniquement à cette caisse (backend + guichet).
   </p>
 
-  @if (chargement()) {
+  <!-- Sélecteur de caisse -->
+  <mat-form-field appearance="outline" class="full">
+    <mat-label>Caisse</mat-label>
+    <mat-select [(ngModel)]="caisseSelectionneeId" [ngModelOptions]="{ standalone: true }"
+                (selectionChange)="chargerCaisse()">
+      @for (c of caisses(); track c.id) {
+        <mat-option [value]="c.id">{{ c.code }} — {{ c.libelle }}</mat-option>
+      }
+    </mat-select>
+    <mat-hint>Les modifications ne s'appliqueront qu'à la caisse sélectionnée.</mat-hint>
+  </mat-form-field>
+
+  @if (caisseSelectionneeId == null) {
+    <p class="loading">Sélectionnez une caisse pour configurer son timbre.</p>
+  } @else if (chargement()) {
     <p class="loading">Chargement de la configuration…</p>
   } @else {
     <form [formGroup]="form" (ngSubmit)="enregistrer()">
       <mat-card class="config-card">
         <mat-card-content>
+          <!-- Mode auto / manuel -->
           <div class="toggle-row">
-            <mat-slide-toggle formControlName="actif">
-              Timbre activé
-            </mat-slide-toggle>
-            <span class="toggle-hint">
-              Lorsqu'il est désactivé, aucun timbre n'est appliqué (timbre = 0).
-            </span>
+            <span class="toggle-hint"><strong>Mode de timbre</strong></span>
+            <mat-button-toggle-group formControlName="mode" hideSingleSelectionIndicator>
+              <mat-button-toggle value="AUTO">
+                <mat-icon>calculate</mat-icon> Automatique
+              </mat-button-toggle>
+              <mat-button-toggle value="MANUEL">
+                <mat-icon>edit</mat-icon> Manuel
+              </mat-button-toggle>
+            </mat-button-toggle-group>
           </div>
 
-          <div class="grid-2">
-            <mat-form-field appearance="outline">
-              <mat-label>Seuil d'application (FCFA)</mat-label>
-              <input matInput type="number" min="0" formControlName="seuil" />
-              <mat-hint>Montant HT à partir duquel le timbre s'applique.</mat-hint>
+          @if (estManuel) {
+            <p class="mode-hint">
+              En mode <strong>manuel</strong>, le caissier saisit le timbre à chaque
+              opération sur cette caisse (champ <strong>optionnel</strong>, peut rester
+              vide = aucun timbre). Le calcul automatique est désactivé.
+            </p>
+          } @else {
+            <div class="toggle-row">
+              <mat-slide-toggle formControlName="actif">Timbre activé</mat-slide-toggle>
+              <span class="toggle-hint">
+                Lorsqu'il est désactivé, aucun timbre n'est appliqué (timbre = 0).
+              </span>
+            </div>
+
+            <div class="grid-2">
+              <mat-form-field appearance="outline">
+                <mat-label>Seuil d'application (FCFA)</mat-label>
+                <input matInput type="number" min="0" formControlName="seuil" />
+                <mat-hint>Montant HT à partir duquel le timbre s'applique.</mat-hint>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Pourcentage du timbre (%)</mat-label>
+                <input matInput type="number" min="0" max="100" step="0.01"
+                       formControlName="pourcentage" />
+                <mat-hint>Ex : 1 = 1 % du montant HT.</mat-hint>
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Moyens de paiement concernés</mat-label>
+              <mat-select formControlName="modesPaiement" multiple>
+                @for (mode of modesDisponibles; track mode.value) {
+                  <mat-option [value]="mode.value">{{ mode.label }}</mat-option>
+                }
+              </mat-select>
+              <mat-hint>Laisser vide pour appliquer le timbre à tous les moyens de paiement.</mat-hint>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
-              <mat-label>Pourcentage du timbre (%)</mat-label>
-              <input matInput type="number" min="0" max="100" step="0.01"
-                     formControlName="pourcentage" />
-              <mat-hint>Ex : 1 = 1 % du montant HT.</mat-hint>
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Catégories (produits) concernées</mat-label>
+              <mat-select formControlName="categorieIds" multiple>
+                @for (cat of categories(); track cat.id) {
+                  <mat-option [value]="cat.id">{{ cat.code }} — {{ cat.libelle }}</mat-option>
+                }
+              </mat-select>
+              <mat-hint>Laisser vide pour appliquer le timbre à toutes les catégories.</mat-hint>
             </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline" class="full">
-            <mat-label>Moyens de paiement concernés</mat-label>
-            <mat-select formControlName="modesPaiement" multiple>
-              @for (mode of modesDisponibles; track mode.value) {
-                <mat-option [value]="mode.value">{{ mode.label }}</mat-option>
-              }
-            </mat-select>
-            <mat-hint>Laisser vide pour appliquer le timbre à tous les moyens de paiement.</mat-hint>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full">
-            <mat-label>Catégories (produits) concernées</mat-label>
-            <mat-select formControlName="categorieIds" multiple>
-              @for (cat of categories(); track cat.id) {
-                <mat-option [value]="cat.id">{{ cat.code }} — {{ cat.libelle }}</mat-option>
-              }
-            </mat-select>
-            <mat-hint>Laisser vide pour appliquer le timbre à toutes les catégories.</mat-hint>
-          </mat-form-field>
+          }
         </mat-card-content>
 
         <mat-card-actions align="end">

@@ -301,9 +301,18 @@ public class CaisseApi {
                 sn.rts.caisse.guichet.model.Dto.ParametresRecuDto.class);
     }
 
-    /** Configuration personnalisable du timbre fiscal (lecture seule). */
+    /** Configuration du timbre (modèle global par défaut). */
     public sn.rts.caisse.guichet.model.Dto.TimbreConfigDto obtenirTimbreConfig() {
         return client.get("/parametres/timbre",
+                sn.rts.caisse.guichet.model.Dto.TimbreConfigDto.class);
+    }
+
+    /** Configuration du timbre PROPRE à une caisse (inclut le mode AUTO/MANUEL). */
+    public sn.rts.caisse.guichet.model.Dto.TimbreConfigDto obtenirTimbreConfig(Long caisseId) {
+        if (caisseId == null) {
+            return obtenirTimbreConfig();
+        }
+        return client.get("/parametres/timbre?caisseId=" + caisseId,
                 sn.rts.caisse.guichet.model.Dto.TimbreConfigDto.class);
     }
 

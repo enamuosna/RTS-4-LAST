@@ -9,8 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import sn.rts.caisse.dto.TimbreConfigDto;
 import sn.rts.caisse.exception.BusinessException;
+import sn.rts.caisse.model.CaisseTimbreConfig;
 import sn.rts.caisse.model.ModePaiement;
+import sn.rts.caisse.model.ModeTimbre;
 import sn.rts.caisse.model.TimbreConfig;
+import sn.rts.caisse.repository.CaisseTimbreConfigRepository;
 import sn.rts.caisse.repository.TimbreConfigRepository;
 
 import java.math.BigDecimal;
@@ -34,6 +37,7 @@ public class TimbreConfigService {
     private static final Long SINGLETON_ID = 1L;
 
     private final TimbreConfigRepository repository;
+    private final CaisseTimbreConfigRepository caisseRepository;
     private final ObjectMapper objectMapper;
 
     // ==================================================================
@@ -52,9 +56,12 @@ public class TimbreConfigService {
             BigDecimal seuil,
             BigDecimal pourcentage,
             Set<Long> categorieIds,
-            Set<ModePaiement> modesPaiement) {
+            Set<ModePaiement> modesPaiement,
+            /** true = mode MANUEL (saisie caissier, calcul auto désactivé). */
+            boolean manuel) {
     }
 
+    /** Règlement par défaut (modèle global), mode AUTO. */
     @Transactional(readOnly = true)
     public Reglement obtenirReglement() {
         TimbreConfig e = loadEntity();
@@ -63,7 +70,28 @@ public class TimbreConfigService {
                 e.getSeuil(),
                 e.getPourcentage(),
                 Set.copyOf(parseLongs(e.getCategoriesJson())),
-                parseModes(e.getModesPaiementJson()));
+                parseModes(e.getModesPaiementJson()),
+                false);
+    }
+
+    /**
+     * Règlement effectif pour une caisse : sa config propre si elle existe,
+     * sinon les valeurs par défaut (modèle global, mode AUTO).
+     */
+    @Transactional(readOnly = true)
+    public Reglement obtenirReglement(Long caisseId) {
+        CaisseTimbreConfig c = caisseId == null ? null
+                : caisseRepository.findByCaisseId(caisseId).orElse(null);
+        if (c == null) {
+            return obtenirReglement();
+        }
+        return new Reglement(
+                c.isActif(),
+                c.getSeuil(),
+                c.getPourcentage(),
+                Set.copyOf(parseLongs(c.getCategoriesJson())),
+                parseModes(c.getModesPaiementJson()),
+                c.getMode() == ModeTimbre.MANUEL);
     }
 
     // ==================================================================
@@ -73,6 +101,62 @@ public class TimbreConfigService {
     @Transactional(readOnly = true)
     public TimbreConfigDto obtenir() {
         return toDto(loadEntity());
+    }
+
+    /** Config d'une caisse : la sienne si elle existe, sinon les défauts (mode AUTO). */
+    @Transactional(readOnly = true)
+    public TimbreConfigDto obtenir(Long caisseId) {
+        CaisseTimbreConfig c = caisseId == null ? null
+                : caisseRepository.findByCaisseId(caisseId).orElse(null);
+        if (c == null) {
+            // Pas encore configurée : on renvoie les valeurs par défaut (modèle global)
+            // avec mode AUTO, pour pré-remplir le formulaire admin.
+            TimbreConfigDto base = toDto(loadEntity());
+            return new TimbreConfigDto(base.actif(), base.seuil(), base.pourcentage(),
+                    base.categorieIds(), base.modesPaiement(), ModeTimbre.AUTO.name());
+        }
+        return toDto(c);
+    }
+
+    /** Crée ou met à jour la config timbre d'une caisse. */
+    @Transactional
+    public TimbreConfigDto mettreAJour(Long caisseId, TimbreConfigDto dto, String loginAdmin) {
+        if (caisseId == null) {
+            throw new BusinessException("caisseId requis pour configurer le timbre d'une caisse.");
+        }
+        CaisseTimbreConfig c = caisseRepository.findByCaisseId(caisseId)
+                .orElseGet(() -> CaisseTimbreConfig.builder().caisseId(caisseId).build());
+        c.setActif(dto.actif());
+        c.setSeuil(dto.seuil());
+        c.setPourcentage(dto.pourcentage());
+        c.setCategoriesJson(serialize(dto.categorieIds() == null ? List.of() : dto.categorieIds()));
+        c.setModesPaiementJson(serialize(dto.modesPaiement() == null ? List.of() : dto.modesPaiement()));
+        c.setMode(parseMode(dto.mode()));
+        c.setUpdatedAt(LocalDateTime.now());
+        c.setUpdatedBy(loginAdmin);
+        caisseRepository.save(c);
+        log.info("Config timbre caisse {} mise à jour par {} : mode={} actif={} seuil={} taux={}%",
+                caisseId, loginAdmin, c.getMode(), c.isActif(), c.getSeuil(), c.getPourcentage());
+        return toDto(c);
+    }
+
+    private ModeTimbre parseMode(String mode) {
+        if (mode == null || mode.isBlank()) return ModeTimbre.AUTO;
+        try {
+            return ModeTimbre.valueOf(mode.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return ModeTimbre.AUTO;
+        }
+    }
+
+    private TimbreConfigDto toDto(CaisseTimbreConfig c) {
+        return new TimbreConfigDto(
+                c.isActif(),
+                c.getSeuil(),
+                c.getPourcentage(),
+                new ArrayList<>(parseLongs(c.getCategoriesJson())),
+                new ArrayList<>(parseModes(c.getModesPaiementJson())),
+                c.getMode().name());
     }
 
     @Transactional
@@ -110,7 +194,8 @@ public class TimbreConfigService {
                 e.getSeuil(),
                 e.getPourcentage(),
                 new ArrayList<>(parseLongs(e.getCategoriesJson())),
-                new ArrayList<>(parseModes(e.getModesPaiementJson())));
+                new ArrayList<>(parseModes(e.getModesPaiementJson())),
+                ModeTimbre.AUTO.name());
     }
 
     // ------------------------------------------------------------------

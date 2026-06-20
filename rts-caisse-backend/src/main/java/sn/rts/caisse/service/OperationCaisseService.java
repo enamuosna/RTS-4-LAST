@@ -69,6 +69,7 @@ public class OperationCaisseService {
     private final NumeroRecuGenerator       numeroRecuGenerator;
     private final AuditService              auditService;
     private final TimbreFiscalCalculator    timbreCalculator;
+    private final TimbreConfigService       timbreConfigService;
 
     // ==================================================================
     //  ENREGISTREMENT
@@ -118,14 +119,17 @@ public class OperationCaisseService {
             }
 
             // ---------- 3. Timbre (automatique OU manuel) + montant TTC ----------
-            //  - MANUEL (timbreManuel=true) : on prend la valeur saisie
-            //    request.timbre() telle quelle (null = aucun timbre -> 0).
-            //  - AUTO (false/null) : regle metier RTS, timbre 1% UNIQUEMENT
-            //    pour les ESPECES a partir de 20 000 FCFA (autres modes exoneres).
-            BigDecimal timbre = Boolean.TRUE.equals(request.timbreManuel())
+            // Mode determine PAR LA CAISSE (config admin) ou force par le client :
+            //  - MANUEL : on prend la valeur saisie request.timbre() telle quelle
+            //    (null = aucun timbre -> 0). Le caissier maitrise.
+            //  - AUTO   : calcul selon les regles de la caisse (seuil, taux, modes,
+            //    categories). Caisse en mode MANUEL => calculer() renvoie 0 de toute facon.
+            boolean timbreManuel = Boolean.TRUE.equals(request.timbreManuel())
+                    || timbreConfigService.obtenirReglement(caisse.getId()).manuel();
+            BigDecimal timbre = timbreManuel
                     ? (request.timbre() != null ? request.timbre() : BigDecimal.ZERO)
                     : timbreCalculator.calculer(
-                            request.montant(), request.modePaiement(), categorie.getId());
+                            request.montant(), request.modePaiement(), categorie.getId(), caisse.getId());
             BigDecimal montantTtc = request.montant().add(timbre);
 
             // Solde suffisant pour les sorties (sur le TTC)
@@ -398,13 +402,14 @@ public class OperationCaisseService {
                     ? clientService.trouver(request.clientId())
                     : null;
 
-            // ---------- Timbre (automatique OU manuel) + TTC ----------
-            //  - MANUEL : valeur saisie request.timbre() (null = aucun timbre).
-            //  - AUTO   : recalcul selon le mode (1% ESPECES >= 20 000, 0 sinon).
-            BigDecimal nouveauTimbre = Boolean.TRUE.equals(request.timbreManuel())
+            // ---------- Timbre (automatique OU manuel selon la caisse) + TTC ----------
+            boolean timbreManuelMod = Boolean.TRUE.equals(request.timbreManuel())
+                    || timbreConfigService.obtenirReglement(operation.getCaisse().getId()).manuel();
+            BigDecimal nouveauTimbre = timbreManuelMod
                     ? (request.timbre() != null ? request.timbre() : BigDecimal.ZERO)
                     : timbreCalculator.calculer(
-                            request.montant(), request.modePaiement(), categorie.getId());
+                            request.montant(), request.modePaiement(), categorie.getId(),
+                            operation.getCaisse().getId());
             BigDecimal nouveauTtc = request.montant().add(nouveauTimbre);
 
             // ---------- Recalcul du solde caisse ----------

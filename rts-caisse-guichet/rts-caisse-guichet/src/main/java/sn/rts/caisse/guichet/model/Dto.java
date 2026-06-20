@@ -455,6 +455,8 @@ public final class Dto {
         public java.util.List<Long> categorieIds;
         /** Noms des modes de paiement concernes ; liste vide = tous. */
         public java.util.List<String> modesPaiement;
+        /** "AUTO" (calcul) ou "MANUEL" (saisie caissier) pour cette caisse. */
+        public String mode;
 
         public TimbreConfigDto() {}
     }

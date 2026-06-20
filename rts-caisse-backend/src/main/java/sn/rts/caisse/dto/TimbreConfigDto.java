@@ -23,6 +23,9 @@ public record TimbreConfigDto(
         @NotNull @DecimalMin("0.0") BigDecimal seuil,
         @NotNull @DecimalMin("0.0") @DecimalMax("100.0") BigDecimal pourcentage,
         List<Long> categorieIds,
-        List<ModePaiement> modesPaiement
+        List<ModePaiement> modesPaiement,
+        /** Mode de la caisse : "AUTO" (calcul) ou "MANUEL" (saisie caissier).
+         *  Null/absent traité comme AUTO. */
+        String mode
 ) {
 }

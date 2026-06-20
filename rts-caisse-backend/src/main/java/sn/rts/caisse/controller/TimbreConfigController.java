@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sn.rts.caisse.dto.TimbreConfigDto;
 import sn.rts.caisse.service.TimbreConfigService;
@@ -34,17 +35,22 @@ public class TimbreConfigController {
     private final TimbreConfigService service;
 
     @GetMapping
-    @Operation(summary = "Lire la configuration courante du timbre")
-    public ResponseEntity<TimbreConfigDto> obtenir() {
-        return ResponseEntity.ok(service.obtenir());
+    @Operation(summary = "Lire la config du timbre d'une caisse (ou les défauts si caisseId absent)")
+    public ResponseEntity<TimbreConfigDto> obtenir(
+            @RequestParam(required = false) Long caisseId) {
+        return ResponseEntity.ok(
+                caisseId != null ? service.obtenir(caisseId) : service.obtenir());
     }
 
     @PutMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Mettre à jour la configuration du timbre (ADMIN)")
+    @Operation(summary = "Mettre à jour la config du timbre d'une caisse (ADMIN)")
     public ResponseEntity<TimbreConfigDto> mettreAJour(
+            @RequestParam(required = false) Long caisseId,
             @Valid @RequestBody TimbreConfigDto dto,
             Authentication authentication) {
-        return ResponseEntity.ok(service.mettreAJour(dto, authentication.getName()));
+        return ResponseEntity.ok(caisseId != null
+                ? service.mettreAJour(caisseId, dto, authentication.getName())
+                : service.mettreAJour(dto, authentication.getName()));
     }
 }

@@ -53,7 +53,9 @@ public class RecetteHebdo extends Auditable {
      * CHECK constraint figeant les valeurs : même approche que {@code Utilisateur.role}.
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "VARCHAR(20) NOT NULL")
+    // columnDefinition SANS "NOT NULL" inline : ALTER valide en cas de migration
+    // sur volume existant ; CHECK enum supprime (columnDefinition explicite).
+    @Column(nullable = false, columnDefinition = "varchar(20)")
     @Builder.Default
     private StatutRecette statut = StatutRecette.BROUILLON;
 

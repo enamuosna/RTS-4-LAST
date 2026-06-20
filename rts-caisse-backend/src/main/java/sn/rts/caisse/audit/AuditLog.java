@@ -68,7 +68,11 @@ public class AuditLog {
      * Java par {@link Enumerated}.</p>
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "VARCHAR(40) NOT NULL")
+    // columnDefinition SANS "NOT NULL" inline : Hibernate genere alors un ALTER
+    // valide ("set data type varchar(40)") si la colonne doit etre migree sur un
+    // volume existant (sinon "set data type VARCHAR(40) NOT NULL" -> erreur SQL).
+    // Le CHECK enum reste supprime grace au columnDefinition explicite.
+    @Column(nullable = false, columnDefinition = "varchar(40)")
     private AuditAction action;
 
     // ----- Auteur (dénormalisé pour résister aux modifications) -----

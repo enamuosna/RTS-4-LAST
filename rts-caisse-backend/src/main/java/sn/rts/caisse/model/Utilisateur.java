@@ -75,7 +75,10 @@ public class Utilisateur extends Auditable implements UserDetails {
      * {@link Enumerated}. Même correctif que sur {@code audit_logs.action}.
      */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "VARCHAR(20) NOT NULL")
+    // columnDefinition SANS "NOT NULL" inline : Hibernate genere alors un ALTER
+    // valide ("set data type varchar(20)") si la colonne doit etre migree sur un
+    // volume existant. Le CHECK enum reste supprime (columnDefinition explicite).
+    @Column(nullable = false, columnDefinition = "varchar(20)")
     private Role role;
 
     @Column(nullable = false)

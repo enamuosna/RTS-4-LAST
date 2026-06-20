@@ -3,6 +3,7 @@ package sn.rts.caisse.config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import sn.rts.caisse.model.*;
@@ -33,9 +34,11 @@ public class DataInitializer implements CommandLineRunner {
     private final TimbreConfigRepository timbreConfigRepository;
     private final ParametresRecuRepository parametresRecuRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
+        nettoyerContraintesObsoletes();
         initAdmin();
         initChefsControle();
         initCategories();
@@ -45,6 +48,40 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     // ------------------------------------------------------------------
+
+    /**
+     * Auto-réparation au démarrage : supprime les <b>CHECK constraints obsolètes</b>
+     * sur {@code utilisateurs.role} et {@code audit_logs.action} héritées d'anciens
+     * volumes. En profil docker (Flyway désactivé), ces contraintes figées
+     * bloquent l'ajout de nouveaux rôles/actions à l'enum Java. La validation des
+     * valeurs reste assurée par {@code @Enumerated(STRING)}.
+     *
+     * <p>Postgres-spécifique et idempotent : toute erreur (autre SGBD, table
+     * absente) est ignorée — ne doit jamais empêcher le démarrage.</p>
+     */
+    private void nettoyerContraintesObsoletes() {
+        String sql = """
+            DO $$
+            DECLARE c RECORD;
+            BEGIN
+              FOR c IN
+                SELECT conname, conrelid::regclass AS tbl
+                FROM pg_constraint
+                WHERE contype = 'c'
+                  AND ( (conrelid = 'utilisateurs'::regclass AND pg_get_constraintdef(oid) ILIKE '%role%')
+                     OR (conrelid = 'audit_logs'::regclass   AND pg_get_constraintdef(oid) ILIKE '%action%') )
+              LOOP
+                EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', c.tbl, c.conname);
+              END LOOP;
+            END $$;
+            """;
+        try {
+            jdbcTemplate.execute(sql);
+            log.info("Contraintes CHECK obsolètes (role/action) vérifiées/supprimées.");
+        } catch (Exception e) {
+            log.debug("Nettoyage des CHECK obsolètes ignoré ({}).", e.getMessage());
+        }
+    }
 
     private void initAdmin() {
         if (utilisateurRepository.existsByLogin("admin")) {

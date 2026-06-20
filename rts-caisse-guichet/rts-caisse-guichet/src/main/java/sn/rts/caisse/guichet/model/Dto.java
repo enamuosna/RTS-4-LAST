@@ -50,6 +50,13 @@ public final class Dto {
         public String emplacement;
         public StatutCaisse statut;
         public BigDecimal soldeCourant;
+        /**
+         * Type(s) d'opération autorisé(s) sur la caisse : "ENTREE", "SORTIE"
+         * ou "TOUS" (mixte). Défini par l'ADMIN. Le guichet adapte l'affichage
+         * du type d'opération en conséquence. Null pour les caisses héritées
+         * (traité comme TOUS).
+         */
+        public String typeOperationAutorise;
         public Long caissierId;
         public String caissierNomComplet;
         /** Agent de recette rattaché à cette caisse (peut modifier les opérations). */
@@ -66,8 +73,34 @@ public final class Dto {
         public boolean actif;
         /** Permet de joindre un PDF/JPG/PNG a une operation de cette categorie. */
         public boolean accepteJustificatif;
+        /** Propose le choix d'une langue de diffusion (ex. Avis & Communiques). */
+        public boolean proposeLangue;
 
         @Override public String toString() { return libelle; }
+    }
+
+    /** Langue de diffusion (referentiel). */
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
+    public static class LangueDTO {
+        public Long id;
+        public String code;
+        public String libelle;
+        public boolean actif;
+
+        public LangueDTO() {}
+        @Override public String toString() { return libelle; }
+    }
+
+    /** Un creneau de diffusion (date+heure + langue optionnelle). */
+    public static class DiffusionDto {
+        public LocalDateTime dateHeure;
+        public Long langueId;
+
+        public DiffusionDto() {}
+        public DiffusionDto(LocalDateTime dateHeure, Long langueId) {
+            this.dateHeure = dateHeure;
+            this.langueId = langueId;
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -284,6 +317,9 @@ public final class Dto {
         public BigDecimal    montant;
         /** Timbre fiscal (taxe optionnelle, FCFA). Peut être null = traité comme 0. */
         public BigDecimal    timbre;
+        /** True = timbre saisi MANUELLEMENT ({@link #timbre} utilisé tel quel) ;
+         *  false/null = timbre calculé AUTOMATIQUEMENT par le backend. */
+        public Boolean       timbreManuel;
         public ModePaiement  modePaiement;
 
         /** Conservé pour compat ; envoyé null depuis le formulaire v5. */
@@ -301,6 +337,9 @@ public final class Dto {
          * vente d'archives, prestation). Affiche sur le recu sous "Reference".
          */
         public LocalDateTime dateDiffusion;
+
+        /** Creneaux de diffusion (date/heure + langue optionnelle). Optionnel. */
+        public java.util.List<DiffusionDto> diffusions;
 
         public OperationCaisseRequest() {}
     }
@@ -429,5 +468,25 @@ public final class Dto {
         public String        notes;
 
         public VersementResponse() {}
+    }
+
+    // ================================================================
+    //  TimbreConfigDto - configuration personnalisable du timbre fiscal.
+    //  Lue par le guichet pour reproduire EXACTEMENT le calcul backend
+    //  (autoritatif). La mise a jour est reservee a l'ADMIN via le web.
+    // ================================================================
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class TimbreConfigDto {
+        public boolean actif;
+        public BigDecimal seuil;
+        public BigDecimal pourcentage;
+        /** IDs des categories concernees ; liste vide = toutes. */
+        public java.util.List<Long> categorieIds;
+        /** Noms des modes de paiement concernes ; liste vide = tous. */
+        public java.util.List<String> modesPaiement;
+        /** "AUTO" (calcul) ou "MANUEL" (saisie caissier) pour cette caisse. */
+        public String mode;
+
+        public TimbreConfigDto() {}
     }
 }

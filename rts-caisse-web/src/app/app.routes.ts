@@ -29,7 +29,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
         // CAISSIER autorisé : le backend filtre automatiquement sur ses propres opérations.
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'])]
+        // CONTROLEUR + chefs validateurs : vue d'ensemble en lecture seule
+        // (sert aussi de page de repli pour /unauthorized).
+        canActivate: [roleGuard([
+          'ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR',
+          'CHEF_UNITE_FINANCES', 'CHEF_DEPARTEMENT'
+        ])]
       },
       {
         path: 'utilisateurs',
@@ -60,18 +65,30 @@ export const routes: Routes = [
       {
         path: 'clients',
         loadComponent: () =>
-          import('./features/clients/clients.component').then((m) => m.ClientsComponent)
+          import('./features/clients/clients.component').then((m) => m.ClientsComponent),
+        // CONTROLEUR exclu : il est en lecture seule et ne gère pas le référentiel clients.
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'])]
       },
       {
         path: 'operations',
         loadComponent: () =>
-          import('./features/operations/operations.component').then((m) => m.OperationsComponent)
+          import('./features/operations/operations.component').then((m) => m.OperationsComponent),
+        // CONTROLEUR autorisé : consultation en lecture seule (aucune action de mutation).
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'])]
       },
       {
         path: 'journaux',
         loadComponent: () =>
           import('./features/journaux/journaux.component').then((m) => m.JournauxComponent),
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'])]
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR'])]
+      },
+      {
+        path: 'recettes',
+        loadComponent: () =>
+          import('./features/recettes/recettes.component').then((m) => m.RecettesComponent),
+        canActivate: [roleGuard([
+          'ADMIN', 'SUPERVISEUR', 'CONTROLEUR', 'CHEF_UNITE_FINANCES', 'CHEF_DEPARTEMENT'
+        ])]
       },
       {
         path: 'audit',
@@ -86,17 +103,29 @@ export const routes: Routes = [
         canActivate: [roleGuard(['ADMIN'])]
       },
       {
+        path: 'timbre',
+        loadComponent: () =>
+          import('./features/timbre/timbre.component').then((m) => m.TimbreComponent),
+        canActivate: [roleGuard(['ADMIN'])]
+      },
+      {
+        path: 'langues',
+        loadComponent: () =>
+          import('./features/langues/langues.component').then((m) => m.LanguesComponent),
+        canActivate: [roleGuard(['ADMIN'])]
+      },
+      {
         path: 'supervision',
         loadComponent: () =>
           import('./features/supervision/supervision.component').then((m) => m.SupervisionComponent),
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'])]
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR'])]
       },
       {
         path: 'supervision/caisse/:id',
         loadComponent: () =>
           import('./features/supervision/caisse-detail/caisse-detail.component')
             .then((m) => m.CaisseDetailComponent),
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE'])]
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'AGENT_RECETTE', 'CONTROLEUR'])]
       },
       {
         path: 'backup',
@@ -108,7 +137,7 @@ export const routes: Routes = [
         path: 'versements',
         loadComponent: () =>
           import('./features/versements/versements.component').then((m) => m.VersementsComponent),
-        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE'])]
+        canActivate: [roleGuard(['ADMIN', 'SUPERVISEUR', 'CAISSIER', 'AGENT_RECETTE', 'CONTROLEUR'])]
       },
       {
         path: 'maintenance/purge-operations',

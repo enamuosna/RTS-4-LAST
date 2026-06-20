@@ -179,11 +179,13 @@ class OperationCaisseServiceIT extends AbstractTestcontainersIT {
                 type,
                 montant,
                 BigDecimal.ZERO, // timbre
+                null, // timbreManuel (auto)
                 ModePaiement.ESPECES,
                 "Opération de test",
                 "REF-TEST",
                 null, // banqueId
-                null  // dateDiffusion
+                null, // dateDiffusion
+                null  // diffusions
         );
     }
 }

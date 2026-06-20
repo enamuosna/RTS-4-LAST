@@ -38,6 +38,7 @@ public class OperationCaisseController {
     private final sn.rts.caisse.service.RecuPdfService recuPdfService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(summary = "Enregistrer une nouvelle opération (encaissement / décaissement)")
     public ResponseEntity<OperationCaisseResponse> enregistrer(
             @Valid @RequestBody OperationCaisseRequest request,
@@ -47,6 +48,7 @@ public class OperationCaisseController {
     }
 
     @PatchMapping("/{id}/annuler")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(summary = "Annuler une opération (contre-passation, pas de suppression)")
     public ResponseEntity<OperationCaisseResponse> annuler(@PathVariable Long id,
                                                            @RequestParam String motif,
@@ -55,6 +57,7 @@ public class OperationCaisseController {
     }
 
     @PatchMapping("/{id}/reactiver")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(summary = "Réactiver une opération annulée par erreur",
                description = "Défait la contre-passation : l'opération repasse à "
                        + "annulee=false et le solde est ré-ajusté. Réservé aux ADMIN, "
@@ -81,6 +84,7 @@ public class OperationCaisseController {
     }
 
     @org.springframework.web.bind.annotation.PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(summary = "Modifier une opération (correction d'erreur de saisie)",
                description = "Recalcule automatiquement le solde de la caisse. "
                        + "Refusé si l'opération est annulée ou si la journée est clôturée.")
@@ -186,6 +190,7 @@ public class OperationCaisseController {
     }
 
     @PostMapping("/{id}/whatsapp")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(
             summary = "Envoie le reçu PDF d'une opération par WhatsApp",
             description = "Le PDF est généré côté serveur, uploadé chez Meta, puis envoyé "

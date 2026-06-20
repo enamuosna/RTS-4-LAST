@@ -285,9 +285,9 @@ export const AUDIT_ACTION_LIBELLES: Record<AuditAction, string> = {
   ENVOYER_WHATSAPP: 'Envoi WhatsApp',
   EXPORTER_JOURNAL_EXCEL: 'Export Excel du journal',
 
-  CREER_CATEGORIE: 'Création de catégorie',
-  MODIFIER_CATEGORIE: 'Modification de catégorie',
-  SUPPRIMER_CATEGORIE: 'Suppression de catégorie',
+  CREER_CATEGORIE: 'Création de produit',
+  MODIFIER_CATEGORIE: 'Modification de produit',
+  SUPPRIMER_CATEGORIE: 'Suppression de produit',
   CREER_CLIENT: 'Création de client',
   MODIFIER_CLIENT: 'Modification de client',
   SUPPRIMER_CLIENT: 'Suppression de client',

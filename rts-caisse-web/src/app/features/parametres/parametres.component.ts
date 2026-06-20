@@ -91,7 +91,7 @@ export class ParametresComponent implements OnInit {
     caisse:            { id: 'caisse',            libelle: 'Caisse',                     description: 'Libellé de la caisse',                                   conditionnelle: false },
     agent:             { id: 'agent',             libelle: 'Agent (caissier)',           description: 'Nom de l\'agent qui a saisi l\'opération',                conditionnelle: false },
     type_operation:    { id: 'type_operation',    libelle: 'Type d\'opération',          description: 'Encaissement ou décaissement',                            conditionnelle: false },
-    categorie:         { id: 'categorie',         libelle: 'Catégorie',                  description: 'Catégorie comptable',                                    conditionnelle: false },
+    categorie:         { id: 'categorie',         libelle: 'Produit',                    description: 'Produit (catégorie comptable)',                          conditionnelle: false },
     mode_paiement:     { id: 'mode_paiement',     libelle: 'Mode de règlement',          description: 'Espèces, chèque, virement, mobile money…',                conditionnelle: false },
     reference:         { id: 'reference',         libelle: 'Référence',                  description: 'N° de chèque, ID transaction, etc. (si renseignée)',    conditionnelle: true },
     diffusion:         { id: 'diffusion',         libelle: 'Date de diffusion',          description: 'Date + heure prévues de diffusion antenne',              conditionnelle: false },

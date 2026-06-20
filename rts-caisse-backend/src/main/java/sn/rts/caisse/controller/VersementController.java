@@ -69,7 +69,7 @@ public class VersementController {
     // ==================================================================
 
     @GetMapping("/caisse/{caisseId}")
-    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN','CONTROLEUR')")
     @Operation(summary = "Versements d'une caisse, filtrable par dates")
     public Page<VersementResponse> listerParCaisse(
             @PathVariable Long caisseId,
@@ -82,14 +82,14 @@ public class VersementController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERVISEUR','ADMIN')")
-    @Operation(summary = "Tous les versements (vue admin/superviseur, paginee)")
+    @PreAuthorize("hasAnyRole('SUPERVISEUR','ADMIN','CONTROLEUR')")
+    @Operation(summary = "Tous les versements (vue admin/superviseur/controleur, paginee)")
     public Page<VersementResponse> listerTous(Pageable pageable) {
         return service.listerTous(pageable);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN','CONTROLEUR')")
     @Operation(summary = "Detail d'un versement (sans le contenu du bordereau)")
     public VersementResponse obtenir(@PathVariable Long id) {
         return service.obtenir(id);
@@ -100,7 +100,7 @@ public class VersementController {
     // d'URL ; on garde les alias pour les contextes ou ca marche
     // (intranet, navigateurs sans protection agressive).
     @GetMapping({"/{id}/pdf", "/{id}/bordereau", "/{id}/fichier"})
-    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN','CONTROLEUR')")
     @Operation(summary = "Telecharge le bordereau bancaire (PDF ou image)")
     public ResponseEntity<byte[]> telechargerBordereau(@PathVariable Long id,
                                                        Authentication auth) {
@@ -125,7 +125,7 @@ public class VersementController {
      * negligeable sur un reseau interne.</p>
      */
     @GetMapping("/{id}/donnees")
-    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN','CONTROLEUR')")
     @Operation(summary = "Recupere le bordereau en base64 dans un JSON "
             + "(fallback navigateurs avec Tracking Prevention agressif)")
     public java.util.Map<String, Object> telechargerBase64(@PathVariable Long id,

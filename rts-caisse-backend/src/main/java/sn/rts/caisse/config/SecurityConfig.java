@@ -96,6 +96,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/journaux/*/valider")
                             .hasAnyRole("ADMIN", "SUPERVISEUR")
 
+                        // Recettes : double validation. La lecture (ventilation,
+                        // historique, PDF) reste ouverte aux utilisateurs
+                        // authentifiés ; seules les signatures sont restreintes.
+                        .requestMatchers(HttpMethod.POST, "/api/recettes/*/controle1")
+                            .hasRole("CHEF_UNITE_FINANCES")
+                        .requestMatchers(HttpMethod.POST, "/api/recettes/*/controle2")
+                            .hasRole("CHEF_DEPARTEMENT")
+
                         // Tout le reste nécessite une authentification
                         // ⚠ DOIT TOUJOURS RESTER LA DERNIÈRE LIGNE de authorizeHttpRequests
                         .anyRequest().authenticated()

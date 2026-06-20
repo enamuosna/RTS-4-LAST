@@ -2,9 +2,19 @@
 //  Types miroirs des DTOs Spring Boot (sn.rts.caisse.dto)
 // ============================================================
 
-export type Role = 'ADMIN' | 'SUPERVISEUR' | 'CAISSIER' | 'AGENT_RECETTE';
+export type Role =
+  | 'ADMIN'
+  | 'SUPERVISEUR'
+  | 'CAISSIER'
+  | 'AGENT_RECETTE'
+  | 'CONTROLEUR'
+  | 'CHEF_UNITE_FINANCES'
+  | 'CHEF_DEPARTEMENT';
 
 export type TypeOperation = 'ENTREE' | 'SORTIE';
+
+/** Type(s) d'opération qu'une caisse est autorisée à effectuer. */
+export type TypeOperationAutorise = 'ENTREE' | 'SORTIE' | 'TOUS';
 
 export type ModePaiement =
   | 'ESPECES'
@@ -16,6 +26,24 @@ export type ModePaiement =
   | 'FREE_MONEY';
 
 export type StatutCaisse = 'FERMEE' | 'OUVERTE' | 'SUSPENDUE';
+
+/**
+ * Configuration personnalisable du timbre fiscal (singleton, ADMIN).
+ * Le timbre s'applique si actif, montant >= seuil, mode concerné
+ * (modesPaiement vide = tous) et catégorie concernée (categorieIds vide
+ * = toutes). Montant = montant * pourcentage / 100.
+ */
+export type ModeTimbre = 'AUTO' | 'MANUEL';
+
+export interface TimbreConfig {
+  actif: boolean;
+  seuil: number;
+  pourcentage: number;
+  categorieIds: number[];
+  modesPaiement: ModePaiement[];
+  /** AUTO = calcul automatique ; MANUEL = saisie par le caissier (par caisse). */
+  mode?: ModeTimbre;
+}
 
 // ---------- Auth ----------
 export interface LoginRequest {
@@ -66,6 +94,8 @@ export interface Caisse {
   emplacement?: string;
   statut: StatutCaisse;
   soldeCourant: number;
+  /** Type(s) d'opération autorisé(s) sur la caisse (défini par l'ADMIN). */
+  typeOperationAutorise?: TypeOperationAutorise;
   caissierId?: number;
   caissierNomComplet?: string;
   /** Agent de recette rattaché : peut modifier/réactiver les opérations. */
@@ -83,6 +113,25 @@ export interface CategorieOperation {
   /** True si les opérations de cette catégorie peuvent porter un
    *  justificatif (PDF/JPG/PNG) joint par le caissier. */
   accepteJustificatif: boolean;
+  /** True si le produit propose le choix d'une langue de diffusion
+   *  (ex. Avis & Communiqués). Sélection optionnelle au guichet. */
+  proposeLangue: boolean;
+}
+
+// ---------- Langue de diffusion ----------
+export interface Langue {
+  id?: number;
+  code: string;
+  libelle: string;
+  actif: boolean;
+}
+
+// ---------- Créneau de diffusion (date/heure + langue) ----------
+export interface DiffusionSlot {
+  /** ISO 8601 datetime. */
+  dateHeure: string;
+  langueId?: number | null;
+  langueLibelle?: string | null;
 }
 
 // ---------- Client ----------
@@ -105,6 +154,9 @@ export interface OperationCaisseRequest {
   montant: number;
   /** Timbre fiscal optionnel. Si null/0, montantTtc = montant. */
   timbre?: number;
+  /** true = timbre saisi manuellement (valeur `timbre` utilisée telle quelle) ;
+   *  false/absent = timbre calculé automatiquement par le backend. */
+  timbreManuel?: boolean;
   modePaiement: ModePaiement;
   motif: string;
   reference?: string;
@@ -115,6 +167,8 @@ export interface OperationCaisseRequest {
    * une diffusion. Format ISO 8601 attendu par le backend.
    */
   dateDiffusion?: string | null;
+  /** Créneaux de diffusion multiples (date/heure + langue optionnelle). */
+  diffusions?: DiffusionSlot[];
 }
 
 // ──────────────────────────────
@@ -141,8 +195,12 @@ export interface OperationCaisse {
   modePaiement: ModePaiement;
   reference?: string;
   dateOperation: string;
-  /** Date+heure de diffusion du produit a l'antenne (optionnel). */
+  /** Date+heure de diffusion du produit a l'antenne (optionnel, 1er créneau). */
   dateDiffusion?: string | null;
+  /** Créneaux de diffusion (date/heure + langue). */
+  diffusions?: DiffusionSlot[];
+  /** Nombre de créneaux de diffusion. */
+  nombreDiffusions?: number;
   caisseId: number;
   caisseLibelle: string;
   caissierId: number;
@@ -330,6 +388,75 @@ export interface SupervisionSnapshot {
   soldeNetJour: number;
   caisses: EtatCaisseSupervision[];
   activiteRecente: ActiviteRecente[];
+}
+
+// ---------- Recettes (ventilation hebdomadaire + double validation) ----------
+export type StatutRecette = 'BROUILLON' | 'CONTROLE_1' | 'VALIDEE';
+
+export interface LigneVentilation {
+  produitCode: string;
+  produitLibelle: string;
+  montantHt: number;
+  timbre: number;
+  montantTtc: number;
+}
+
+export interface FicheReference {
+  numeroRecu: string;
+  /** ISO 8601 datetime. */
+  date: string;
+  montant: number;
+}
+
+export interface ReversementLigne {
+  /** ISO 8601 datetime. */
+  date: string;
+  refBordereau: string;
+  montant: number;
+}
+
+export interface VentilationRecette {
+  recetteId: number;
+  caisseId: number;
+  caisseCode: string;
+  caisseLibelle: string;
+  /** ISO LocalDate (yyyy-MM-dd). */
+  dateDebut: string;
+  dateFin: string;
+  statut: StatutRecette;
+  controle1ParId?: number;
+  controle1ParNom?: string;
+  controle1Le?: string;
+  controle2ParId?: number;
+  controle2ParNom?: string;
+  controle2Le?: string;
+  lignes: LigneVentilation[];
+  totalHt: number;
+  totalTimbre: number;
+  totalTtc: number;
+  fiches: FicheReference[];
+  reversements: ReversementLigne[];
+  totalReversements: number;
+}
+
+export interface LigneCaisseRecette {
+  caisseId: number;
+  caisseCode: string;
+  caisseLibelle: string;
+  totalHt: number;
+  totalTimbre: number;
+  totalTtc: number;
+  nbOperations: number;
+}
+
+export interface ConsolidationRecette {
+  dateDebut: string;
+  dateFin: string;
+  parProduit: LigneVentilation[];
+  totalHt: number;
+  totalTimbre: number;
+  totalTtc: number;
+  parCaisse: LigneCaisseRecette[];
 }
 
 // ---------- Pagination Spring ----------

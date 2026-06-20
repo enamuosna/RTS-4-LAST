@@ -66,8 +66,19 @@ public class Utilisateur extends Auditable implements UserDetails {
     @Column(length = 20)
     private String telephone;
 
+    /**
+     * Rôle applicatif. {@code columnDefinition} explicite (et non {@code length})
+     * pour empêcher Hibernate (profil docker, ddl-auto=update) de regénérer un
+     * CHECK constraint figeant la liste des rôles connus au premier démarrage :
+     * tout nouveau rôle ajouté à l'enum (ex. {@code CONTROLEUR}) ferait alors
+     * échouer l'INSERT. La validation des valeurs reste assurée côté Java par
+     * {@link Enumerated}. Même correctif que sur {@code audit_logs.action}.
+     */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    // columnDefinition SANS "NOT NULL" inline : Hibernate genere alors un ALTER
+    // valide ("set data type varchar(20)") si la colonne doit etre migree sur un
+    // volume existant. Le CHECK enum reste supprime (columnDefinition explicite).
+    @Column(nullable = false, columnDefinition = "varchar(20)")
     private Role role;
 
     @Column(nullable = false)

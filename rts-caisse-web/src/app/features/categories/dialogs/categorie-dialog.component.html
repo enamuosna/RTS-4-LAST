@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>{{ data ? 'Modifier' : 'Nouvelle' }} catégorie</h2>
+<h2 mat-dialog-title>{{ data ? 'Modifier le produit' : 'Nouveau produit' }}</h2>
 
 <form [formGroup]="form" (ngSubmit)="valider()">
   <mat-dialog-content class="dialog-content">
@@ -29,8 +29,17 @@
     </mat-slide-toggle>
     <p class="hint-toggle">
       Quand activé, le caissier ou l'agent de recette peut joindre un fichier
-      lors de la saisie d'une opération de cette catégorie (typique : AVIS ET
+      lors de la saisie d'une opération de ce produit (typique : AVIS ET
       COMMUNIQUES, APPEL).
+    </p>
+
+    <mat-slide-toggle formControlName="proposeLangue">
+      Propose une langue de diffusion (optionnel)
+    </mat-slide-toggle>
+    <p class="hint-toggle">
+      Quand activé, le guichet propose un menu déroulant de langues (français,
+      wolof, pulaar…) pour chaque créneau de diffusion (typique : AVIS &amp;
+      COMMUNIQUÉS).
     </p>
   </mat-dialog-content>
 

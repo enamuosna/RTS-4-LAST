@@ -70,6 +70,10 @@ import { UtilisateurService } from '@core/services/admin.services';
               Caissier
               <small class="role-desc"> — saisie d'opérations sur sa caisse</small>
             </mat-option>
+            <mat-option value="CONTROLEUR">
+              Contrôleur
+              <small class="role-desc"> — consultation seule des transactions</small>
+            </mat-option>
           </mat-select>
         </mat-form-field>
 
@@ -174,6 +178,7 @@ export class ModifierRoleDialogComponent {
       case 'SUPERVISEUR':   return 'Superviseur';
       case 'CAISSIER':      return 'Caissier';
       case 'AGENT_RECETTE': return 'Agent de recette';
+      case 'CONTROLEUR':    return 'Contrôleur';
       default:              return role;
     }
   }

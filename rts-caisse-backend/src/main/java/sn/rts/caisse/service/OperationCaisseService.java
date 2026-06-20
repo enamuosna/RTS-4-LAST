@@ -23,6 +23,7 @@ import sn.rts.caisse.model.ModePaiement;
 import sn.rts.caisse.model.OperationCaisse;
 import sn.rts.caisse.model.StatutCaisse;
 import sn.rts.caisse.model.TypeOperation;
+import sn.rts.caisse.model.TypeOperationAutorise;
 import sn.rts.caisse.model.Utilisateur;
 import sn.rts.caisse.repository.BanqueRepository;
 import sn.rts.caisse.repository.OperationCaisseRepository;
@@ -68,6 +69,9 @@ public class OperationCaisseService {
     private final NumeroRecuGenerator       numeroRecuGenerator;
     private final AuditService              auditService;
     private final TimbreFiscalCalculator    timbreCalculator;
+    private final TimbreConfigService       timbreConfigService;
+    private final sn.rts.caisse.repository.OperationDiffusionRepository diffusionRepository;
+    private final sn.rts.caisse.repository.LangueRepository            langueRepository;
 
     // ==================================================================
     //  ENREGISTREMENT
@@ -83,15 +87,10 @@ public class OperationCaisseService {
                     request.montant(), request.reference(),
                     request.dateDiffusion(), loginCaissier);
 
-            // ---------- 0bis. Date de diffusion obligatoire ----------
-            // Garde-fou : la regle est aussi posee par @NotNull sur le DTO,
-            // mais on remet une verification ici pour fournir un message clair
-            // meme si un client venait a contourner la validation.
-            if (request.dateDiffusion() == null) {
-                throw new BusinessException(
-                        "La date et l'heure de diffusion sont obligatoires "
-                                + "pour toute operation de caisse.");
-            }
+            // ---------- 0bis. Diffusions — désormais OPTIONNELLES ----------
+            // Une opération peut n'avoir aucune diffusion, ou plusieurs créneaux
+            // (jours/heures/langues différents). Les créneaux sont persistés
+            // après l'enregistrement de l'opération (cf. enregistrerDiffusions).
 
             // ---------- 1. Caisse ----------
             Caisse caisse = caisseService.trouver(request.caisseId());
@@ -100,28 +99,34 @@ public class OperationCaisseService {
                         "La caisse " + caisse.getCode()
                                 + " doit être ouverte pour saisir une opération.");
             }
+            // Le type d'opération doit être autorisé par la configuration de la caisse.
+            verifierTypeAutoriseParCaisse(caisse, request.typeOperation());
 
             // ---------- 2. Catégorie ----------
             CategorieOperation categorie = categorieService.trouver(request.categorieId());
             if (categorie.getTypeOperation() != request.typeOperation()) {
                 throw new BusinessException(
-                        "La catégorie '" + categorie.getLibelle()
+                        "Le produit '" + categorie.getLibelle()
                                 + "' ne correspond pas au type d'opération demandé ("
                                 + request.typeOperation() + ").");
             }
             if (!categorie.isActif()) {
                 throw new BusinessException(
-                        "Catégorie désactivée : " + categorie.getLibelle());
+                        "Produit désactivé : " + categorie.getLibelle());
             }
 
-            // ---------- 3. Calcul automatique du timbre + montant TTC ----------
-            // Regle metier RTS : timbre 1% UNIQUEMENT pour les ESPECES
-            // a partir de 20 000 FCFA. Tous les autres modes (cheque,
-            // virement, mobile money, carte) sont exoneres. On IGNORE la
-            // valeur envoyee par le client (request.timbre()) : seul le
-            // calcul backend fait foi.
-            BigDecimal timbre = timbreCalculator.calculer(
-                    request.montant(), request.modePaiement());
+            // ---------- 3. Timbre (automatique OU manuel) + montant TTC ----------
+            // Mode determine PAR LA CAISSE (config admin) ou force par le client :
+            //  - MANUEL : on prend la valeur saisie request.timbre() telle quelle
+            //    (null = aucun timbre -> 0). Le caissier maitrise.
+            //  - AUTO   : calcul selon les regles de la caisse (seuil, taux, modes,
+            //    categories). Caisse en mode MANUEL => calculer() renvoie 0 de toute facon.
+            boolean timbreManuel = Boolean.TRUE.equals(request.timbreManuel())
+                    || timbreConfigService.obtenirReglement(caisse.getId()).manuel();
+            BigDecimal timbre = timbreManuel
+                    ? (request.timbre() != null ? request.timbre() : BigDecimal.ZERO)
+                    : timbreCalculator.calculer(
+                            request.montant(), request.modePaiement(), categorie.getId(), caisse.getId());
             BigDecimal montantTtc = request.montant().add(timbre);
 
             // Solde suffisant pour les sorties (sur le TTC)
@@ -190,8 +195,11 @@ public class OperationCaisseService {
                     montantTtc));
 
             OperationCaisse saved = operationRepository.save(operation);
-            log.info("Opération enregistrée : {} ({} FCFA) - caisse {}",
-                    saved.getNumeroRecu(), saved.getMontant(), caisse.getCode());
+            // Créneaux de diffusion (date/heure/langue) — optionnels, multiples.
+            enregistrerDiffusions(saved, request);
+            log.info("Opération enregistrée : {} ({} FCFA) - caisse {} - {} diffusion(s)",
+                    saved.getNumeroRecu(), saved.getMontant(), caisse.getCode(),
+                    request.diffusions() != null ? request.diffusions().size() : 0);
 
             // ---------- 9. Audit succès ----------
             auditService.logSuccess(
@@ -203,14 +211,14 @@ public class OperationCaisseService {
                             + " Montant=" + saved.getMontant() + " FCFA"
                             + " Mode=" + saved.getModePaiement()
                             + " Caisse=" + caisse.getCode()
-                            + " Catégorie=" + categorie.getLibelle()
+                            + " Produit=" + categorie.getLibelle()
                             + (client != null
                             ? " Client=" + client.getRaisonSociale() : "")
                             + (banque != null
                             ? " Banque=" + banque.getCode() : "")
                             + " NouveauSolde=" + caisse.getSoldeCourant() + " FCFA");
 
-            return OperationCaisseResponse.from(saved);
+            return toResponse(saved);
 
         } catch (BusinessException | ResourceNotFoundException e) {
             // Audit échec (transaction REQUIRES_NEW dans AuditService)
@@ -338,14 +346,8 @@ public class OperationCaisseService {
                     operationId, request.reference(), request.dateDiffusion(),
                     loginModificateur);
 
-            // Date de diffusion obligatoire aussi sur la modification :
-            // on ne peut pas re-enregistrer une operation sans la rattacher
-            // a un creneau de diffusion antenne.
-            if (request.dateDiffusion() == null) {
-                throw new BusinessException(
-                        "La date et l'heure de diffusion sont obligatoires "
-                                + "pour modifier une operation.");
-            }
+            // Diffusions optionnelles aussi en modification : les créneaux sont
+            // remplacés via enregistrerDiffusions() plus bas.
 
             operation = trouver(operationId);
             verifierDroitModifierOuReactiver(operation, loginModificateur);
@@ -368,12 +370,12 @@ public class OperationCaisseService {
             CategorieOperation categorie = categorieService.trouver(request.categorieId());
             if (categorie.getTypeOperation() != request.typeOperation()) {
                 throw new BusinessException(
-                        "La catégorie '" + categorie.getLibelle()
+                        "Le produit '" + categorie.getLibelle()
                                 + "' ne correspond pas au type d'opération.");
             }
             if (!categorie.isActif()) {
                 throw new BusinessException(
-                        "Catégorie désactivée : " + categorie.getLibelle());
+                        "Produit désactivé : " + categorie.getLibelle());
             }
 
             ModePaiement mode = request.modePaiement();
@@ -394,14 +396,14 @@ public class OperationCaisseService {
                     ? clientService.trouver(request.clientId())
                     : null;
 
-            // ---------- Recalcul automatique du timbre + TTC ----------
-            // On recalcule aussi sur la modification, en tenant compte du
-            // mode de paiement (potentiellement modifie) : timbre 1% si
-            // ESPECES + montant >= 20 000 FCFA, 0 sinon. Si le mode passe
-            // d'ESPECES a CHEQUE/VIREMENT/Wave/OM, le timbre disparait
-            // automatiquement.
-            BigDecimal nouveauTimbre = timbreCalculator.calculer(
-                    request.montant(), request.modePaiement());
+            // ---------- Timbre (automatique OU manuel selon la caisse) + TTC ----------
+            boolean timbreManuelMod = Boolean.TRUE.equals(request.timbreManuel())
+                    || timbreConfigService.obtenirReglement(operation.getCaisse().getId()).manuel();
+            BigDecimal nouveauTimbre = timbreManuelMod
+                    ? (request.timbre() != null ? request.timbre() : BigDecimal.ZERO)
+                    : timbreCalculator.calculer(
+                            request.montant(), request.modePaiement(), categorie.getId(),
+                            operation.getCaisse().getId());
             BigDecimal nouveauTtc = request.montant().add(nouveauTimbre);
 
             // ---------- Recalcul du solde caisse ----------
@@ -437,10 +439,11 @@ public class OperationCaisseService {
             operation.setMotif(request.motif());
             operation.setModePaiement(mode);
             operation.setReference(request.reference());
-            operation.setDateDiffusion(request.dateDiffusion());
             operation.setCategorie(categorie);
             operation.setClient(client);
             operation.setBanque(banque);
+            // Remplace les créneaux de diffusion (et met à jour dateDiffusion).
+            enregistrerDiffusions(operation, request);
 
             log.info("Opération {} modifiée par {} : montant={} timbre={} TTC={} solde {}->{}",
                     operation.getNumeroRecu(), loginModificateur,
@@ -462,7 +465,7 @@ public class OperationCaisseService {
                             + " SoldeApres=" + nouveauSolde + " FCFA"
                             + " ModifieePar=" + loginModificateur);
 
-            return OperationCaisseResponse.from(operation);
+            return toResponse(operation);
 
         } catch (BusinessException | ResourceNotFoundException e) {
             auditService.logFailure(
@@ -525,6 +528,31 @@ public class OperationCaisseService {
         }
         throw new BusinessException(
                 "Action réservée au personnel autorisé sur cette caisse.");
+    }
+
+    /**
+     * Vérifie que le type d'opération demandé est compatible avec le type
+     * d'opération autorisé configuré sur la caisse par l'ADMIN.
+     * {@link TypeOperationAutorise#TOUS} (ou null pour les caisses héritées)
+     * autorise les deux sens.
+     */
+    private void verifierTypeAutoriseParCaisse(Caisse caisse, TypeOperation type) {
+        TypeOperationAutorise autorise = caisse.getTypeOperationAutorise();
+        if (autorise == null || autorise == TypeOperationAutorise.TOUS) {
+            return; // caisse mixte : encaissement et décaissement permis
+        }
+        boolean ok = (autorise == TypeOperationAutorise.ENTREE && type == TypeOperation.ENTREE)
+                || (autorise == TypeOperationAutorise.SORTIE && type == TypeOperation.SORTIE);
+        if (!ok) {
+            throw new BusinessException(
+                    "La caisse " + caisse.getCode() + " est configurée uniquement pour "
+                            + (autorise == TypeOperationAutorise.ENTREE
+                                    ? "les encaissements"
+                                    : "les décaissements")
+                            + " : opération de type "
+                            + (type == TypeOperation.ENTREE ? "encaissement" : "décaissement")
+                            + " refusée.");
+        }
     }
 
     // ==================================================================
@@ -671,12 +699,64 @@ public class OperationCaisseService {
 
     @Transactional(readOnly = true)
     public OperationCaisseResponse obtenir(Long id) {
-        return OperationCaisseResponse.from(trouver(id));
+        return toResponse(trouver(id));
     }
 
     private OperationCaisse trouver(Long id) {
         return operationRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.of("Opération", id));
+    }
+
+    // ==================================================================
+    //  Diffusions (créneaux date/heure/langue) — optionnelles, multiples
+    // ==================================================================
+
+    /** Construit la réponse en incluant les créneaux de diffusion de l'opération. */
+    private OperationCaisseResponse toResponse(OperationCaisse op) {
+        java.util.List<sn.rts.caisse.dto.DiffusionDto> diffusions = diffusionRepository
+                .findByOperationIdOrderByDateHeureAsc(op.getId())
+                .stream().map(sn.rts.caisse.dto.DiffusionDto::from).toList();
+        return OperationCaisseResponse.from(op, diffusions);
+    }
+
+    /**
+     * Remplace les créneaux de diffusion d'une opération à partir de la requête.
+     * Compat : si aucune liste mais un {@code dateDiffusion} simple est fourni,
+     * on crée un créneau unique. Met à jour {@code dateDiffusion} = 1er créneau
+     * (pour le reçu).
+     */
+    private void enregistrerDiffusions(OperationCaisse op, OperationCaisseRequest request) {
+        diffusionRepository.deleteByOperationId(op.getId());
+
+        java.util.List<sn.rts.caisse.dto.DiffusionDto> demandes = request.diffusions();
+        if ((demandes == null || demandes.isEmpty()) && request.dateDiffusion() != null) {
+            demandes = java.util.List.of(
+                    new sn.rts.caisse.dto.DiffusionDto(request.dateDiffusion(), null, null));
+        }
+
+        java.time.LocalDateTime premiere = null;
+        if (demandes != null) {
+            for (sn.rts.caisse.dto.DiffusionDto d : demandes) {
+                if (d == null || d.dateHeure() == null) continue;
+                String libelle = null;
+                Long langueId = null;
+                if (d.langueId() != null) {
+                    var langue = langueRepository.findById(d.langueId()).orElse(null);
+                    if (langue != null) {
+                        langueId = langue.getId();
+                        libelle = langue.getLibelle();
+                    }
+                }
+                diffusionRepository.save(sn.rts.caisse.model.OperationDiffusion.builder()
+                        .operationId(op.getId())
+                        .dateHeure(d.dateHeure())
+                        .langueId(langueId)
+                        .langueLibelle(libelle)
+                        .build());
+                if (premiere == null) premiere = d.dateHeure();
+            }
+        }
+        op.setDateDiffusion(premiere);
     }
 
     // ==================================================================

@@ -77,14 +77,24 @@ public record OperationCaisseResponse(
         boolean justificatifPresent,
         String  justificatifNomFichier,
         String  justificatifTypeMime,
-        Long    justificatifTailleFichier
+        Long    justificatifTailleFichier,
+
+        // ---------- Diffusions à l'antenne (créneaux date/heure/langue) ----------
+        java.util.List<DiffusionDto> diffusions,
+        int nombreDiffusions
 ) {
 
-    /**
-     * Conversion entité → DTO. À appeler dans une transaction active
-     * (lazy loading des relations client et banque).
-     */
+    /** Sans les créneaux de diffusion (listes, historiques). */
     public static OperationCaisseResponse from(OperationCaisse o) {
+        return from(o, java.util.List.of());
+    }
+
+    /**
+     * Conversion entité → DTO avec les créneaux de diffusion. À appeler dans une
+     * transaction active (lazy loading des relations client et banque).
+     */
+    public static OperationCaisseResponse from(OperationCaisse o,
+                                               java.util.List<DiffusionDto> diffusions) {
         Client c = o.getClient();
         Banque b = o.getBanque();
 
@@ -137,7 +147,11 @@ public record OperationCaisseResponse(
                         && o.getJustificatifTailleFichier() > 0,
                 o.getJustificatifNomFichier(),
                 o.getJustificatifTypeMime(),
-                o.getJustificatifTailleFichier()
+                o.getJustificatifTailleFichier(),
+
+                // Diffusions
+                diffusions,
+                diffusions == null ? 0 : diffusions.size()
         );
     }
 }

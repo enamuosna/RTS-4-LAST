@@ -115,6 +115,12 @@ public class CaisseApi {
                 new TypeReference<List<BanqueDTO>>() {});
     }
 
+    /** Langues de diffusion actives (référentiel). */
+    public List<sn.rts.caisse.guichet.model.Dto.LangueDTO> listerLangues() {
+        return client.get("/langues?actives=true",
+                new TypeReference<List<sn.rts.caisse.guichet.model.Dto.LangueDTO>>() {});
+    }
+
     /**
      * Récupère un client par son identifiant.
      */
@@ -299,6 +305,21 @@ public class CaisseApi {
     public sn.rts.caisse.guichet.model.Dto.ParametresRecuDto obtenirParametresRecu() {
         return client.get("/parametres/recu",
                 sn.rts.caisse.guichet.model.Dto.ParametresRecuDto.class);
+    }
+
+    /** Configuration du timbre (modèle global par défaut). */
+    public sn.rts.caisse.guichet.model.Dto.TimbreConfigDto obtenirTimbreConfig() {
+        return client.get("/parametres/timbre",
+                sn.rts.caisse.guichet.model.Dto.TimbreConfigDto.class);
+    }
+
+    /** Configuration du timbre PROPRE à une caisse (inclut le mode AUTO/MANUEL). */
+    public sn.rts.caisse.guichet.model.Dto.TimbreConfigDto obtenirTimbreConfig(Long caisseId) {
+        if (caisseId == null) {
+            return obtenirTimbreConfig();
+        }
+        return client.get("/parametres/timbre?caisseId=" + caisseId,
+                sn.rts.caisse.guichet.model.Dto.TimbreConfigDto.class);
     }
 
     /** Renvoie l'image du logo en octets, ou null si aucun logo n'a été déposé. */

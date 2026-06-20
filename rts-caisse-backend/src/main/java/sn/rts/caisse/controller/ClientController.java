@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import sn.rts.caisse.dto.ClientDTO;
 import sn.rts.caisse.service.ClientService;
@@ -46,11 +47,13 @@ public class ClientController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     public ResponseEntity<ClientDTO> creer(@Valid @RequestBody ClientDTO dto) {
         return ResponseEntity.ok(service.creer(dto));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     public ResponseEntity<ClientDTO> modifier(@PathVariable Long id,
                                               @Valid @RequestBody ClientDTO dto) {
         return ResponseEntity.ok(service.modifier(id, dto));

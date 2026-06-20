@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import sn.rts.caisse.model.Caisse;
 import sn.rts.caisse.model.StatutCaisse;
+import sn.rts.caisse.model.TypeOperationAutorise;
 
 import java.math.BigDecimal;
 
@@ -14,6 +15,8 @@ public record CaisseDTO(
         @Size(max = 150) String emplacement,
         StatutCaisse statut,
         BigDecimal soldeCourant,
+        /** Type(s) d'opération autorisé(s) : ENTREE, SORTIE ou TOUS (mixte). */
+        TypeOperationAutorise typeOperationAutorise,
         Long caissierId,
         String caissierNomComplet,
         /** Agent de recette rattaché à cette caisse (peut modifier les opérations). */
@@ -28,6 +31,7 @@ public record CaisseDTO(
                 c.getEmplacement(),
                 c.getStatut(),
                 c.getSoldeCourant(),
+                c.getTypeOperationAutorise(),
                 c.getCaissier() != null ? c.getCaissier().getId() : null,
                 c.getCaissier() != null ? c.getCaissier().getNomComplet() : null,
                 c.getAgentRecette() != null ? c.getAgentRecette().getId() : null,

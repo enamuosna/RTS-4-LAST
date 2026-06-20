@@ -42,7 +42,8 @@ export class CategorieDialogComponent {
     libelle: [this.data?.libelle ?? '', Validators.required],
     typeOperation: [(this.data?.typeOperation ?? 'ENTREE') as TypeOperation, Validators.required],
     actif: [this.data?.actif ?? true],
-    accepteJustificatif: [this.data?.accepteJustificatif ?? false]
+    accepteJustificatif: [this.data?.accepteJustificatif ?? false],
+    proposeLangue: [this.data?.proposeLangue ?? false]
   });
 
   valider(): void {
@@ -52,7 +53,7 @@ export class CategorieDialogComponent {
       ? this.service.modifier(this.data.id, dto)
       : this.service.creer(dto);
     obs.subscribe((c) => {
-      this.snackBar.open('Catégorie enregistrée', 'OK', {
+      this.snackBar.open('Produit enregistré', 'OK', {
         duration: 2500,
         panelClass: ['snackbar-success']
       });

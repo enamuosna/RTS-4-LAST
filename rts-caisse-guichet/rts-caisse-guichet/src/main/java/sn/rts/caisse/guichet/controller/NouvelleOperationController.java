@@ -3,16 +3,17 @@ package sn.rts.caisse.guichet.controller;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
@@ -27,11 +28,13 @@ import sn.rts.caisse.guichet.model.Dto.ClientCreateRequest;
 import sn.rts.caisse.guichet.model.Dto.ClientDTO;
 import sn.rts.caisse.guichet.model.Dto.OperationCaisseRequest;
 import sn.rts.caisse.guichet.model.Dto.OperationCaisseResponse;
+import sn.rts.caisse.guichet.model.Dto.TimbreConfigDto;
 import sn.rts.caisse.guichet.model.ModePaiement;
 import sn.rts.caisse.guichet.model.TypeOperation;
 import sn.rts.caisse.guichet.print.PrintRecu;
 import sn.rts.caisse.guichet.print.RecuExporter;
 import sn.rts.caisse.guichet.util.AsyncRunner;
+import sn.rts.caisse.guichet.util.RtsDialog;
 import sn.rts.caisse.guichet.util.Ui;
 
 import java.io.File;
@@ -62,17 +65,32 @@ public class NouvelleOperationController {
     @FXML private ComboBox<CategorieDTO> categorieCombo;
     @FXML private ComboBox<ModePaiement> modePaiementCombo;
     @FXML private TextField montantField;
-    @FXML private VBox      timbreBox;       // masque si mode != ESPECES
+    @FXML private VBox      timbreBox;       // masque si mode != ESPECES (sauf saisie manuelle)
     @FXML private TextField timbreField;
+    @FXML private CheckBox  timbreManuelCheck;  // coché = saisie manuelle du timbre
     @FXML private TextField montantTtcField;
     @FXML private TextField referenceField;
 
-    // ---------------- Heure de diffusion (optionnel) ----------------
-    // RTS est une chaine TV : pour un spot/sponsoring, on imprime sur le
-    // recu la date+heure de diffusion antenne. DatePicker + champ heure
-    // (HH:mm) pour ne pas dependre de saisie texte libre.
-    @FXML private DatePicker dateDiffusionPicker;
-    @FXML private TextField  heureDiffusionField;
+    // ---------------- Diffusions à l'antenne (optionnel, multiples) ----------------
+    // Une opération peut avoir plusieurs créneaux {date + heure + langue}.
+    // Les lignes sont gérées dynamiquement dans diffusionsBox.
+    @FXML private VBox    diffusionsBox;
+    @FXML private Button  ajouterDiffusionButton;
+    private final java.util.List<LigneDiffusion> lignesDiffusion = new ArrayList<>();
+    /** Langues de diffusion chargées depuis le backend (référentiel). */
+    private java.util.List<sn.rts.caisse.guichet.model.Dto.LangueDTO> langues = new ArrayList<>();
+
+    /** Une ligne de diffusion dans l'IHM : date + heure + langue (optionnelle). */
+    private static final class LigneDiffusion {
+        final HBox node;
+        final DatePicker date;
+        final TextField heure;
+        final ComboBox<sn.rts.caisse.guichet.model.Dto.LangueDTO> langue;
+        LigneDiffusion(HBox node, DatePicker date, TextField heure,
+                       ComboBox<sn.rts.caisse.guichet.model.Dto.LangueDTO> langue) {
+            this.node = node; this.date = date; this.heure = heure; this.langue = langue;
+        }
+    }
 
     // ---------------- Justificatif (conditionnel) ----------------
     // Visible uniquement si la categorie selectionnee a
@@ -120,6 +138,14 @@ public class NouvelleOperationController {
     private List<ClientDTO>    tousClients      = new ArrayList<>();
     private List<BanqueDTO>    toutesBanques    = List.of();
 
+    /**
+     * Configuration personnalisable du timbre, chargée depuis le backend à
+     * l'ouverture du formulaire. Null tant qu'elle n'est pas chargée : le
+     * timbre affiché vaut alors 0 (le backend reste autoritatif au moment de
+     * l'enregistrement).
+     */
+    private TimbreConfigDto timbreConfig;
+
     // ==================================================================
     //  Initialisation
     // ==================================================================
@@ -165,47 +191,119 @@ public class NouvelleOperationController {
         appliquerModePaiement(ModePaiement.ESPECES);
 
         // Affiche / cache la zone d'upload du justificatif selon la
-        // categorie selectionnee (flag accepteJustificatif).
+        // categorie selectionnee (flag accepteJustificatif). Recalcule aussi
+        // le timbre : il peut dependre de la categorie selon la config.
         categorieCombo.valueProperty().addListener(
-                (obs, ancienne, nouvelle) -> appliquerVisibiliteJustificatif(nouvelle));
+                (obs, ancienne, nouvelle) -> {
+                    appliquerVisibiliteJustificatif(nouvelle);
+                    majVisibiliteLangues();
+                    recalculerTtc();
+                });
 
-        // Le timbre est CALCULE automatiquement a partir du montant HT.
-        // L'utilisateur ne le saisit plus : le champ est readonly.
-        timbreField.setEditable(false);
-        timbreField.setFocusTraversable(false);
+        // Timbre : AUTOMATIQUE par defaut (champ readonly, recalcule live) ou
+        // MANUEL si la case est cochee (le caissier saisit librement ; champ
+        // vide = aucun timbre). Le timbre reste optionnel dans les deux cas.
+        boolean manuelInitial = timbreManuelCheck != null && timbreManuelCheck.isSelected();
+        timbreField.setEditable(manuelInitial);
+        timbreField.setFocusTraversable(manuelInitial);
         timbreField.getStyleClass().add("timbre-calcule");
 
+        if (timbreManuelCheck != null) {
+            timbreManuelCheck.selectedProperty().addListener((o, a, manuel) -> {
+                timbreField.setEditable(manuel);
+                timbreField.setFocusTraversable(manuel);
+                timbreField.clear();        // repart propre dans les deux sens
+                recalculerTtc();            // auto -> remplit ; manuel -> reste vide (0)
+                if (manuel) timbreField.requestFocus();
+            });
+        }
+        // En mode manuel, recalcul du TTC a chaque frappe dans le champ timbre.
+        timbreField.textProperty().addListener((o, a, b) -> {
+            if (timbreManuelCheck != null && timbreManuelCheck.isSelected()) {
+                recalculerTtc();
+            }
+        });
+
         // Recalcul live du timbre + montant TTC quand le montant HT change.
-        // Le changement de mode de paiement declenche aussi recalculerTtc
-        // via appliquerModePaiement() ci-dessus (ESPECES -> timbre
-        // potentiellement applicable, autres modes -> timbre = 0 force).
         montantField.textProperty().addListener((o, a, b) -> recalculerTtc());
         recalculerTtc();
     }
 
-    /** Seuil d'application du timbre fiscal (inclusif) : 20 000 FCFA. */
-    private static final BigDecimal TIMBRE_SEUIL = new BigDecimal("20000");
-    /** Taux du timbre : 1% du montant HT. */
-    private static final BigDecimal TIMBRE_TAUX  = new BigDecimal("0.01");
+    private static final BigDecimal CENT = new BigDecimal("100");
 
     /**
-     * Calcule le timbre selon la regle RTS : 1% du montant si paiement
-     * ESPECES ET montant &ge; 20 000 FCFA, sinon 0. Met a jour les champs
-     * Timbre + TTC. Doit reproduire EXACTEMENT le calcul backend
-     * (autoritatif). Les autres modes (cheque, virement, mobile money,
-     * carte) sont exoneres du timbre fiscal.
+     * Recalcule le timbre + le montant TTC à partir du montant HT, du mode de
+     * paiement et de la catégorie sélectionnés, en appliquant la configuration
+     * personnalisable du timbre ({@link #timbreConfig}). Doit reproduire
+     * EXACTEMENT le calcul backend (autoritatif).
      */
     private void recalculerTtc() {
+        boolean manuel = timbreManuelCheck != null && timbreManuelCheck.isSelected();
         BigDecimal montant = parseOuZero(montantField.getText());
         ModePaiement mode = modePaiementCombo != null
                 ? modePaiementCombo.getValue() : null;
-        boolean especes = mode == ModePaiement.ESPECES;
-        BigDecimal timbre = (especes && montant.compareTo(TIMBRE_SEUIL) >= 0)
-                ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
-        timbreField.setText(timbre.signum() == 0 ? "" : Ui.formatMontant(timbre));
+
+        BigDecimal timbre;
+        if (manuel) {
+            // Timbre saisi manuellement : valeur du champ (vide = aucun timbre).
+            // On NE reecrit PAS le champ (l'utilisateur tape dedans).
+            timbre = parseOuZero(timbreField.getText());
+        } else {
+            Long categorieId = (categorieCombo != null && categorieCombo.getValue() != null)
+                    ? categorieCombo.getValue().id : null;
+            timbre = calculerTimbre(montant, mode, categorieId);
+            timbreField.setText(timbre.signum() == 0 ? "" : Ui.formatMontant(timbre));
+        }
+
         BigDecimal ttc = montant.add(timbre);
         montantTtcField.setText(Ui.formatMontant(ttc));
+
+        // Bloc Timbre : toujours visible en mode manuel (saisie libre quel que
+        // soit le mode) ; en auto, visible seulement si la config s'applique.
+        boolean afficheTimbre = manuel || timbreApplicablePourMode(mode);
+        if (timbreBox != null) {
+            timbreBox.setVisible(afficheTimbre);
+            timbreBox.setManaged(afficheTimbre);
+        }
+    }
+
+    /**
+     * Indique si la configuration courante peut appliquer un timbre pour ce
+     * mode de paiement (config active et mode concerné). Sert à afficher ou
+     * masquer le bloc Timbre, indépendamment du montant.
+     */
+    private boolean timbreApplicablePourMode(ModePaiement mode) {
+        TimbreConfigDto cfg = timbreConfig;
+        if (cfg == null || !cfg.actif || mode == null) {
+            return false;
+        }
+        return cfg.modesPaiement == null || cfg.modesPaiement.isEmpty()
+                || cfg.modesPaiement.contains(mode.name());
+    }
+
+    /**
+     * Calcule le timbre selon la configuration courante : actif, montant &ge;
+     * seuil, mode concerné (liste vide = tous) et catégorie concernée (liste
+     * vide = toutes). Renvoie 0 si la config n'est pas (encore) chargée.
+     */
+    private BigDecimal calculerTimbre(BigDecimal montant, ModePaiement mode, Long categorieId) {
+        TimbreConfigDto cfg = timbreConfig;
+        if (cfg == null || !cfg.actif || montant == null) {
+            return BigDecimal.ZERO;
+        }
+        if (cfg.seuil != null && montant.compareTo(cfg.seuil) < 0) {
+            return BigDecimal.ZERO;
+        }
+        if (cfg.modesPaiement != null && !cfg.modesPaiement.isEmpty()
+                && (mode == null || !cfg.modesPaiement.contains(mode.name()))) {
+            return BigDecimal.ZERO;
+        }
+        if (cfg.categorieIds != null && !cfg.categorieIds.isEmpty()
+                && (categorieId == null || !cfg.categorieIds.contains(categorieId))) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal taux = cfg.pourcentage == null ? BigDecimal.ZERO : cfg.pourcentage;
+        return montant.multiply(taux).divide(CENT, 0, java.math.RoundingMode.HALF_UP);
     }
 
     private static BigDecimal parseOuZero(String texte) {
@@ -221,6 +319,8 @@ public class NouvelleOperationController {
         if (caisse != null) {
             caisseLabel.setText(caisse.code + " · " + caisse.libelle);
         }
+        // Affiche / verrouille le type d'opération selon la config de la caisse.
+        appliquerTypeOperationAutorise(true);
         chargerReferences();
         Platform.runLater(() -> montantField.requestFocus());
     }
@@ -245,6 +345,10 @@ public class NouvelleOperationController {
         }
         // On charge d'abord les référentiels, PUIS on pré-remplit (callback)
         chargerReferencesEtPrefRemplir(op);
+        // Verrouille le type selon la caisse SANS écraser le type de l'op éditée
+        // (forcerDefautMixte=false : pour une caisse mixte, on garde le type
+        // déjà pré-rempli depuis l'opération).
+        appliquerTypeOperationAutorise(false);
         Platform.runLater(() -> montantField.requestFocus());
     }
 
@@ -312,6 +416,11 @@ public class NouvelleOperationController {
                     }
                 },
                 e -> log.error("Banques indisponibles", e));
+
+        chargerTimbreConfig();
+        // Diffusions : une ligne vide au départ + chargement des langues.
+        reinitialiserDiffusions();
+        chargerLangues();
     }
 
     private void chargerReferences() {
@@ -325,8 +434,8 @@ public class NouvelleOperationController {
                 },
                 e -> {
                     log.error("Catégories indisponibles", e);
-                    Ui.erreur("Catégories indisponibles",
-                            "Impossible de charger les catégories.\n\n" + describe(e));
+                    Ui.erreur("Produits indisponibles",
+                            "Impossible de charger les produits.\n\n" + describe(e));
                 });
 
         // Clients
@@ -356,6 +465,39 @@ public class NouvelleOperationController {
                     Ui.erreur("Banques indisponibles",
                             "Impossible de charger la liste des banques.\n\n" + describe(e));
                 });
+
+        chargerTimbreConfig();
+        chargerLangues();
+    }
+
+    /**
+     * Charge la configuration du timbre depuis le backend (à chaque ouverture
+     * du formulaire, pour refléter immédiatement les changements de l'ADMIN).
+     * En cas d'échec, on conserve {@code timbreConfig == null} : le timbre
+     * affiché reste 0, le backend recalculant la valeur correcte à
+     * l'enregistrement.
+     */
+    private void chargerTimbreConfig() {
+        Long caisseId = (caisse != null) ? caisse.id : null;
+        AsyncRunner.run(
+                () -> api.obtenirTimbreConfig(caisseId),
+                cfg -> {
+                    this.timbreConfig = cfg;
+                    // Caisse en mode MANUEL : on force la saisie manuelle du timbre
+                    // (le caissier saisit ; champ optionnel). Case verrouillée.
+                    boolean manuelCaisse = cfg != null && "MANUEL".equalsIgnoreCase(cfg.mode);
+                    if (timbreManuelCheck != null) {
+                        if (manuelCaisse) {
+                            timbreManuelCheck.setSelected(true);
+                            timbreManuelCheck.setDisable(true);
+                        } else {
+                            timbreManuelCheck.setDisable(false);
+                        }
+                    }
+                    recalculerTtc();
+                },
+                e -> log.warn("Configuration du timbre indisponible, timbre affiché = 0 : {}",
+                        describe(e)));
     }
 
     /** Formate proprement une exception API pour l'affichage utilisateur. */
@@ -378,6 +520,69 @@ public class NouvelleOperationController {
         if (!filtrees.isEmpty()) {
             categorieCombo.getSelectionModel().selectFirst();
         }
+    }
+
+    /**
+     * Adapte la section « Type d'opération » selon le type autorisé de la
+     * caisse (défini par l'ADMIN) :
+     * <ul>
+     *   <li>{@code "ENTREE"} : seul ENCAISSEMENT est affiché et sélectionné
+     *       (verrouillé) ;</li>
+     *   <li>{@code "SORTIE"} : seul DÉCAISSEMENT est affiché et sélectionné
+     *       (verrouillé) ;</li>
+     *   <li>{@code "TOUS"} / null : les deux toggles restent disponibles
+     *       (caisse mixte, choix libre du caissier).</li>
+     * </ul>
+     *
+     * @param forcerDefautMixte si {@code true} et caisse mixte, sélectionne
+     *        ENCAISSEMENT par défaut (création / reset). {@code false} en
+     *        modification pour préserver le type de l'opération éditée.
+     */
+    private void appliquerTypeOperationAutorise(boolean forcerDefautMixte) {
+        String autorise = (caisse != null && caisse.typeOperationAutorise != null)
+                ? caisse.typeOperationAutorise
+                : "TOUS";
+        switch (autorise) {
+            case "ENTREE" -> verrouillerType(entreeToggle, sortieToggle);
+            case "SORTIE" -> verrouillerType(sortieToggle, entreeToggle);
+            default -> {
+                // Caisse mixte : les deux choix sont offerts au caissier.
+                afficherToggle(entreeToggle, true);
+                afficherToggle(sortieToggle, true);
+                deverrouillerToggle(entreeToggle);
+                deverrouillerToggle(sortieToggle);
+                if (forcerDefautMixte) {
+                    entreeToggle.setSelected(true);
+                }
+            }
+        }
+        filtrerCategoriesPourType();
+    }
+
+    /**
+     * Verrouille la caisse sur un seul type d'opération : {@code autorise}
+     * reste visible et sélectionné mais non modifiable ; {@code interdit}
+     * est masqué. Le caissier voit ainsi clairement le type imposé.
+     */
+    private void verrouillerType(ToggleButton autorise, ToggleButton interdit) {
+        afficherToggle(autorise, true);
+        autorise.setSelected(true);
+        autorise.setDisable(true);       // non cliquable...
+        // ...mais on force l'opacité à 1 (sinon modena grise le bouton à 40%)
+        // pour que le type reste parfaitement lisible par le caissier.
+        autorise.setStyle("-fx-opacity: 1.0; -fx-cursor: default;");
+        afficherToggle(interdit, false); // masqué
+    }
+
+    /** Rend un toggle de nouveau cliquable et retire le style de verrouillage. */
+    private static void deverrouillerToggle(ToggleButton t) {
+        t.setDisable(false);
+        t.setStyle("");
+    }
+
+    private static void afficherToggle(ToggleButton t, boolean visible) {
+        t.setVisible(visible);
+        t.setManaged(visible);
     }
 
     /**
@@ -574,12 +779,7 @@ public class NouvelleOperationController {
         montantTtcField.clear();
         referenceField.clear();
 
-        if (dateDiffusionPicker != null) {
-            dateDiffusionPicker.setValue(null);
-        }
-        if (heureDiffusionField != null) {
-            heureDiffusionField.clear();
-        }
+        reinitialiserDiffusions();
         // Reset du justificatif (visibilite suit la categorie par defaut)
         justificatifSelectionne = null;
         justificatifTypeMime = null;
@@ -603,8 +803,9 @@ public class NouvelleOperationController {
         clientExistantToggle.setSelected(true);
         appliquerModeClient(false);
 
-        entreeToggle.setSelected(true);
-        filtrerCategoriesPourType();
+        // Réinitialise le type en respectant la config de la caisse
+        // (revient à ENCAISSEMENT par défaut pour une caisse mixte).
+        appliquerTypeOperationAutorise(true);
 
         modePaiementCombo.getSelectionModel().select(ModePaiement.ESPECES);
         appliquerModePaiement(ModePaiement.ESPECES);
@@ -647,15 +848,8 @@ public class NouvelleOperationController {
                 default -> referenceField.setPromptText("Référence (optionnel)");
             }
         }
-        // Le timbre ne concerne QUE les ESPECES : on cache le bloc entier
-        // pour les autres modes pour ne pas afficher un champ "Timbre 0"
-        // qui pretend etre saisissable. Le calcul reste fait par
-        // recalculerTtc() (montant TTC = montant HT quand timbre cache).
-        boolean afficheTimbre = (mode == ModePaiement.ESPECES);
-        if (timbreBox != null) {
-            timbreBox.setVisible(afficheTimbre);
-            timbreBox.setManaged(afficheTimbre);
-        }
+        // La visibilité du bloc Timbre dépend désormais de la configuration
+        // (modes concernés) et est gérée par recalculerTtc() ci-dessous.
         // Le justificatif depend AUSSI du mode de paiement : mode non-especes
         // = justificatif possible (preuve de paiement electronique).
         appliquerVisibiliteJustificatif(
@@ -722,7 +916,7 @@ public class NouvelleOperationController {
         }
         CategorieDTO categorie = categorieCombo.getValue();
         if (categorie == null) {
-            Ui.erreur("Catégorie manquante", "Sélectionnez une catégorie.");
+            Ui.erreur("Produit manquant", "Sélectionnez un produit.");
             return null;
         }
         ModePaiement mode = modePaiementCombo.getValue();
@@ -739,15 +933,13 @@ public class NouvelleOperationController {
             return null;
         }
 
-        // Timbre calcule automatiquement a partir du montant HT + mode,
-        // identique a la regle backend : 1% UNIQUEMENT pour ESPECES a partir
-        // de 20 000 FCFA, 0 pour tous les autres modes (cheque, virement,
-        // mobile money, carte). On l'envoie pour information mais le backend
-        // recalcule de toute facon (autoritatif).
-        boolean especes = mode == ModePaiement.ESPECES;
-        BigDecimal timbre = (especes && montant.compareTo(TIMBRE_SEUIL) >= 0)
-                ? montant.multiply(TIMBRE_TAUX).setScale(0, java.math.RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
+        // Timbre : MANUEL (valeur saisie, null si champ vide = aucun timbre) ou
+        // AUTOMATIQUE (calcule selon la config ; le backend reste autoritatif
+        // pour l'auto, et respecte la valeur saisie pour le manuel).
+        boolean timbreManuel = timbreManuelCheck != null && timbreManuelCheck.isSelected();
+        BigDecimal timbre = timbreManuel
+                ? Ui.parseMontant(timbreField.getText())
+                : calculerTimbre(montant, mode, categorie.id);
 
         OperationCaisseRequest req = new OperationCaisseRequest();
         req.caisseId      = caisse.id;
@@ -755,6 +947,7 @@ public class NouvelleOperationController {
         req.typeOperation = getTypeSelectionne();
         req.montant       = montant;
         req.timbre        = timbre;
+        req.timbreManuel  = timbreManuel;
         req.modePaiement  = mode;
         req.motif         = null;
         req.reference     = (referenceField.getText() == null
@@ -762,13 +955,15 @@ public class NouvelleOperationController {
                 ? null
                 : referenceField.getText().trim();
 
-        // Date+heure de diffusion OBLIGATOIRES (regle metier RTS).
-        // Si l'un des deux champs est vide / mal forme, collecterDateDiffusion
-        // affiche l'erreur appropriee et retourne null. On annule.
-        req.dateDiffusion = collecterDateDiffusion();
-        if (req.dateDiffusion == null) {
+        // Diffusions OPTIONNELLES et multiples. collecterDiffusions renvoie
+        // null si un créneau est incomplet (date sans heure, heure invalide…).
+        java.util.List<sn.rts.caisse.guichet.model.Dto.DiffusionDto> diffs = collecterDiffusions();
+        if (diffs == null) {
             return null;
         }
+        req.diffusions = diffs;
+        // dateDiffusion principale (compat reçu) = premier créneau, sinon null.
+        req.dateDiffusion = diffs.isEmpty() ? null : diffs.get(0).dateHeure;
 
         // Validation banque pour CHÈQUE / VIREMENT
         if (banqueRequise(mode)) {
@@ -800,52 +995,148 @@ public class NouvelleOperationController {
     private static final DateTimeFormatter HEURE_FMT =
             DateTimeFormatter.ofPattern("H:mm");
 
-    /**
-     * Compose la date+heure de diffusion a partir des deux champs FXML.
-     * Desormais OBLIGATOIRE : si l'un des deux champs est vide, affiche une
-     * erreur et retourne null pour bloquer l'enregistrement.
-     */
-    private LocalDateTime collecterDateDiffusion() {
-        if (dateDiffusionPicker == null || heureDiffusionField == null) {
-            return null;
-        }
-        // Piege JavaFX : si l'utilisateur a TAPE la date dans l'editeur du
-        // DatePicker sans appuyer sur Entree ni cliquer dans le calendrier,
-        // getValue() retourne null meme si l'editeur contient du texte. On
-        // force la validation pour recuperer la valeur saisie au clavier.
-        forcerCommitDatePicker(dateDiffusionPicker);
-        LocalDate date = dateDiffusionPicker.getValue();
-        String heureTexte = heureDiffusionField.getText();
-        boolean heureRenseignee = heureTexte != null && !heureTexte.isBlank();
+    /** Bouton « Ajouter une diffusion ». */
+    @FXML
+    public void onAjouterDiffusion() {
+        ajouterLigneDiffusion();
+    }
 
-        if (date == null && !heureRenseignee) {
-            Ui.erreur("Diffusion obligatoire",
-                    "Vous devez saisir la date ET l'heure de diffusion "
-                            + "antenne de cette operation.");
-            return null;
+    /** Ajoute une ligne de diffusion (date + heure + langue) dans l'IHM. */
+    private LigneDiffusion ajouterLigneDiffusion() {
+        DatePicker date = new DatePicker();
+        date.setPromptText("JJ/MM/AAAA");
+        date.setPrefWidth(150);
+        TextField heure = new TextField();
+        heure.setPromptText("HH:mm");
+        heure.setPrefWidth(90);
+        ComboBox<sn.rts.caisse.guichet.model.Dto.LangueDTO> langue = new ComboBox<>();
+        langue.setPromptText("Langue (optionnel)");
+        langue.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(langue, Priority.ALWAYS);
+        peuplerCombo(langue);
+        Button suppr = new Button("✕");
+        suppr.getStyleClass().addAll("button", "button-ghost");
+
+        HBox row = new HBox(8, date, heure, langue, suppr);
+        LigneDiffusion ligne = new LigneDiffusion(row, date, heure, langue);
+        suppr.setOnAction(e -> supprimerLigneDiffusion(ligne));
+        lignesDiffusion.add(ligne);
+        if (diffusionsBox != null) {
+            diffusionsBox.getChildren().add(row);
         }
-        if (date == null) {
-            Ui.erreur("Date de diffusion manquante",
-                    "Saisissez la date de diffusion (format JJ/MM/AAAA).");
-            dateDiffusionPicker.requestFocus();
-            return null;
+        majVisibiliteLanguesLigne(ligne);
+        return ligne;
+    }
+
+    private void supprimerLigneDiffusion(LigneDiffusion ligne) {
+        lignesDiffusion.remove(ligne);
+        if (diffusionsBox != null) {
+            diffusionsBox.getChildren().remove(ligne.node);
         }
-        if (!heureRenseignee) {
-            Ui.erreur("Heure de diffusion manquante",
-                    "Saisissez l'heure de diffusion (format HH:mm, ex. 20:30).");
-            heureDiffusionField.requestFocus();
-            return null;
+        if (lignesDiffusion.isEmpty()) {
+            ajouterLigneDiffusion(); // toujours laisser au moins une ligne vide
         }
-        try {
-            LocalTime heure = LocalTime.parse(heureTexte.trim(), HEURE_FMT);
-            return LocalDateTime.of(date, heure);
-        } catch (Exception ex) {
-            Ui.erreur("Heure invalide",
-                    "L'heure de diffusion doit etre au format HH:mm "
-                            + "(ex. 20:30). Valeur saisie : " + heureTexte);
-            heureDiffusionField.requestFocus();
-            return null;
+    }
+
+    /** Remet la liste des diffusions à une unique ligne vide. */
+    private void reinitialiserDiffusions() {
+        lignesDiffusion.clear();
+        if (diffusionsBox != null) {
+            diffusionsBox.getChildren().clear();
         }
+        ajouterLigneDiffusion();
+    }
+
+    /** Charge le référentiel des langues et (re)peuple les combos existants. */
+    private void chargerLangues() {
+        AsyncRunner.run(
+                api::listerLangues,
+                list -> {
+                    this.langues = list == null ? new ArrayList<>() : list;
+                    for (LigneDiffusion l : lignesDiffusion) {
+                        peuplerCombo(l.langue);
+                    }
+                },
+                e -> log.warn("Langues de diffusion indisponibles : {}", describe(e)));
+    }
+
+    /** Remplit un combo avec « Aucune » + les langues actives, en conservant la sélection. */
+    private void peuplerCombo(ComboBox<sn.rts.caisse.guichet.model.Dto.LangueDTO> combo) {
+        sn.rts.caisse.guichet.model.Dto.LangueDTO aucune =
+                new sn.rts.caisse.guichet.model.Dto.LangueDTO();
+        aucune.libelle = "— Aucune —";
+        java.util.List<sn.rts.caisse.guichet.model.Dto.LangueDTO> items = new ArrayList<>();
+        items.add(aucune);
+        items.addAll(langues);
+        Long selId = combo.getValue() != null ? combo.getValue().id : null;
+        combo.setItems(FXCollections.observableArrayList(items));
+        if (selId != null) {
+            for (var l : items) {
+                if (selId.equals(l.id)) { combo.setValue(l); break; }
+            }
+        }
+    }
+
+    /** Affiche/masque le combo langue de chaque ligne selon le produit choisi. */
+    private void majVisibiliteLangues() {
+        for (LigneDiffusion l : lignesDiffusion) {
+            majVisibiliteLanguesLigne(l);
+        }
+    }
+
+    private void majVisibiliteLanguesLigne(LigneDiffusion l) {
+        boolean propose = categorieCombo != null && categorieCombo.getValue() != null
+                && categorieCombo.getValue().proposeLangue;
+        l.langue.setVisible(propose);
+        l.langue.setManaged(propose);
+        if (!propose) {
+            l.langue.setValue(null);
+        }
+    }
+
+    /**
+     * Collecte les créneaux de diffusion saisis. Lignes vides ignorées
+     * (diffusion optionnelle) ; ligne incomplète/heure invalide → erreur + null.
+     */
+    private java.util.List<sn.rts.caisse.guichet.model.Dto.DiffusionDto> collecterDiffusions() {
+        java.util.List<sn.rts.caisse.guichet.model.Dto.DiffusionDto> result = new ArrayList<>();
+        for (LigneDiffusion l : lignesDiffusion) {
+            forcerCommitDatePicker(l.date);
+            LocalDate date = l.date.getValue();
+            String heureTexte = l.heure.getText();
+            boolean heureRenseignee = heureTexte != null && !heureTexte.isBlank();
+
+            if (date == null && !heureRenseignee) {
+                continue; // ligne vide : ignorée (diffusion optionnelle)
+            }
+            if (date == null) {
+                Ui.erreur("Date de diffusion manquante",
+                        "Une diffusion a une heure sans date. Complétez la date ou videz la ligne.");
+                l.date.requestFocus();
+                return null;
+            }
+            if (!heureRenseignee) {
+                Ui.erreur("Heure de diffusion manquante",
+                        "Une diffusion a une date sans heure (format HH:mm, ex. 20:30).");
+                l.heure.requestFocus();
+                return null;
+            }
+            LocalTime heure;
+            try {
+                heure = LocalTime.parse(heureTexte.trim(), HEURE_FMT);
+            } catch (Exception ex) {
+                Ui.erreur("Heure invalide",
+                        "L'heure de diffusion doit être au format HH:mm (ex. 20:30). "
+                                + "Valeur : " + heureTexte);
+                l.heure.requestFocus();
+                return null;
+            }
+            Long langueId = (l.langue.isVisible() && l.langue.getValue() != null)
+                    ? l.langue.getValue().id : null;
+            result.add(new sn.rts.caisse.guichet.model.Dto.DiffusionDto(
+                    LocalDateTime.of(date, heure), langueId));
+        }
+        return result;
     }
 
     /**
@@ -869,17 +1160,14 @@ public class NouvelleOperationController {
         }
     }
 
-    /** Pre-remplit les deux champs depuis une operation existante. */
+    /** Pré-remplit les diffusions depuis une opération existante (modification). */
     private void prefRemplirDateDiffusion(LocalDateTime dt) {
-        if (dateDiffusionPicker == null || heureDiffusionField == null) return;
-        if (dt == null) {
-            dateDiffusionPicker.setValue(null);
-            heureDiffusionField.clear();
-            return;
+        reinitialiserDiffusions();
+        if (dt != null && !lignesDiffusion.isEmpty()) {
+            LigneDiffusion l = lignesDiffusion.get(0);
+            l.date.setValue(dt.toLocalDate());
+            l.heure.setText(String.format("%02d:%02d", dt.getHour(), dt.getMinute()));
         }
-        dateDiffusionPicker.setValue(dt.toLocalDate());
-        heureDiffusionField.setText(String.format("%02d:%02d",
-                dt.getHour(), dt.getMinute()));
     }
 
     // ==================================================================
@@ -887,29 +1175,29 @@ public class NouvelleOperationController {
     // ==================================================================
 
     private void proposerActionsApresEnregistrement(OperationCaisseResponse op) {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("RTS Caisse - Opération enregistrée");
-        alert.setHeaderText("Reçu n° " + op.numeroRecu + " enregistré");
-        alert.setContentText(
-                "Montant : " + Ui.formatMontant(op.montant) + "\n"
-                        + (op.clientRaisonSociale != null
-                        ? "Client : " + op.clientRaisonSociale + "\n" : "")
-                        + (op.banqueCode != null
-                        ? "Banque : " + op.banqueCode
-                        + " - " + op.banqueLibelle + "\n" : "")
-                        + "\nQue souhaitez-vous faire ?");
-        ButtonType btnImprimer = new ButtonType("🖨  Imprimer");
-        ButtonType btnWhatsApp = new ButtonType("📱  WhatsApp");
-        ButtonType btnFermer   = new ButtonType("Fermer", ButtonType.CANCEL.getButtonData());
-        alert.getButtonTypes().setAll(btnImprimer, btnWhatsApp, btnFermer);
-        alert.getDialogPane().setPrefWidth(420);
-        Optional<ButtonType> choix = alert.showAndWait();
+        String message = "Montant : " + Ui.formatMontant(op.montant) + "\n"
+                + (op.clientRaisonSociale != null
+                ? "Client : " + op.clientRaisonSociale + "\n" : "")
+                + (op.banqueCode != null
+                ? "Banque : " + op.banqueCode + " - " + op.banqueLibelle + "\n" : "")
+                + "\nQue souhaitez-vous faire ?";
+
+        Optional<String> choix = RtsDialog.<String>create()
+                .type(RtsDialog.Type.SUCCESS)
+                .title("Reçu n° " + op.numeroRecu + " enregistré")
+                .message(message)
+                .width(440)
+                .cancelValue(null)
+                .defaultButton("🖨  Imprimer", RtsDialog.ButtonKind.PRIMARY, "print")
+                .button("📱  WhatsApp", RtsDialog.ButtonKind.SUCCESS, "whatsapp")
+                .cancelButton("Fermer", RtsDialog.ButtonKind.SECONDARY, null)
+                .showAndWait();
+
         if (choix.isEmpty()) return;
-        ButtonType bt = choix.get();
-        if (bt == btnImprimer) {
-            PrintRecu.imprimer(op);
-        } else if (bt == btnWhatsApp) {
-            RecuExporter.envoyerWhatsApp(op);
+        switch (choix.get()) {
+            case "print"    -> PrintRecu.imprimer(op);
+            case "whatsapp" -> RecuExporter.envoyerWhatsApp(op);
+            default         -> { /* Fermer */ }
         }
     }
 

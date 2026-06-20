@@ -1,0 +1,87 @@
+.page { padding: 8px 4px 32px; }
+
+.page-header { margin-bottom: 16px; }
+.page-header h1 { margin: 0; font-size: 22px; font-weight: 600; }
+.subtitle { margin: 2px 0 0; color: rgba(0, 0, 0, 0.55); font-size: 13px; }
+
+.card {
+  background: #fff;
+  border: 1px solid #e6e8ee;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.filtres .mode-toggle { margin-right: 4px; }
+.filtres .f-caisse { min-width: 280px; flex: 1 1 280px; }
+.filtres .f-date { width: 160px; }
+.filtres button { height: 48px; }
+
+.loading { display: flex; justify-content: center; padding: 28px; }
+
+/* ----- Bandeau d'état ----- */
+.etat-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.etat-info { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.etat-caisse { font-weight: 600; }
+.etat-periode { color: rgba(0, 0, 0, 0.6); font-size: 13px; }
+.etat-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-draft { background: #f1f5f9; color: #475569; }
+.badge-mid   { background: #fff4e0; color: #b45309; }
+.badge-ok    { background: #e6f7ec; color: #15803d; }
+
+/* ----- Tableaux ----- */
+h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
+h3 { font-size: 14px; font-weight: 600; margin: 0 0 10px; }
+
+table.grid { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.grid th, table.grid td {
+  border: 1px solid #e6e8ee;
+  padding: 8px 10px;
+}
+table.grid thead th {
+  background: #faf2f3;
+  color: #b30510;
+  font-weight: 600;
+  text-align: center;
+}
+table.grid td.left, table.grid th.left { text-align: left; }
+table.grid td.right, table.grid th.right { text-align: right; font-variant-numeric: tabular-nums; }
+table.grid td.center { text-align: center; }
+table.grid tbody tr:nth-child(even) { background: #fcfcfd; }
+table.grid .vide { text-align: center; color: rgba(0, 0, 0, 0.45); font-style: italic; }
+table.grid tfoot .total td {
+  background: #faf2f3;
+  font-weight: 700;
+}
+table.grid tfoot .total td.right { color: #b30510; }
+
+.deux-colonnes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .deux-colonnes { grid-template-columns: 1fr; }
+}
+
+/* ----- Cases de contrôle ----- */
+.controle { text-align: center; }
+.controle .signe { margin: 6px 0 0; }
+.controle .signe-date { margin: 2px 0 0; color: rgba(0, 0, 0, 0.55); font-size: 12px; }
+.controle .attente { margin: 10px 0; color: #b45309; font-style: italic; }
+.controle .fonction { margin-top: 20px; font-weight: 600; color: rgba(0, 0, 0, 0.7); }

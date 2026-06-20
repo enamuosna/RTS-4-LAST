@@ -60,4 +60,16 @@ public class CategorieOperation extends Auditable {
     @org.hibernate.annotations.ColumnDefault("false")
     @Builder.Default
     private boolean accepteJustificatif = false;
+
+    /**
+     * Indique si le produit propose le choix d'une <b>langue de diffusion</b>
+     * lors de la saisie (ex. Avis & Communiqués, diffusés en français, wolof,
+     * pulaar…). Quand actif, le guichet affiche un menu déroulant de langues
+     * pour chaque créneau de diffusion. La sélection reste <b>optionnelle</b>.
+     * Même rationale {@code @ColumnDefault} que {@link #accepteJustificatif}.
+     */
+    @Column(name = "propose_langue", nullable = false)
+    @org.hibernate.annotations.ColumnDefault("false")
+    @Builder.Default
+    private boolean proposeLangue = false;
 }

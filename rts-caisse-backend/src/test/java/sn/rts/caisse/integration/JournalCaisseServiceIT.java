@@ -182,11 +182,13 @@ class JournalCaisseServiceIT extends AbstractTestcontainersIT {
                 type,
                 new BigDecimal(montant),
                 BigDecimal.ZERO, // timbre
+                null, // timbreManuel (auto)
                 ModePaiement.ESPECES,
                 "Test",
                 null,
                 null, // banqueId
-                null  // dateDiffusion
+                null, // dateDiffusion
+                null  // diffusions
         ), caissier.getLogin());
     }
 }

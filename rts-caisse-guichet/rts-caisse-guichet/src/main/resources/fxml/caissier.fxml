@@ -115,7 +115,7 @@
                     <!-- Champ de recherche automatique (filtre en temps réel) -->
                     <HBox alignment="CENTER_LEFT" maxWidth="320" prefWidth="320" spacing="8" styleClass="text-field-with-icon">
                         <FontIcon iconLiteral="fas-search" iconSize="14" styleClass="icon-muted" />
-                        <TextField fx:id="searchField" promptText="Rechercher (n° reçu, catégorie, client, montant…)" HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="searchField" promptText="Rechercher (n° reçu, produit, client, montant…)" HBox.hgrow="ALWAYS" />
                     </HBox>
 
                     <Button fx:id="refreshButton" onAction="#onRefresh" styleClass="button, button-icon">
@@ -140,7 +140,7 @@
                         <TableColumn fx:id="colHeure" prefWidth="80" sortable="false" text="Heure" />
                         <TableColumn fx:id="colNumero" prefWidth="180" sortable="false" text="N° Reçu" />
                         <TableColumn fx:id="colType" prefWidth="110" sortable="false" text="Type" />
-                        <TableColumn fx:id="colCategorie" prefWidth="220" sortable="false" text="Catégorie" />
+                        <TableColumn fx:id="colCategorie" prefWidth="220" sortable="false" text="Produit" />
                         <TableColumn fx:id="colClient" prefWidth="320" sortable="false" text="Client" />
                         <TableColumn fx:id="colMontant" prefWidth="160" sortable="false" text="Montant" />
                         <TableColumn fx:id="colActions" prefWidth="160" resizable="false" sortable="false" text="Actions" />

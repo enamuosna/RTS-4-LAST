@@ -34,6 +34,10 @@ public interface VersementRepository extends JpaRepository<Versement, Long> {
     /** Versements rattachés à un journal donné (pour l'export Excel). */
     List<Versement> findByJournalIdOrderByDateVersementAsc(Long journalId);
 
+    /** Versements d'une caisse sur une plage [debut, fin], pour la ventilation hebdo. */
+    List<Versement> findByCaisseIdAndDateVersementBetweenOrderByDateVersementAsc(
+            Long caisseId, LocalDateTime debut, LocalDateTime fin);
+
     /** Tous les versements (admin/superviseur), du plus récent au plus ancien. */
     Page<Versement> findAllByOrderByDateVersementDesc(Pageable pageable);
 

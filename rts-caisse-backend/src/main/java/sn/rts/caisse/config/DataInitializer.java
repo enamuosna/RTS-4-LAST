@@ -3,14 +3,19 @@ package sn.rts.caisse.config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import sn.rts.caisse.model.*;
 import sn.rts.caisse.repository.CaisseRepository;
 import sn.rts.caisse.repository.CategorieOperationRepository;
+import sn.rts.caisse.repository.LangueRepository;
+import sn.rts.caisse.repository.ParametresRecuRepository;
+import sn.rts.caisse.repository.TimbreConfigRepository;
 import sn.rts.caisse.repository.UtilisateurRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -27,16 +32,79 @@ public class DataInitializer implements CommandLineRunner {
     private final UtilisateurRepository utilisateurRepository;
     private final CategorieOperationRepository categorieRepository;
     private final CaisseRepository caisseRepository;
+    private final TimbreConfigRepository timbreConfigRepository;
+    private final ParametresRecuRepository parametresRecuRepository;
+    private final LangueRepository langueRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
+        nettoyerContraintesObsoletes();
         initAdmin();
+        initChefsControle();
         initCategories();
         initCaisse();
+        initTimbreConfig();
+        initParametresRecu();
+        initLangues();
+    }
+
+    /**
+     * Seed du référentiel des langues de diffusion (idempotent). Indispensable
+     * en profil docker (Flyway désactivé) où la table est créée par Hibernate
+     * mais reste vide.
+     */
+    private void initLangues() {
+        if (langueRepository.count() > 0) {
+            return;
+        }
+        langueRepository.saveAll(List.of(
+                Langue.builder().code("FR").libelle("Français").actif(true).build(),
+                Langue.builder().code("WO").libelle("Wolof").actif(true).build(),
+                Langue.builder().code("FF").libelle("Pulaar").actif(true).build(),
+                Langue.builder().code("MND").libelle("Mandingue").actif(true).build(),
+                Langue.builder().code("SRR").libelle("Sérère").actif(true).build(),
+                Langue.builder().code("DYO").libelle("Diola").actif(true).build()
+        ));
+        log.info("Référentiel des langues de diffusion initialisé (6 langues).");
     }
 
     // ------------------------------------------------------------------
+
+    /**
+     * Auto-réparation au démarrage : supprime les <b>CHECK constraints obsolètes</b>
+     * sur {@code utilisateurs.role} et {@code audit_logs.action} héritées d'anciens
+     * volumes. En profil docker (Flyway désactivé), ces contraintes figées
+     * bloquent l'ajout de nouveaux rôles/actions à l'enum Java. La validation des
+     * valeurs reste assurée par {@code @Enumerated(STRING)}.
+     *
+     * <p>Postgres-spécifique et idempotent : toute erreur (autre SGBD, table
+     * absente) est ignorée — ne doit jamais empêcher le démarrage.</p>
+     */
+    private void nettoyerContraintesObsoletes() {
+        String sql = """
+            DO $$
+            DECLARE c RECORD;
+            BEGIN
+              FOR c IN
+                SELECT conname, conrelid::regclass AS tbl
+                FROM pg_constraint
+                WHERE contype = 'c'
+                  AND ( (conrelid = 'utilisateurs'::regclass AND pg_get_constraintdef(oid) ILIKE '%role%')
+                     OR (conrelid = 'audit_logs'::regclass   AND pg_get_constraintdef(oid) ILIKE '%action%') )
+              LOOP
+                EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', c.tbl, c.conname);
+              END LOOP;
+            END $$;
+            """;
+        try {
+            jdbcTemplate.execute(sql);
+            log.info("Contraintes CHECK obsolètes (role/action) vérifiées/supprimées.");
+        } catch (Exception e) {
+            log.debug("Nettoyage des CHECK obsolètes ignoré ({}).", e.getMessage());
+        }
+    }
 
     private void initAdmin() {
         if (utilisateurRepository.existsByLogin("admin")) {
@@ -60,6 +128,40 @@ public class DataInitializer implements CommandLineRunner {
         log.warn("│  Password : Admin@2026                                       │");
         log.warn("│  ** CHANGEZ CE MOT DE PASSE IMMÉDIATEMENT EN PRODUCTION **   │");
         log.warn("└──────────────────────────────────────────────────────────────┘");
+    }
+
+    /**
+     * Crée deux comptes de démonstration pour les signataires de la ventilation
+     * hebdomadaire des recettes : Chef Unité Finances (Contrôle 1) et Chef de
+     * Département (Contrôle 2). Idempotent.
+     */
+    private void initChefsControle() {
+        if (!utilisateurRepository.existsByLogin("chef.finances")) {
+            utilisateurRepository.save(Utilisateur.builder()
+                    .matricule("RTS-CUF-001")
+                    .login("chef.finances")
+                    .motDePasse(passwordEncoder.encode("Chef@2026"))
+                    .prenom("Chef")
+                    .nom("Unité Finances")
+                    .email("finances@rts.sn")
+                    .role(Role.CHEF_UNITE_FINANCES)
+                    .actif(true)
+                    .build());
+            log.warn("Compte de démo créé : chef.finances / Chef@2026 (CHEF_UNITE_FINANCES) — à sécuriser.");
+        }
+        if (!utilisateurRepository.existsByLogin("chef.departement")) {
+            utilisateurRepository.save(Utilisateur.builder()
+                    .matricule("RTS-CDEP-001")
+                    .login("chef.departement")
+                    .motDePasse(passwordEncoder.encode("Chef@2026"))
+                    .prenom("Chef")
+                    .nom("Département")
+                    .email("departement@rts.sn")
+                    .role(Role.CHEF_DEPARTEMENT)
+                    .actif(true)
+                    .build());
+            log.warn("Compte de démo créé : chef.departement / Chef@2026 (CHEF_DEPARTEMENT) — à sécuriser.");
+        }
     }
 
     private void initCategories() {
@@ -114,5 +216,75 @@ public class DataInitializer implements CommandLineRunner {
                 .build();
         caisseRepository.save(caisse);
         log.info("Caisse d'exemple créée : {} - {}", caisse.getCode(), caisse.getLibelle());
+    }
+
+    /**
+     * Seed du singleton de configuration du timbre. Indispensable en profil
+     * docker (Flyway désactivé, ddl-auto=update) où la table est créée par
+     * Hibernate mais aucune ligne n'est insérée. Idempotent : si la migration
+     * Flyway (dev) a déjà inséré la ligne id=1, on ne fait rien.
+     */
+    private void initTimbreConfig() {
+        if (timbreConfigRepository.existsById(1L)) {
+            return;
+        }
+        TimbreConfig config = TimbreConfig.builder()
+                .id(1L)
+                .actif(true)
+                .seuil(new BigDecimal("20000"))
+                .pourcentage(new BigDecimal("1.00"))
+                .categoriesJson("[]")
+                .modesPaiementJson("[\"ESPECES\"]")
+                .updatedAt(LocalDateTime.now())
+                .updatedBy("system")
+                .build();
+        timbreConfigRepository.save(config);
+        log.info("Configuration du timbre initialisée (seuil=20000, taux=1%, ESPECES).");
+    }
+
+    /**
+     * Seed du singleton de paramètres du reçu (id=1). Indispensable en profil
+     * docker (Flyway désactivé, ddl-auto=update) où la table est créée par
+     * Hibernate mais aucune ligne n'est insérée — sans cette ligne, l'aperçu
+     * du reçu et l'upload du logo échouent ("Paramètres du reçu introuvables").
+     * Reprend les valeurs par défaut RTS de la migration V4. Idempotent.
+     */
+    private void initParametresRecu() {
+        if (parametresRecuRepository.existsById(1L)) {
+            return;
+        }
+        ParametresRecu params = ParametresRecu.builder()
+                .id(1L)
+                .logoTexte("RTS")
+                .raisonSociale("SOCIÉTÉ NATIONALE DE RADIODIFFUSION TÉLÉVISION DU SÉNÉGAL")
+                .sousTitreEntete("Radiodiffusion Télévision Sénégalaise")
+                .ligneLegale("Créée par la loi n° 92-02 du 06 janvier 1992")
+                .capital("Capital : 7 milliards FCFA")
+                .adresse("Triangle Sud")
+                .telephone("Tél. (221) 33 849 12 12")
+                .boitePostale("B.P. 1765 — DAKAR")
+                .ninea("NINEA : 2059782 2G3")
+                .footerLigne1("Merci de votre passage.")
+                .footerLigne2("RTS — Conservez ce reçu comme preuve.")
+                .villeSignature("Dakar")
+                .couleurPrimaire("#E30613")
+                .couleurAccent("#1A1A1A")
+                .couleurTexte("#212121")
+                .couleurTexteSecondaire("#9E9E9E")
+                .couleurSuccess("#2E7D32")
+                .couleurDanger("#C62828")
+                .couleurFondMontant("#FBE5E7")
+                .tailleTitre(14)
+                .tailleEntete(16)
+                .tailleCorps(9)
+                .tailleMontant(20)
+                .tailleFooter(7)
+                // layout null -> RecuPdfService retombe sur sa config granulaire par défaut
+                .layoutJson(null)
+                .updatedAt(LocalDateTime.now())
+                .updatedBy("system")
+                .build();
+        parametresRecuRepository.save(params);
+        log.info("Paramètres du reçu initialisés (singleton id=1, valeurs RTS par défaut).");
     }
 }

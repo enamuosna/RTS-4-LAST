@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import sn.rts.caisse.dto.ClotureCaisseRequest;
@@ -25,6 +26,7 @@ public class JournalCaisseController {
     private final JournalCaisseService service;
 
     @PostMapping("/caisse/{caisseId}/ouvrir")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(summary = "Ouvrir la caisse pour la journée (crée un journal)")
     public ResponseEntity<JournalCaisseResponse> ouvrir(@PathVariable Long caisseId,
                                                         @Valid @RequestBody OuvertureCaisseRequest request,
@@ -33,6 +35,7 @@ public class JournalCaisseController {
     }
 
     @PostMapping("/caisse/{caisseId}/cloturer")
+    @PreAuthorize("hasAnyRole('CAISSIER','AGENT_RECETTE','SUPERVISEUR','ADMIN')")
     @Operation(summary = "Clôturer la caisse : fige les totaux et calcule l'écart")
     public ResponseEntity<JournalCaisseResponse> cloturer(@PathVariable Long caisseId,
                                                           @Valid @RequestBody ClotureCaisseRequest request,

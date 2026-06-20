@@ -6,8 +6,9 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Caisse } from '../../../core/models/models';
+import { Caisse, TypeOperationAutorise } from '../../../core/models/models';
 import { CaisseService } from '../../../core/services/admin.services';
 
 @Component({
@@ -19,6 +20,7 @@ import { CaisseService } from '../../../core/services/admin.services';
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatButtonModule,
     MatIconModule
   ],
@@ -36,7 +38,12 @@ export class CaisseDialogComponent {
   readonly form = this.fb.nonNullable.group({
     code: [this.data?.code ?? '', Validators.required],
     libelle: [this.data?.libelle ?? '', Validators.required],
-    emplacement: [this.data?.emplacement ?? '']
+    emplacement: [this.data?.emplacement ?? ''],
+    // Type d'opération autorisé : TOUS (mixte) par défaut.
+    typeOperationAutorise: [
+      (this.data?.typeOperationAutorise ?? 'TOUS') as TypeOperationAutorise,
+      Validators.required
+    ]
   });
 
   valider(): void {

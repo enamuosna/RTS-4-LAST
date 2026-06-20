@@ -16,7 +16,9 @@ public record CategorieOperationDTO(
          * Active la zone d'upload d'un justificatif (PDF/JPG/PNG) lors
          * de la saisie d'une operation. Default false : pas d'upload.
          */
-        boolean accepteJustificatif
+        boolean accepteJustificatif,
+        /** Active le choix d'une langue de diffusion (ex. Avis & Communiqués). */
+        boolean proposeLangue
 ) {
     public static CategorieOperationDTO from(CategorieOperation c) {
         return new CategorieOperationDTO(
@@ -25,7 +27,8 @@ public record CategorieOperationDTO(
                 c.getLibelle(),
                 c.getTypeOperation(),
                 c.isActif(),
-                c.isAccepteJustificatif()
+                c.isAccepteJustificatif(),
+                c.isProposeLangue()
         );
     }
 }

@@ -1,0 +1,23 @@
+# ===== Artefacts de build (ne pas committer — régénérés par Docker/Maven/npm) =====
+# Backend (Maven)
+**/target/
+# Web (Angular)
+**/dist/
+**/node_modules/
+**/.angular/
+# Client guichet (jlink/jpackage)
+**/build/
+*.msi
+*.dmg
+
+# ===== Secrets / environnement local =====
+**/.env
+!**/.env.example
+!**/env.example
+
+# ===== IDE / OS =====
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

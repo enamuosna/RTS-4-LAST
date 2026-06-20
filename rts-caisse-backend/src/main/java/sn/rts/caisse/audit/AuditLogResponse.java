@@ -78,6 +78,9 @@ public record AuditLogResponse(
             case OUVRIR_CAISSE              -> "Ouverture de caisse";
             case CLOTURER_CAISSE            -> "Clôture de caisse";
             case VALIDER_JOURNAL            -> "Validation de journal";
+            case CONTROLE_1_RECETTE         -> "Recettes — Contrôle 1 (Chef Unité Finances)";
+            case CONTROLE_2_RECETTE         -> "Recettes — Contrôle 2 (Chef de Département)";
+            case TELECHARGER_RECETTE_PDF    -> "Téléchargement de la ventilation (PDF)";
             case CREER_CAISSE               -> "Création de caisse";
             case MODIFIER_CAISSE            -> "Modification de caisse";
             case SUPPRIMER_CAISSE           -> "Suppression de caisse";
@@ -98,9 +101,9 @@ public record AuditLogResponse(
             case EXPORTER_JOURNAL_EXCEL     -> "Export Excel du journal";
             case EXPORTER_BDD               -> "Sauvegarde de la BDD";
             case IMPORTER_BDD               -> "Restauration de la BDD";
-            case CREER_CATEGORIE            -> "Création de catégorie";
-            case MODIFIER_CATEGORIE         -> "Modification de catégorie";
-            case SUPPRIMER_CATEGORIE        -> "Suppression de catégorie";
+            case CREER_CATEGORIE            -> "Création de produit";
+            case MODIFIER_CATEGORIE         -> "Modification de produit";
+            case SUPPRIMER_CATEGORIE        -> "Suppression de produit";
             case CREER_CLIENT               -> "Création de client";
             case MODIFIER_CLIENT            -> "Modification de client";
             case SUPPRIMER_CLIENT           -> "Suppression de client";

@@ -99,7 +99,8 @@ export class UtilisateursComponent implements OnInit {
       admin:       par('ADMIN'),
       superviseur: par('SUPERVISEUR'),
       agent:       par('AGENT_RECETTE'),
-      caissier:    par('CAISSIER')
+      caissier:    par('CAISSIER'),
+      controleur:  par('CONTROLEUR')
     };
   });
 
@@ -215,6 +216,7 @@ export class UtilisateursComponent implements OnInit {
       case 'ADMIN':         return 'badge-info';
       case 'SUPERVISEUR':   return 'badge-warning';
       case 'AGENT_RECETTE': return 'badge-rts';
+      case 'CONTROLEUR':    return 'badge-neutral';
       default:              return 'badge-neutral';
     }
   }
@@ -226,6 +228,7 @@ export class UtilisateursComponent implements OnInit {
       case 'SUPERVISEUR':   return 'Superviseur';
       case 'CAISSIER':      return 'Caissier';
       case 'AGENT_RECETTE': return 'Agent de recette';
+      case 'CONTROLEUR':    return 'Contrôleur';
       default:              return role;
     }
   }

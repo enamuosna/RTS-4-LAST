@@ -76,6 +76,13 @@ export class OperationsComponent implements OnInit {
   /** Seul l'ADMIN peut supprimer définitivement une opération (purge BDD). */
   readonly isAdmin = computed(() => this.auth.currentRole() === 'ADMIN');
 
+  /**
+   * CONTROLEUR : acteur en lecture seule. Aucune action de mutation
+   * (annuler, modifier, réactiver, supprimer) ne lui est proposée. Le
+   * backend refuse de toute façon ces appels (cf. @PreAuthorize).
+   */
+  readonly estControleur = computed(() => this.auth.currentRole() === 'CONTROLEUR');
+
   readonly peutCorriger = computed<boolean>(() => {
     const role = this.auth.currentRole();
     if (role === 'ADMIN' || role === 'SUPERVISEUR') return true;

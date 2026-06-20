@@ -23,8 +23,8 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="sn.rts.caisse.guichet.controller.VersementController"
       styleClass="modal-root"
-      prefWidth="640" minWidth="560" maxWidth="720"
-      prefHeight="600" minHeight="500" maxHeight="780">
+      prefWidth="640" minWidth="560"
+      prefHeight="600" minHeight="500">
 
     <!-- ====================== HEADER ====================== -->
     <HBox styleClass="modal-header" alignment="CENTER_LEFT" spacing="14">

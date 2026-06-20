@@ -182,6 +182,7 @@ class JournalCaisseServiceIT extends AbstractTestcontainersIT {
                 type,
                 new BigDecimal(montant),
                 BigDecimal.ZERO, // timbre
+                null, // timbreManuel (auto)
                 ModePaiement.ESPECES,
                 "Test",
                 null,

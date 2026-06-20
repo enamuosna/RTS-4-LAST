@@ -131,6 +131,9 @@ export interface OperationCaisseRequest {
   montant: number;
   /** Timbre fiscal optionnel. Si null/0, montantTtc = montant. */
   timbre?: number;
+  /** true = timbre saisi manuellement (valeur `timbre` utilisée telle quelle) ;
+   *  false/absent = timbre calculé automatiquement par le backend. */
+  timbreManuel?: boolean;
   modePaiement: ModePaiement;
   motif: string;
   reference?: string;

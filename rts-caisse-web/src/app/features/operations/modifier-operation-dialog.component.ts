@@ -2,6 +2,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Inject, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import {
   MAT_DIALOG_DATA,
   MatDialogModule,
@@ -36,6 +37,7 @@ import { OperationService } from '../../core/services/caisse.services';
     CurrencyPipe,
     MatDialogModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
@@ -63,7 +65,20 @@ import { OperationService } from '../../core/services/caisse.services';
           <input matInput type="number" min="1" [(ngModel)]="montant" (ngModelChange)="recalculer()" />
         </mat-form-field>
 
-        @if (estEspeces()) {
+        <div class="full">
+          <mat-checkbox [(ngModel)]="timbreManuel" (ngModelChange)="recalculer()">
+            Saisie manuelle du timbre
+          </mat-checkbox>
+        </div>
+
+        @if (timbreManuel) {
+          <mat-form-field appearance="outline">
+            <mat-label>Timbre (FCFA)</mat-label>
+            <input matInput type="number" min="0"
+                   [(ngModel)]="timbre" (ngModelChange)="recalculer()" />
+            <mat-hint>Vide ou 0 = aucun timbre</mat-hint>
+          </mat-form-field>
+        } @else if (estEspeces()) {
           <mat-form-field appearance="outline">
             <mat-label>Timbre (FCFA, calculé)</mat-label>
             <input matInput type="text" readonly
@@ -217,6 +232,8 @@ export class ModifierOperationDialogComponent {
 
   montant = 0;
   timbre = 0;
+  /** Saisie manuelle du timbre (sinon calcul automatique). */
+  timbreManuel = false;
   motif = '';
   reference = '';
   /** Au format "YYYY-MM-DDTHH:mm" attendu par <input type="datetime-local">. */
@@ -324,12 +341,16 @@ export class ModifierOperationDialogComponent {
    */
   recalculer(): void {
     const montantNum = Number(this.montant) || 0;
-    const especes = this.data.operation.modePaiement === 'ESPECES';
-    this.timbre = (especes && montantNum >= 20000)
-        ? Math.round(montantNum * 0.01)
-        : 0;
+    // En mode AUTO uniquement : recalcul du timbre selon la règle ESPECES 1%.
+    // En mode MANUEL, on conserve la valeur saisie par l'utilisateur.
+    if (!this.timbreManuel) {
+      const especes = this.data.operation.modePaiement === 'ESPECES';
+      this.timbre = (especes && montantNum >= 20000)
+          ? Math.round(montantNum * 0.01)
+          : 0;
+    }
     this.montantSig.set(montantNum);
-    this.timbreSig.set(this.timbre);
+    this.timbreSig.set(Number(this.timbre) || 0);
   }
 
   estValide(): boolean {
@@ -357,6 +378,7 @@ export class ModifierOperationDialogComponent {
       typeOperation: op.typeOperation,
       montant: Number(this.montant),
       timbre: Number(this.timbre) || 0,
+      timbreManuel: this.timbreManuel,
       modePaiement: op.modePaiement,
       motif: this.motif,
       reference: this.reference || undefined,

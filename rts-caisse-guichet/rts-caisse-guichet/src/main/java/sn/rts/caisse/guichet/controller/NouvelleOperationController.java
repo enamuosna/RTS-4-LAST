@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -61,8 +62,9 @@ public class NouvelleOperationController {
     @FXML private ComboBox<CategorieDTO> categorieCombo;
     @FXML private ComboBox<ModePaiement> modePaiementCombo;
     @FXML private TextField montantField;
-    @FXML private VBox      timbreBox;       // masque si mode != ESPECES
+    @FXML private VBox      timbreBox;       // masque si mode != ESPECES (sauf saisie manuelle)
     @FXML private TextField timbreField;
+    @FXML private CheckBox  timbreManuelCheck;  // coché = saisie manuelle du timbre
     @FXML private TextField montantTtcField;
     @FXML private TextField referenceField;
 
@@ -180,16 +182,31 @@ public class NouvelleOperationController {
                     recalculerTtc();
                 });
 
-        // Le timbre est CALCULE automatiquement a partir du montant HT.
-        // L'utilisateur ne le saisit plus : le champ est readonly.
-        timbreField.setEditable(false);
-        timbreField.setFocusTraversable(false);
+        // Timbre : AUTOMATIQUE par defaut (champ readonly, recalcule live) ou
+        // MANUEL si la case est cochee (le caissier saisit librement ; champ
+        // vide = aucun timbre). Le timbre reste optionnel dans les deux cas.
+        boolean manuelInitial = timbreManuelCheck != null && timbreManuelCheck.isSelected();
+        timbreField.setEditable(manuelInitial);
+        timbreField.setFocusTraversable(manuelInitial);
         timbreField.getStyleClass().add("timbre-calcule");
 
+        if (timbreManuelCheck != null) {
+            timbreManuelCheck.selectedProperty().addListener((o, a, manuel) -> {
+                timbreField.setEditable(manuel);
+                timbreField.setFocusTraversable(manuel);
+                timbreField.clear();        // repart propre dans les deux sens
+                recalculerTtc();            // auto -> remplit ; manuel -> reste vide (0)
+                if (manuel) timbreField.requestFocus();
+            });
+        }
+        // En mode manuel, recalcul du TTC a chaque frappe dans le champ timbre.
+        timbreField.textProperty().addListener((o, a, b) -> {
+            if (timbreManuelCheck != null && timbreManuelCheck.isSelected()) {
+                recalculerTtc();
+            }
+        });
+
         // Recalcul live du timbre + montant TTC quand le montant HT change.
-        // Le changement de mode de paiement declenche aussi recalculerTtc
-        // via appliquerModePaiement() ci-dessus (ESPECES -> timbre
-        // potentiellement applicable, autres modes -> timbre = 0 force).
         montantField.textProperty().addListener((o, a, b) -> recalculerTtc());
         recalculerTtc();
     }
@@ -203,18 +220,29 @@ public class NouvelleOperationController {
      * EXACTEMENT le calcul backend (autoritatif).
      */
     private void recalculerTtc() {
+        boolean manuel = timbreManuelCheck != null && timbreManuelCheck.isSelected();
         BigDecimal montant = parseOuZero(montantField.getText());
         ModePaiement mode = modePaiementCombo != null
                 ? modePaiementCombo.getValue() : null;
-        Long categorieId = (categorieCombo != null && categorieCombo.getValue() != null)
-                ? categorieCombo.getValue().id : null;
-        BigDecimal timbre = calculerTimbre(montant, mode, categorieId);
-        timbreField.setText(timbre.signum() == 0 ? "" : Ui.formatMontant(timbre));
+
+        BigDecimal timbre;
+        if (manuel) {
+            // Timbre saisi manuellement : valeur du champ (vide = aucun timbre).
+            // On NE reecrit PAS le champ (l'utilisateur tape dedans).
+            timbre = parseOuZero(timbreField.getText());
+        } else {
+            Long categorieId = (categorieCombo != null && categorieCombo.getValue() != null)
+                    ? categorieCombo.getValue().id : null;
+            timbre = calculerTimbre(montant, mode, categorieId);
+            timbreField.setText(timbre.signum() == 0 ? "" : Ui.formatMontant(timbre));
+        }
+
         BigDecimal ttc = montant.add(timbre);
         montantTtcField.setText(Ui.formatMontant(ttc));
-        // Affiche le bloc Timbre uniquement si la config peut appliquer un
-        // timbre pour ce mode de paiement (sinon TTC = HT, bloc masqué).
-        boolean afficheTimbre = timbreApplicablePourMode(mode);
+
+        // Bloc Timbre : toujours visible en mode manuel (saisie libre quel que
+        // soit le mode) ; en auto, visible seulement si la config s'applique.
+        boolean afficheTimbre = manuel || timbreApplicablePourMode(mode);
         if (timbreBox != null) {
             timbreBox.setVisible(afficheTimbre);
             timbreBox.setManaged(afficheTimbre);
@@ -876,10 +904,13 @@ public class NouvelleOperationController {
             return null;
         }
 
-        // Timbre calcule automatiquement selon la configuration personnalisable
-        // (seuil, taux, modes et categories concernes). On l'envoie pour
-        // information mais le backend recalcule de toute facon (autoritatif).
-        BigDecimal timbre = calculerTimbre(montant, mode, categorie.id);
+        // Timbre : MANUEL (valeur saisie, null si champ vide = aucun timbre) ou
+        // AUTOMATIQUE (calcule selon la config ; le backend reste autoritatif
+        // pour l'auto, et respecte la valeur saisie pour le manuel).
+        boolean timbreManuel = timbreManuelCheck != null && timbreManuelCheck.isSelected();
+        BigDecimal timbre = timbreManuel
+                ? Ui.parseMontant(timbreField.getText())
+                : calculerTimbre(montant, mode, categorie.id);
 
         OperationCaisseRequest req = new OperationCaisseRequest();
         req.caisseId      = caisse.id;
@@ -887,6 +918,7 @@ public class NouvelleOperationController {
         req.typeOperation = getTypeSelectionne();
         req.montant       = montant;
         req.timbre        = timbre;
+        req.timbreManuel  = timbreManuel;
         req.modePaiement  = mode;
         req.motif         = null;
         req.reference     = (referenceField.getText() == null

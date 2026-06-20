@@ -117,14 +117,15 @@ public class OperationCaisseService {
                         "Produit désactivé : " + categorie.getLibelle());
             }
 
-            // ---------- 3. Calcul automatique du timbre + montant TTC ----------
-            // Regle metier RTS : timbre 1% UNIQUEMENT pour les ESPECES
-            // a partir de 20 000 FCFA. Tous les autres modes (cheque,
-            // virement, mobile money, carte) sont exoneres. On IGNORE la
-            // valeur envoyee par le client (request.timbre()) : seul le
-            // calcul backend fait foi.
-            BigDecimal timbre = timbreCalculator.calculer(
-                    request.montant(), request.modePaiement(), categorie.getId());
+            // ---------- 3. Timbre (automatique OU manuel) + montant TTC ----------
+            //  - MANUEL (timbreManuel=true) : on prend la valeur saisie
+            //    request.timbre() telle quelle (null = aucun timbre -> 0).
+            //  - AUTO (false/null) : regle metier RTS, timbre 1% UNIQUEMENT
+            //    pour les ESPECES a partir de 20 000 FCFA (autres modes exoneres).
+            BigDecimal timbre = Boolean.TRUE.equals(request.timbreManuel())
+                    ? (request.timbre() != null ? request.timbre() : BigDecimal.ZERO)
+                    : timbreCalculator.calculer(
+                            request.montant(), request.modePaiement(), categorie.getId());
             BigDecimal montantTtc = request.montant().add(timbre);
 
             // Solde suffisant pour les sorties (sur le TTC)
@@ -397,14 +398,13 @@ public class OperationCaisseService {
                     ? clientService.trouver(request.clientId())
                     : null;
 
-            // ---------- Recalcul automatique du timbre + TTC ----------
-            // On recalcule aussi sur la modification, en tenant compte du
-            // mode de paiement (potentiellement modifie) : timbre 1% si
-            // ESPECES + montant >= 20 000 FCFA, 0 sinon. Si le mode passe
-            // d'ESPECES a CHEQUE/VIREMENT/Wave/OM, le timbre disparait
-            // automatiquement.
-            BigDecimal nouveauTimbre = timbreCalculator.calculer(
-                    request.montant(), request.modePaiement(), categorie.getId());
+            // ---------- Timbre (automatique OU manuel) + TTC ----------
+            //  - MANUEL : valeur saisie request.timbre() (null = aucun timbre).
+            //  - AUTO   : recalcul selon le mode (1% ESPECES >= 20 000, 0 sinon).
+            BigDecimal nouveauTimbre = Boolean.TRUE.equals(request.timbreManuel())
+                    ? (request.timbre() != null ? request.timbre() : BigDecimal.ZERO)
+                    : timbreCalculator.calculer(
+                            request.montant(), request.modePaiement(), categorie.getId());
             BigDecimal nouveauTtc = request.montant().add(nouveauTimbre);
 
             // ---------- Recalcul du solde caisse ----------

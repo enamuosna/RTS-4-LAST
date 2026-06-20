@@ -50,6 +50,18 @@ public record OperationCaisseRequest(
         @PositiveOrZero
         BigDecimal timbre,
 
+        /**
+         * Mode de saisie du timbre :
+         * <ul>
+         *   <li>{@code true} → timbre <b>MANUEL</b> : la valeur {@link #timbre}
+         *       est utilisée telle quelle ({@code null}/0 = aucun timbre).</li>
+         *   <li>{@code false} ou {@code null} → timbre <b>AUTOMATIQUE</b> :
+         *       calculé par le backend selon la configuration (comportement
+         *       historique par défaut).</li>
+         * </ul>
+         */
+        Boolean timbreManuel,
+
         @NotNull
         ModePaiement modePaiement,
 

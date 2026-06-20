@@ -291,6 +291,9 @@ public final class Dto {
         public BigDecimal    montant;
         /** Timbre fiscal (taxe optionnelle, FCFA). Peut être null = traité comme 0. */
         public BigDecimal    timbre;
+        /** True = timbre saisi MANUELLEMENT ({@link #timbre} utilisé tel quel) ;
+         *  false/null = timbre calculé AUTOMATIQUEMENT par le backend. */
+        public Boolean       timbreManuel;
         public ModePaiement  modePaiement;
 
         /** Conservé pour compat ; envoyé null depuis le formulaire v5. */

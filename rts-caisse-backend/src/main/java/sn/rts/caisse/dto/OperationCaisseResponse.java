@@ -81,7 +81,10 @@ public record OperationCaisseResponse(
 
         // ---------- Diffusions à l'antenne (créneaux date/heure/langue) ----------
         java.util.List<DiffusionDto> diffusions,
-        int nombreDiffusions
+        int nombreDiffusions,
+
+        /** Nombre de passages à l'antenne (informatif, optionnel). */
+        Integer nombrePassages
 ) {
 
     /** Sans les créneaux de diffusion (listes, historiques). */
@@ -151,7 +154,10 @@ public record OperationCaisseResponse(
 
                 // Diffusions
                 diffusions,
-                diffusions == null ? 0 : diffusions.size()
+                diffusions == null ? 0 : diffusions.size(),
+
+                // Nombre de passages à l'antenne (informatif)
+                o.getNombrePassages()
         );
     }
 }

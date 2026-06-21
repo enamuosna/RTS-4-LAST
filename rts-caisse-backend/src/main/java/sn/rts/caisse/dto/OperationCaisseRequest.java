@@ -90,6 +90,15 @@ public record OperationCaisseRequest(
          * chacun avec une langue optionnelle. Optionnel : liste vide = aucune
          * diffusion. Le « nombre de diffusion » = taille de cette liste.
          */
-        java.util.List<DiffusionDto> diffusions
+        java.util.List<DiffusionDto> diffusions,
+
+        /**
+         * Nombre de passages à l'antenne (un spot diffusé N fois).
+         * <b>Informatif</b> et optionnel : n'influence pas le montant. Saisi au
+         * guichet pour les produits dont la catégorie a
+         * {@code proposeNombrePassages=true}. {@code null} = non renseigné.
+         */
+        @Positive
+        Integer nombrePassages
 ) {
 }

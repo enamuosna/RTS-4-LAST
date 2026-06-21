@@ -75,6 +75,8 @@ public final class Dto {
         public boolean accepteJustificatif;
         /** Propose le choix d'une langue de diffusion (ex. Avis & Communiques). */
         public boolean proposeLangue;
+        /** Propose la saisie d'un nombre de passages a l'antenne (informatif). */
+        public boolean proposeNombrePassages;
 
         @Override public String toString() { return libelle; }
     }
@@ -341,6 +343,9 @@ public final class Dto {
         /** Creneaux de diffusion (date/heure + langue optionnelle). Optionnel. */
         public java.util.List<DiffusionDto> diffusions;
 
+        /** Nombre de passages a l'antenne (informatif, optionnel). null = non renseigne. */
+        public Integer nombrePassages;
+
         public OperationCaisseRequest() {}
     }
 
@@ -404,6 +409,9 @@ public final class Dto {
         public boolean annulee;
         public String  motifAnnulation;
         public String banqueSiteInternet;
+
+        /** Nombre de passages a l'antenne (informatif, optionnel). */
+        public Integer nombrePassages;
 
         public OperationCaisseResponse() {}
     }

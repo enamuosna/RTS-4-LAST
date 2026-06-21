@@ -180,6 +180,7 @@ public class OperationCaisseService {
                     .reference(request.reference())
                     .dateOperation(LocalDateTime.now())
                     .dateDiffusion(request.dateDiffusion())
+                    .nombrePassages(request.nombrePassages())
                     .caisse(caisse)
                     .caissier(caissier)
                     .categorie(categorie)
@@ -442,6 +443,7 @@ public class OperationCaisseService {
             operation.setCategorie(categorie);
             operation.setClient(client);
             operation.setBanque(banque);
+            operation.setNombrePassages(request.nombrePassages());
             // Remplace les créneaux de diffusion (et met à jour dateDiffusion).
             enregistrerDiffusions(operation, request);
 

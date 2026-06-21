@@ -18,7 +18,9 @@ public record CategorieOperationDTO(
          */
         boolean accepteJustificatif,
         /** Active le choix d'une langue de diffusion (ex. Avis & Communiqués). */
-        boolean proposeLangue
+        boolean proposeLangue,
+        /** Active la saisie d'un nombre de passages à l'antenne (informatif). */
+        boolean proposeNombrePassages
 ) {
     public static CategorieOperationDTO from(CategorieOperation c) {
         return new CategorieOperationDTO(
@@ -28,7 +30,8 @@ public record CategorieOperationDTO(
                 c.getTypeOperation(),
                 c.isActif(),
                 c.isAccepteJustificatif(),
-                c.isProposeLangue()
+                c.isProposeLangue(),
+                c.isProposeNombrePassages()
         );
     }
 }

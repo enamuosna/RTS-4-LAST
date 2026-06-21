@@ -229,6 +229,8 @@ export class UtilisateursComponent implements OnInit {
       case 'CAISSIER':      return 'Caissier';
       case 'AGENT_RECETTE': return 'Agent de recette';
       case 'CONTROLEUR':    return 'Contrôleur';
+      case 'CHEF_UNITE_FINANCES': return 'Contrôleur 1 (Finances)';
+      case 'CHEF_DEPARTEMENT':    return 'Contrôleur 2 (Département)';
       default:              return role;
     }
   }

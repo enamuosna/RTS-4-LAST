@@ -74,6 +74,14 @@ import { UtilisateurService } from '@core/services/admin.services';
               Contrôleur
               <small class="role-desc"> — consultation seule des transactions</small>
             </mat-option>
+            <mat-option value="CHEF_UNITE_FINANCES">
+              Contrôleur 1 — Chef Unité Finances
+              <small class="role-desc"> — Contrôle 1 des recettes (1ère signature)</small>
+            </mat-option>
+            <mat-option value="CHEF_DEPARTEMENT">
+              Contrôleur 2 — Chef de Département
+              <small class="role-desc"> — Contrôle 2 des recettes (validation finale)</small>
+            </mat-option>
           </mat-select>
         </mat-form-field>
 
@@ -179,6 +187,8 @@ export class ModifierRoleDialogComponent {
       case 'CAISSIER':      return 'Caissier';
       case 'AGENT_RECETTE': return 'Agent de recette';
       case 'CONTROLEUR':    return 'Contrôleur';
+      case 'CHEF_UNITE_FINANCES': return 'Contrôleur 1 — Chef Unité Finances';
+      case 'CHEF_DEPARTEMENT':    return 'Contrôleur 2 — Chef de Département';
       default:              return role;
     }
   }

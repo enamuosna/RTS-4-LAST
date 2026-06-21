@@ -28,6 +28,11 @@
             "assets": ["src/assets"],
             "styles": [
               "@angular/material/prebuilt-themes/indigo-pink.css",
+              "node_modules/@fontsource/roboto/300.css",
+              "node_modules/@fontsource/roboto/400.css",
+              "node_modules/@fontsource/roboto/500.css",
+              "node_modules/@fontsource/roboto/700.css",
+              "node_modules/material-icons/iconfont/material-icons.css",
               "src/styles.scss"
             ],
             "scripts": []

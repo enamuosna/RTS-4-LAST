@@ -72,4 +72,16 @@ public class CategorieOperation extends Auditable {
     @org.hibernate.annotations.ColumnDefault("false")
     @Builder.Default
     private boolean proposeLangue = false;
+
+    /**
+     * Indique si le produit propose la saisie d'un <b>nombre de passages à
+     * l'antenne</b> (un spot diffusé N fois). Quand actif, le guichet affiche
+     * un champ numérique optionnel lors de la saisie. <b>Purement informatif</b> :
+     * n'affecte pas le montant. Même rationale {@code @ColumnDefault} que
+     * {@link #proposeLangue}.
+     */
+    @Column(name = "propose_nombre_passages", nullable = false)
+    @org.hibernate.annotations.ColumnDefault("false")
+    @Builder.Default
+    private boolean proposeNombrePassages = false;
 }

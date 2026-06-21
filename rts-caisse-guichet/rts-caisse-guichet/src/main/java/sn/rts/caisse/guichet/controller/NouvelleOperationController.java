@@ -76,6 +76,11 @@ public class NouvelleOperationController {
     // Les lignes sont gérées dynamiquement dans diffusionsBox.
     @FXML private VBox    diffusionsBox;
     @FXML private Button  ajouterDiffusionButton;
+
+    // Nombre de passages à l'antenne (informatif, optionnel) — visible
+    // uniquement pour les produits dont la catégorie a proposeNombrePassages=true.
+    @FXML private VBox      nombrePassagesBox;
+    @FXML private TextField nombrePassagesField;
     private final java.util.List<LigneDiffusion> lignesDiffusion = new ArrayList<>();
     /** Langues de diffusion chargées depuis le backend (référentiel). */
     private java.util.List<sn.rts.caisse.guichet.model.Dto.LangueDTO> langues = new ArrayList<>();
@@ -197,6 +202,7 @@ public class NouvelleOperationController {
                 (obs, ancienne, nouvelle) -> {
                     appliquerVisibiliteJustificatif(nouvelle);
                     majVisibiliteLangues();
+                    majVisibiliteNombrePassages();
                     recalculerTtc();
                 });
 
@@ -365,6 +371,13 @@ public class NouvelleOperationController {
 
         // Pre-remplissage de la date+heure de diffusion (si presente).
         prefRemplirDateDiffusion(op.dateDiffusion);
+
+        // Nombre de passages à l'antenne (la visibilité suit la catégorie,
+        // appliquée quand la catégorie est sélectionnée plus bas en async).
+        if (nombrePassagesField != null) {
+            nombrePassagesField.setText(
+                    op.nombrePassages == null ? "" : String.valueOf(op.nombrePassages));
+        }
 
         // Mode de paiement
         if (op.modePaiement != null) {
@@ -778,6 +791,9 @@ public class NouvelleOperationController {
         timbreField.clear();
         montantTtcField.clear();
         referenceField.clear();
+        if (nombrePassagesField != null) {
+            nombrePassagesField.clear();
+        }
 
         reinitialiserDiffusions();
         // Reset du justificatif (visibilite suit la categorie par defaut)
@@ -965,6 +981,25 @@ public class NouvelleOperationController {
         // dateDiffusion principale (compat reçu) = premier créneau, sinon null.
         req.dateDiffusion = diffs.isEmpty() ? null : diffs.get(0).dateHeure;
 
+        // Nombre de passages à l'antenne (informatif, optionnel) — uniquement
+        // pour les produits qui le proposent. Entier positif sinon erreur.
+        req.nombrePassages = null;
+        if (nombrePassagesBox != null && nombrePassagesBox.isVisible()
+                && nombrePassagesField != null
+                && nombrePassagesField.getText() != null
+                && !nombrePassagesField.getText().isBlank()) {
+            try {
+                int n = Integer.parseInt(nombrePassagesField.getText().trim());
+                if (n <= 0) throw new NumberFormatException();
+                req.nombrePassages = n;
+            } catch (NumberFormatException ex) {
+                Ui.erreur("Nombre de passages invalide",
+                        "Le nombre de passages à l'antenne doit être un entier positif (ex. 30).");
+                nombrePassagesField.requestFocus();
+                return null;
+            }
+        }
+
         // Validation banque pour CHÈQUE / VIREMENT
         if (banqueRequise(mode)) {
             BanqueDTO banque = banqueCombo.getValue();
@@ -1091,6 +1126,22 @@ public class NouvelleOperationController {
         l.langue.setManaged(propose);
         if (!propose) {
             l.langue.setValue(null);
+        }
+    }
+
+    /**
+     * Affiche/masque le champ « nombre de passages à l'antenne » selon le
+     * produit choisi (flag proposeNombrePassages). Vide le champ quand masqué.
+     */
+    private void majVisibiliteNombrePassages() {
+        boolean propose = categorieCombo != null && categorieCombo.getValue() != null
+                && categorieCombo.getValue().proposeNombrePassages;
+        if (nombrePassagesBox != null) {
+            nombrePassagesBox.setVisible(propose);
+            nombrePassagesBox.setManaged(propose);
+        }
+        if (!propose && nombrePassagesField != null) {
+            nombrePassagesField.clear();
         }
     }
 

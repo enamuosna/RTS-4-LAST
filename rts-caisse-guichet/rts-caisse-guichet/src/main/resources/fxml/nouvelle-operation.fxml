@@ -164,6 +164,17 @@
                 <VBox fx:id="diffusionsBox" spacing="8"/>
             </VBox>
 
+            <!-- ========== Nombre de passages à l'antenne (OPTIONNEL) ==========
+                 Visible uniquement pour les produits dont la categorie a
+                 proposeNombrePassages=true (ex. spots publicitaires). Champ
+                 informatif : n'influence pas le montant. -->
+            <VBox fx:id="nombrePassagesBox" spacing="6"
+                  visible="false" managed="false">
+                <Label styleClass="field-label"
+                       text="NOMBRE DE PASSAGES À L'ANTENNE (optionnel)"/>
+                <TextField fx:id="nombrePassagesField" promptText="ex : 30"/>
+            </VBox>
+
             <!-- ========== Justificatif (visible selon 2 regles) ==========
                  Le bloc apparait si :
                   (a) la categorie a accepteJustificatif=true (AVIS ET

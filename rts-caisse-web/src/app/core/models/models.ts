@@ -116,6 +116,9 @@ export interface CategorieOperation {
   /** True si le produit propose le choix d'une langue de diffusion
    *  (ex. Avis & Communiqués). Sélection optionnelle au guichet. */
   proposeLangue: boolean;
+  /** True si le produit propose la saisie d'un nombre de passages à
+   *  l'antenne (informatif, ex. spots publicitaires). */
+  proposeNombrePassages: boolean;
 }
 
 // ---------- Langue de diffusion ----------
@@ -169,6 +172,8 @@ export interface OperationCaisseRequest {
   dateDiffusion?: string | null;
   /** Créneaux de diffusion multiples (date/heure + langue optionnelle). */
   diffusions?: DiffusionSlot[];
+  /** Nombre de passages à l'antenne (informatif, optionnel). */
+  nombrePassages?: number | null;
 }
 
 // ──────────────────────────────
@@ -201,6 +206,8 @@ export interface OperationCaisse {
   diffusions?: DiffusionSlot[];
   /** Nombre de créneaux de diffusion. */
   nombreDiffusions?: number;
+  /** Nombre de passages à l'antenne (informatif, optionnel). */
+  nombrePassages?: number | null;
   caisseId: number;
   caisseLibelle: string;
   caissierId: number;

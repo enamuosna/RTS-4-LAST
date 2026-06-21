@@ -87,6 +87,15 @@ public class OperationCaisse extends Auditable {
     @Column(name = "date_diffusion")
     private LocalDateTime dateDiffusion;
 
+    /**
+     * Nombre de passages à l'antenne prévus pour ce produit (un spot diffusé
+     * N fois). <b>Purement informatif</b> : n'influence pas le montant. Optionnel,
+     * saisi au guichet uniquement pour les produits dont la catégorie a
+     * {@code proposeNombrePassages=true} (ex. spots publicitaires).
+     */
+    @Column(name = "nombre_passages")
+    private Integer nombrePassages;
+
     // ---------- Relations ----------
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

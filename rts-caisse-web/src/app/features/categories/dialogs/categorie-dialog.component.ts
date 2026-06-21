@@ -43,7 +43,8 @@ export class CategorieDialogComponent {
     typeOperation: [(this.data?.typeOperation ?? 'ENTREE') as TypeOperation, Validators.required],
     actif: [this.data?.actif ?? true],
     accepteJustificatif: [this.data?.accepteJustificatif ?? false],
-    proposeLangue: [this.data?.proposeLangue ?? false]
+    proposeLangue: [this.data?.proposeLangue ?? false],
+    proposeNombrePassages: [this.data?.proposeNombrePassages ?? false]
   });
 
   valider(): void {
